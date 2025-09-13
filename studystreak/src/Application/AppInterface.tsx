@@ -1,6 +1,5 @@
-import React from "react";
 
-function Header() {
+export function Header() {
   return (
     <header className="w-full bg-slate-700 text-white p-4 rounded-xl mb-4">
       <h1 className="text-2xl font-bold text-center">Header</h1>
@@ -8,9 +7,9 @@ function Header() {
   );
 }
 
-function SideBar() {
+export function SideBar() {
   return (
-    <aside className="w-54 bg-slate-700 text-white p-4 rounded-xl mr-4">
+    <aside className="w-64 bg-slate-700 text-white p-4 rounded-xl mr-4">
       <nav>
         <ul>
           <li className="mb-2">
@@ -48,17 +47,4 @@ function SideBar() {
   );
 }
 
-export default function AppInterface() {
-  return (
-    <div className="flex flex-col h-screen">
-      <Header />
-      <div className="flex flex-1">
-        <SideBar />
-        <main className="flex-1 p-4">
-          <h2 className="text-xl font-bold mb-4">Main Content Area</h2>
-          {/* Add your main content here */}
-        </main>
-      </div>
-    </div>
-  );
-}
+
