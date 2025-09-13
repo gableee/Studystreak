@@ -1,31 +1,67 @@
 
 import { Header, SideBar } from './AppInterface.tsx'
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { PageTransition } from './components/PageTransition'
 import Dashboard from '../Features/Dashboard/Dashboard'
 import Profile from '../Features/Profile/Profile'
 import Settings from '../Features/Settings/Settings'
+import Pomodoro from '../Features/Pomodoro/Pomodoro'
+import Courses from '../Features/Courses/Courses'
+import Todo from '../Features/Todo/Todo'
 
 function App() {
-
   return (
-    <>
-    <div className="flex flex-col h-screen">
-      <Header />
-      <div className="flex flex-1">
-        <SideBar />
-        <main className="flex-1 p-4">
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<div className="text-slate-300">Not Found</div>} />
-          </Routes>
-        </main>
+    <div className="min-h-screen bg-[#070B13] overflow-x-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-blue-900/20 via-transparent to-purple-900/20">
+        <div className="flex h-screen">
+          <SideBar />
+          <div className="flex-1 flex flex-col">
+            <Header />
+            <main className="flex-1 p-6 overflow-y-auto">
+              <Routes>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={
+                  <PageTransition>
+                    <Dashboard />
+                  </PageTransition>
+                } />
+                <Route path="/profile" element={
+                  <PageTransition>
+                    <Profile />
+                  </PageTransition>
+                } />
+                <Route path="/settings" element={
+                  <PageTransition>
+                    <Settings />
+                  </PageTransition>
+                } />
+                <Route path="/pomodoro" element={
+                  <PageTransition>
+                    <Pomodoro />
+                  </PageTransition>
+                } />
+                <Route path="/courses" element={
+                  <PageTransition>
+                    <Courses />
+                  </PageTransition>
+                } />
+                <Route path="/todo" element={
+                  <PageTransition>
+                    <Todo />
+                  </PageTransition>
+                } />
+                <Route path="*" element={
+                  <PageTransition>
+                    <div className="text-slate-300">Not Found</div>
+                  </PageTransition>
+                } />
+              </Routes>
+            </main>
+          </div>
+        </div>
       </div>
     </div>
-    </>
-  )
-}
+  );
+                } 
 
 export default App
