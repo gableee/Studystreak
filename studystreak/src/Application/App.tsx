@@ -12,7 +12,7 @@ import Todo from '../Features/Todo/Todo'
 function App() {
   return (
     <div className="min-h-screen bg-[#070B13] overflow-x-hidden">
-      <div className="min-h-screen bg-gradient-to-br from-blue-900/20 via-transparent to-purple-900/20">
+      <div className="min-h-screen bg-gradient-to-br from-blue-900/20 via-transparent to-purple-900/30">
         <div className="flex h-screen">
           <SideBar />
           <div className="flex-1 flex flex-col">

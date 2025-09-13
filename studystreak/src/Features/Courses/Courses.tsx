@@ -3,19 +3,19 @@ export default function Courses() {
     {
       name: 'Coursera',
       url: 'https://www.coursera.org',
-      logo: 'https://d3njjcbhbojbot.cloudfront.net/api/utilities/v1/imageproxy/https://coursera_assets.s3.amazonaws.com/meta_images/coursera_logo_square.png',
+      logo: '/src/assets/images/Coursera-logo.svg',  // Local image path
       description: 'Online courses from top universities'
     },
     {
       name: 'Khan Academy',
       url: 'https://www.khanacademy.org',
-      logo: 'https://cdn.kastatic.org/images/khan-logo-dark-background.new.png',
+      logo: '/src/assets/images/Khan-Academy-logo.png',
       description: 'Free world-class education for anyone'
     },
     {
       name: 'Scrimba',
       url: 'https://scrimba.com',
-      logo: 'https://scrimba.com/static/art/dark-logo.svg',
+      logo: '/src/assets/images/Scrimba-logo.png',
       description: 'Interactive coding courses'
     },
     {
@@ -27,7 +27,7 @@ export default function Courses() {
     {
       name: 'edX',
       url: 'https://www.edx.org',
-      logo: 'https://www.edx.org/images/logos/edx-tm-logo.svg',
+      logo: '/src/assets/images/Edx-logo.png',
       description: 'Education for everyone'
     },
     {
