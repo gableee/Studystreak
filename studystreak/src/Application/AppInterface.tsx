@@ -5,6 +5,7 @@ export function Header() {
   return (
     <header className="w-full bg-[#0A1220] backdrop-blur-xl text-white p-4 mb-4">
       <div className="container mx-auto flex justify-between items-center px-4">
+
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -17,13 +18,9 @@ export function Header() {
             <h1 className="text-lg font-semibold text-white">
               StudyStreak
             </h1>
-            <div className="hidden md:flex items-center gap-2 text-sm">
-              <button className="btn-ghost px-3 py-1 text-white/80">Browse</button>
-              <button className="btn-ghost px-3 py-1 text-white/80">Library</button>
-              <button className="btn-ghost px-3 py-1 text-white/80">Recent</button>
-            </div>
           </div>
         </div>
+
         <div className="flex items-center gap-4">
           <button className="btn-ghost p-2 relative">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -35,6 +32,7 @@ export function Header() {
           <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg flex items-center justify-center text-sm font-medium">
             Lee
           </div>
+
         </div>
       </div>
     </header>
@@ -143,7 +141,6 @@ export function SideBar() {
               </div>
             </NavLink>
           </li>
-
           <li>
             <NavLink to="/todo" 
               className={({ isActive }) => `
