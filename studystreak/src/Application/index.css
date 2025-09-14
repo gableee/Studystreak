@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -14,3 +16,51 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+
+
+@layer components {
+  .btn {
+    /* Base button shape and layout */
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium select-none
+     transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-0;
+  }
+
+  .btn-primary {
+    /* Brand primary action */
+    @apply btn bg-blue-600 text-white hover:bg-blue-700;
+  }
+
+  .btn-ghost {
+    /* Subtle button on dark backgrounds */
+    @apply btn bg-white/5 text-white/80 hover:bg-white/10 hover:text-white;
+  }
+
+  .card-nav {
+    @apply w-10 h-10 rounded-lg flex items-center justify-center
+      transition-colors bg-white/5 group-hover:bg-white/10;
+  }
+
+  .card {
+    /* App-wide card surface */
+    @apply rounded-xl border border-white/5 bg-[#0A1220] p-6;
+  }
+
+  .card-hover {
+    /* Consistent hover affordance for cards */
+    @apply transition-all duration-300 hover:border-white/10;
+  }
+
+  .badge {
+    /* Small status labels */
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+  }
+
+  .badge-info { @apply badge bg-blue-500/10 text-blue-400; }
+  .badge-warn { @apply badge bg-yellow-500/10 text-yellow-400; }
+  .badge-danger { @apply badge bg-red-500/10 text-red-400; }
+}
+
+
+
+
