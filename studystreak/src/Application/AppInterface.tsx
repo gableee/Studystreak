@@ -41,7 +41,7 @@ export function Header() {
 
 export function SideBar() {
   return (
-    <aside className="w-72 bg-[#0A1220]/80 backdrop-blur-xl text-white h-full border-r border-white/5">
+    <aside className="w-72 hidden md:block bg-[#0A1220]/80 backdrop-blur-xl text-white h-full border-r border-white/5">
       <nav className="h-full py-8 px-5">
         <div className="mb-8 px-4">
           <div className="text-xs font-medium text-white/50 uppercase tracking-wider">
