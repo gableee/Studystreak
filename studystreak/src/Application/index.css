@@ -17,6 +17,23 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Page transition styles */
+.page-transition {
+  animation: smoothAppear 0.2s cubic-bezier(0.25, 0.1, 0.25, 1.0);
+  will-change: opacity;
+}
+
+@keyframes smoothAppear {
+  0% { 
+    opacity: 0; 
+    transform: translateY(10px); 
+  }
+  100% { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
 
 
 @layer components {

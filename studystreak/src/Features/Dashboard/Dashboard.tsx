@@ -3,16 +3,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Progress } from "@/components/ui/progress";
 import { PlusIcon } from "lucide-react";
 
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-
 export default function Dashboard() {
-  const [mounted, setMounted] = useState(false);
-  
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-  
   const courses = [
     {
       id: 1,
@@ -39,12 +30,7 @@ export default function Dashboard() {
 
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: mounted ? 1 : 0 }}
-      transition={{ duration: 0.4 }}
-      className="max-w-7xl mx-auto px-2"
-    >
+    <div className="max-w-7xl mx-auto px-2">
       <section className="relative">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-72 bg-blue-600/10 blur-[120px] rounded-full -z-10"></div>
         <div className="flex justify-between items-center mb-8">
@@ -56,17 +42,8 @@ export default function Dashboard() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {courses.map((course, index) => (
-            <motion.div
-              key={course.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ 
-                delay: index * 0.1,
-                duration: 0.4,
-                ease: [0.21, 0.45, 0.42, 0.96]
-              }}
-            >
+          {courses.map((course) => (
+            <div key={course.id}>
             <Card 
               className="border-white/5 bg-gradient-to-b from-[#0C1423] to-[#0A1220] shadow-lg shadow-blue-900/5 
                         hover:border-blue-500/20 transition-all duration-300 hover:shadow-blue-900/10 hover:-translate-y-0.5"
@@ -109,19 +86,14 @@ export default function Dashboard() {
                 </Button>
               </CardFooter>
             </Card>
-            </motion.div>
+            </div>
           ))}
         </div>
 
         {/* Quick Stats */}
-        <motion.div 
-          className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-        >
-          <motion.div whileHover={{ y: -5 }} transition={{ type: 'spring', stiffness: 300 }}>
-            <Card className="border-white/5 bg-gradient-to-br from-[#0C1423] to-[#0A1220] hover:border-blue-500/10 transition-all duration-300 group overflow-hidden">
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <Card className="border-white/5 bg-gradient-to-br from-[#0C1423] to-[#0A1220] hover:border-blue-500/10 transition-all duration-300 hover:-translate-y-1 group overflow-hidden">
               <CardContent className="pt-6 relative">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 rounded-full -mr-16 -mt-16 group-hover:bg-blue-600/10 transition-all duration-500"></div>
                 <h4 className="text-sm text-blue-200/70 font-medium mb-2 tracking-wide uppercase">Total Learning Time</h4>
@@ -130,10 +102,10 @@ export default function Dashboard() {
                 </p>
               </CardContent>
             </Card>
-          </motion.div>
+          </div>
           
-          <motion.div whileHover={{ y: -5 }} transition={{ type: 'spring', stiffness: 300 }}>
-            <Card className="border-white/5 bg-gradient-to-br from-[#0C1423] to-[#0A1220] hover:border-indigo-500/10 transition-all duration-300 group overflow-hidden">
+          <div>
+            <Card className="border-white/5 bg-gradient-to-br from-[#0C1423] to-[#0A1220] hover:border-indigo-500/10 transition-all duration-300 hover:-translate-y-1 group overflow-hidden">
               <CardContent className="pt-6 relative">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/5 rounded-full -mr-16 -mt-16 group-hover:bg-indigo-600/10 transition-all duration-500"></div>
                 <h4 className="text-sm text-indigo-200/70 font-medium mb-2 tracking-wide uppercase">Courses in Progress</h4>
@@ -142,10 +114,10 @@ export default function Dashboard() {
                 </p>
               </CardContent>
             </Card>
-          </motion.div>
+          </div>
           
-          <motion.div whileHover={{ y: -5 }} transition={{ type: 'spring', stiffness: 300 }}>
-            <Card className="border-white/5 bg-gradient-to-br from-[#0C1423] to-[#0A1220] hover:border-emerald-500/10 transition-all duration-300 group overflow-hidden">
+          <div>
+            <Card className="border-white/5 bg-gradient-to-br from-[#0C1423] to-[#0A1220] hover:border-emerald-500/10 transition-all duration-300 hover:-translate-y-1 group overflow-hidden">
               <CardContent className="pt-6 relative">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-600/5 rounded-full -mr-16 -mt-16 group-hover:bg-emerald-600/10 transition-all duration-500"></div>
                 <h4 className="text-sm text-emerald-200/70 font-medium mb-2 tracking-wide uppercase">Completed Courses</h4>
@@ -154,9 +126,9 @@ export default function Dashboard() {
                 </p>
               </CardContent>
             </Card>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </section>
-    </motion.div>
+    </div>
   );
 }

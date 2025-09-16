@@ -1,16 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { motion } from "framer-motion";
 import { ExternalLink } from "lucide-react";
 
 export default function Courses() {
-  const [mounted, setMounted] = useState(false);
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
   
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const handleImageLoad = (platformName: string) => {
     setLoadedImages(prev => ({ ...prev, [platformName]: true }));
   };
@@ -61,12 +55,7 @@ export default function Courses() {
   ];
 
   return (
-    <motion.div 
-      className="space-y-12 p-6 max-w-7xl mx-auto"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: mounted ? 1 : 0 }}
-      transition={{ duration: 0.4 }}
-    >
+    <div className="space-y-12 p-6 max-w-7xl mx-auto">
       {/* Learning Platforms Section */}
       <section className="relative">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-72 bg-blue-600/5 blur-[120px] rounded-full -z-10"></div>
@@ -79,17 +68,8 @@ export default function Courses() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {platforms.map((platform, index) => (
-            <motion.div
-              key={platform.name}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ 
-                delay: index * 0.1,
-                duration: 0.4,
-                ease: [0.21, 0.45, 0.42, 0.96]
-              }}
-            >
+          {platforms.map((platform) => (
+            <div key={platform.name}>
               <Card className={`relative overflow-hidden h-56 border border-slate-700 ${platform.color} shadow-sm 
                             hover:border-slate-500 transition-all duration-300 group`}>
                 <div className="absolute inset-0 bg-[#0A1220]/20"></div>
@@ -135,10 +115,10 @@ export default function Courses() {
                   </a>
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
           ))}
         </div>
       </section>   
-    </motion.div>
+    </div>
   );
 }
