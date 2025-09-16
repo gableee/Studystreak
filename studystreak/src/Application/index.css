@@ -37,6 +37,7 @@
 
 
 @layer components {
+  /* Button Components */
   .btn {
     /* Base button shape and layout */
     @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium select-none
@@ -44,95 +45,116 @@
   }
 
   .btn-primary {
-    /* Brand primary action */
+    /* Brand primary action - Blue (#2563EB -> #1D4ED8 on hover) */
     @apply btn bg-blue-600 text-white hover:bg-blue-700;
   }
 
   .btn-ghost {
-    /* Subtle button on dark backgrounds */
+    /* Subtle button on dark backgrounds - White with opacity */
     @apply btn bg-white/5 text-white/80 hover:bg-white/10 hover:text-white;
   }
 
+  /* Card Components */
   .card-nav {
+    /* Navigation icon container for cards */
     @apply w-10 h-10 rounded-lg flex items-center justify-center
       transition-colors bg-white/5 group-hover:bg-white/10;
   }
 
   .card {
-    /* App-wide card surface */
+    /* App-wide card surface - Dark blue (#0A1220) with white border */
     @apply rounded-xl border border-white/5 bg-[#0A1220] p-6;
   }
 
   .card-hover {
-    /* Consistent hover affordance for cards */
+    /* Consistent hover affordance for cards - Border brightens on hover */
     @apply transition-all duration-300 hover:border-white/10;
   }
 
+  /* Badge Components */
   .badge {
-    /* Small status labels */
+    /* Small status labels - Base styling */
     @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
   }
 
-  .badge-info { @apply badge bg-blue-500/10 text-blue-400; }
-  .badge-warn { @apply badge bg-yellow-500/10 text-yellow-400; }
-  .badge-danger { @apply badge bg-red-500/10 text-red-400; }
+  .badge-info { 
+    /* Blue informational badge */
+    @apply badge bg-blue-500/10 text-blue-400; 
+  }
+  
+  .badge-warn { 
+    /* Yellow warning badge */
+    @apply badge bg-yellow-500/10 text-yellow-400; 
+  }
+  
+  .badge-danger { 
+    /* Red error/danger badge */
+    @apply badge bg-red-500/10 text-red-400; 
+  }
 }
 
 
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    /* Light Mode Theme */
+    --background: 0 0% 100%;                 /* #FFFFFF - White - bg-white */
+    --foreground: 222.2 84% 4.9%;            /* #0F1729 - Dark Blue/Gray - roughly bg-slate-900 */
+    --card: 0 0% 100%;                       /* #FFFFFF - White - bg-white */
+    --card-foreground: 222.2 84% 4.9%;       /* #0F1729 - Dark Blue/Gray - roughly bg-slate-900 */
+    --popover: 0 0% 100%;                    /* #FFFFFF - White - bg-white */
+    --popover-foreground: 222.2 84% 4.9%;    /* #0F1729 - Dark Blue/Gray - roughly bg-slate-900 */
+    --primary: 222.2 47.4% 11.2%;            /* #1C2A3F - Dark Blue - similar to bg-slate-800 */
+    --primary-foreground: 210 40% 98%;       /* #F8FAFC - Very Light Blue-Gray - roughly bg-slate-50 */
+    --secondary: 210 40% 96.1%;              /* #F1F5F9 - Light Blue-Gray - bg-slate-100 */
+    --secondary-foreground: 222.2 47.4% 11.2%; /* #1C2A3F - Dark Blue - similar to bg-slate-800 */
+    --muted: 210 40% 96.1%;                  /* #F1F5F9 - Light Blue-Gray - bg-slate-100 */
+    --muted-foreground: 215.4 16.3% 46.9%;   /* #64748B - Medium Gray-Blue - bg-slate-500 */
+    --accent: 210 40% 96.1%;                 /* #F1F5F9 - Light Blue-Gray - bg-slate-100 */
+    --accent-foreground: 222.2 47.4% 11.2%;  /* #1C2A3F - Dark Blue - similar to bg-slate-800 */
+    --destructive: 0 84.2% 60.2%;            /* #EF4444 - Red - bg-red-500 */
+    --destructive-foreground: 210 40% 98%;   /* #F8FAFC - Very Light Blue-Gray - roughly bg-slate-50 */
+    --border: 214.3 31.8% 91.4%;             /* #E2E8F0 - Light Gray - bg-slate-200 */
+    --input: 214.3 31.8% 91.4%;              /* #E2E8F0 - Light Gray - bg-slate-200 */
+    --ring: 222.2 84% 4.9%;                  /* #0F1729 - Dark Blue/Gray - roughly bg-slate-900 */
+    
+    /* Chart Colors - Light Mode */
+    --chart-1: 12 76% 61%;                   /* #E7583E - Reddish Orange - similar to bg-red-500 */
+    --chart-2: 173 58% 39%;                  /* #29A396 - Teal - similar to bg-teal-600 */
+    --chart-3: 197 37% 24%;                  /* #254E58 - Dark Teal - custom teal shade */
+    --chart-4: 43 74% 66%;                   /* #C9D12A - Yellow-Green - similar to bg-lime-400 */
+    --chart-5: 27 87% 67%;                   /* #EC9627 - Orange - similar to bg-orange-400 */
     --radius: 0.5rem;
   }
+  
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* Dark Mode Theme */
+    --background: 222.2 84% 4.9%;            /* #0F1729 - Dark Blue/Gray - roughly bg-slate-900 */
+    --foreground: 210 40% 98%;               /* #F8FAFC - Very Light Blue-Gray - roughly bg-slate-50 */
+    --card: 222.2 84% 4.9%;                  /* #0F1729 - Dark Blue/Gray - roughly bg-slate-900 */
+    --card-foreground: 210 40% 98%;          /* #F8FAFC - Very Light Blue-Gray - roughly bg-slate-50 */
+    --popover: 222.2 84% 4.9%;               /* #0F1729 - Dark Blue/Gray - roughly bg-slate-900 */
+    --popover-foreground: 210 40% 98%;       /* #F8FAFC - Very Light Blue-Gray - roughly bg-slate-50 */
+    --primary: 210 40% 98%;                  /* #F8FAFC - Very Light Blue-Gray - roughly bg-slate-50 */
+    --primary-foreground: 222.2 47.4% 11.2%; /* #1C2A3F - Dark Blue - similar to bg-slate-800 */
+    --secondary: 217.2 32.6% 17.5%;          /* #1E293B - Dark Blue-Gray - bg-slate-800 */
+    --secondary-foreground: 210 40% 98%;     /* #F8FAFC - Very Light Blue-Gray - roughly bg-slate-50 */
+    --muted: 217.2 32.6% 17.5%;              /* #1E293B - Dark Blue-Gray - bg-slate-800 */
+    --muted-foreground: 215 20.2% 65.1%;     /* #94A3B8 - Medium Gray-Blue - bg-slate-400 */
+    --accent: 217.2 32.6% 17.5%;             /* #1E293B - Dark Blue-Gray - bg-slate-800 */
+    --accent-foreground: 210 40% 98%;        /* #F8FAFC - Very Light Blue-Gray - roughly bg-slate-50 */
+    --destructive: 0 62.8% 30.6%;            /* #9B1C1C - Dark Red - bg-red-800 */
+    --destructive-foreground: 210 40% 98%;   /* #F8FAFC - Very Light Blue-Gray - roughly bg-slate-50 */
+    --border: 217.2 32.6% 17.5%;             /* #1E293B - Dark Blue-Gray - bg-slate-800 */
+    --input: 217.2 32.6% 17.5%;              /* #1E293B - Dark Blue-Gray - bg-slate-800 */
+    --ring: 212.7 26.8% 83.9%;               /* #CBD5E1 - Light Blue-Gray - bg-slate-300 */
+    
+    /* Chart Colors - Dark Mode */
+    --chart-1: 220 70% 50%;                  /* #3B67CC - Blue - similar to bg-blue-600 */
+    --chart-2: 160 60% 45%;                  /* #2E9D74 - Green - similar to bg-green-600 */
+    --chart-3: 30 80% 55%;                   /* #DFA02C - Orange - similar to bg-amber-500 */
+    --chart-4: 280 65% 60%;                  /* #A855DB - Purple - similar to bg-purple-500 */
+    --chart-5: 340 75% 55%;                  /* #D63F82 - Pink - similar to bg-pink-600 */
   }
 }
 

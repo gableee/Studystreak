@@ -30,7 +30,7 @@ import Todo from '../Features/Todo/Todo'
  */
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#070B13] overflow-x-hidden transition-colors duration-200">
+    <div className="min-h-screen bg-background dark:bg-[#070B13] overflow-x-hidden transition-colors duration-200">
       <div className="min-h-screen bg-transparent dark:bg-gradient-to-br dark:from-blue-900/20 dark:via-transparent dark:to-purple-900/30">
         <div className="flex h-screen">
           <SideBar />
@@ -72,7 +72,7 @@ function App() {
                 } />
                 <Route path="*" element={
                   <PageTransition>
-                    <div className="text-slate-300">Not Found</div>
+                    <div className="text-foreground">Not Found</div>
                   </PageTransition>
                 } />
               </Routes>
