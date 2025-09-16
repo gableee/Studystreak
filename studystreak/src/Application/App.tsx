@@ -31,23 +31,15 @@ import Todo from '../Features/Todo/Todo'
 function App() {
   return (
     <div className="min-h-screen bg-[#070B13] overflow-x-hidden">
-      {/* Gradient overlay for visual interest */}
       <div className="min-h-screen bg-gradient-to-br from-blue-900/20 via-transparent to-purple-900/30">
-        {/* App layout with sidebar and main content */}
         <div className="flex h-screen">
-          {/* Left sidebar navigation */}
           <SideBar />
           {/* Main content area */}
           <div className="flex-1 flex flex-col">
-            {/* Top header */}
             <Header />
-            {/* Main scrollable content area */}
             <main className="flex-1 p-6 overflow-y-auto">
-              {/* Application routes configuration */}
               <Routes>
-                {/* Redirect root to dashboard */}
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                {/* Dashboard route with page transition */}
                 <Route path="/dashboard" element={
                   <PageTransition>
                     <Dashboard />
