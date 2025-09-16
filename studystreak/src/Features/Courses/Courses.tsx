@@ -1,14 +1,49 @@
+/**
+ * Courses Component
+ * 
+ * This component displays a grid of educational platform cards that users can access
+ * for their learning. Each platform card shows the platform logo, name, description, 
+ * and a link to the external site.
+ * 
+ * Features:
+ * - Responsive grid layout
+ * - Image loading states with spinner
+ * - Hover effects for interactive feedback
+ * - External links to learning platforms
+ * 
+ * @module Features/Courses
+ */
+
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExternalLink } from "lucide-react";
 
 export default function Courses() {
+  /**
+   * State to track which platform images have finished loading
+   * Key: platform name, Value: boolean indicating if image is loaded
+   */
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
   
+  /**
+   * Handler function called when a platform image finishes loading
+   * Updates the loadedImages state to hide the loading spinner and show the image
+   * 
+   * @param platformName - The name of the platform whose image has loaded
+   */
   const handleImageLoad = (platformName: string) => {
     setLoadedImages(prev => ({ ...prev, [platformName]: true }));
   };
 
+  /**
+   * Array of learning platforms displayed in the course grid
+   * Each platform object contains:
+   * - name: Display name of the platform
+   * - url: External URL to the platform website
+   * - logo: Path to the platform logo image
+   * - description: Short description of what the platform offers
+   * - color: Background color class for the platform card
+   */
   const platforms = [
     {
       name: 'Coursera',
@@ -58,8 +93,10 @@ export default function Courses() {
     <div className="space-y-12 p-6 max-w-7xl mx-auto">
       {/* Learning Platforms Section */}
       <section className="relative">
+        {/* Background gradient effect */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-72 bg-blue-600/5 blur-[120px] rounded-full -z-10"></div>
         
+        {/* Section header */}
         <div className="flex justify-between items-center mb-8">
           <div>
             <h2 className="text-3xl font-bold text-white">Learning Platforms</h2>
@@ -67,14 +104,17 @@ export default function Courses() {
           </div>
         </div>
 
+        {/* Responsive grid of platform cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {platforms.map((platform) => (
             <div key={platform.name}>
+              {/* Platform card with hover effects */}
               <Card className={`relative overflow-hidden h-56 border border-slate-700 ${platform.color} shadow-sm 
                             hover:border-slate-500 transition-all duration-300 group`}>
+                {/* Dark overlay for better text contrast */}
                 <div className="absolute inset-0 bg-[#0A1220]/20"></div>
                 
-                {/* Loading spinner overlay */}
+                {/* Loading spinner overlay - shown while image is loading */}
                 {!loadedImages[platform.name] && (
                   <div className="absolute inset-0 flex items-center justify-center bg-[#0A1220]/40 z-10">
                     <svg className="animate-spin h-6 w-6 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -85,14 +125,18 @@ export default function Courses() {
                 )}
                 
                 <CardContent className="h-full p-0">
+                  {/* External link to the platform website */}
                   <a
                     href={platform.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block h-full w-full p-8"
                   >
+                    {/* Card content layout structure */}
                     <div className="h-full flex flex-col relative z-10">
+                      {/* Platform logo container */}
                       <div className="flex items-center justify-center flex-1">
+                        {/* Platform logo image with fade-in effect on load */}
                         <img
                           src={platform.logo}
                           alt={platform.name}
@@ -102,12 +146,16 @@ export default function Courses() {
                         />
                       </div>
                       
+                      {/* Platform information footer */}
                       <div className="mt-auto">
                         <div className="flex items-center justify-between">
                           <div>
+                            {/* Platform name */}
                             <div className="text-lg font-medium text-white">{platform.name}</div>
+                            {/* Platform description */}
                             <div className="text-sm text-slate-400">{platform.description}</div>
                           </div>
+                          {/* External link icon with hover effect */}
                           <ExternalLink className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" />
                         </div>
                       </div>

@@ -1,4 +1,19 @@
 
+/**
+ * Main Application Component
+ * 
+ * This is the root component of the StudyStreak application that sets up:
+ * - The overall layout structure (sidebar, header, main content)
+ * - Routing configuration for all main features
+ * - Page transitions between routes
+ * - Background styling and gradient effects
+ * 
+ * The component uses React Router for navigation and applies the PageTransition
+ * component to create smooth transitions between different pages.
+ * 
+ * @module Application/App
+ */
+
 import { Header, SideBar } from './AppInterface.tsx'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { PageTransition } from './components/PageTransition'
@@ -9,17 +24,30 @@ import Pomodoro from '../Features/Pomodoro/Pomodoro'
 import Courses from '../Features/Courses/Courses'
 import Todo from '../Features/Todo/Todo'
 
+/**
+ * App Component - The root component of the application
+ * Defines the main layout and routing structure
+ */
 function App() {
   return (
     <div className="min-h-screen bg-[#070B13] overflow-x-hidden">
+      {/* Gradient overlay for visual interest */}
       <div className="min-h-screen bg-gradient-to-br from-blue-900/20 via-transparent to-purple-900/30">
+        {/* App layout with sidebar and main content */}
         <div className="flex h-screen">
+          {/* Left sidebar navigation */}
           <SideBar />
+          {/* Main content area */}
           <div className="flex-1 flex flex-col">
+            {/* Top header */}
             <Header />
+            {/* Main scrollable content area */}
             <main className="flex-1 p-6 overflow-y-auto">
+              {/* Application routes configuration */}
               <Routes>
+                {/* Redirect root to dashboard */}
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                {/* Dashboard route with page transition */}
                 <Route path="/dashboard" element={
                   <PageTransition>
                     <Dashboard />

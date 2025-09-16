@@ -1,9 +1,35 @@
+/**
+ * Dashboard Component
+ * 
+ * The Dashboard is the main landing page of the StudyStreak application.
+ * It displays:
+ * - A summary of current courses and their progress
+ * - Quick statistics about the user's learning
+ * - Recent activity and upcoming deadlines
+ * - Interface to quickly add or access existing courses
+ * 
+ * The dashboard provides an at-a-glance view of the user's study progress
+ * and serves as the central hub for navigation to other features.
+ * 
+ * @module Features/Dashboard
+ */
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { PlusIcon } from "lucide-react";
 
 export default function Dashboard() {
+  /**
+   * Sample course data
+   * In a real application, this would be fetched from an API or database
+   * Each course includes:
+   * - id: Unique identifier
+   * - title: Course name
+   * - progress: Completion percentage (0-100)
+   * - lastAccessed: Human-readable time since last access
+   * - totalHours: Total course duration in hours
+   */
   const courses = [
     {
       id: 1,
@@ -31,8 +57,12 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-2">
+      {/* My Courses Section */}
       <section className="relative">
+        {/* Background gradient effect */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-72 bg-blue-600/10 blur-[120px] rounded-full -z-10"></div>
+        
+        {/* Section header with add course button */}
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-100 to-indigo-200 bg-clip-text text-transparent">My Courses</h2>
           <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-blue-700/20">
@@ -41,9 +71,12 @@ export default function Dashboard() {
           </Button>
         </div>
 
+        {/* Responsive course cards grid */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {/* Map through course data to render course cards */}
           {courses.map((course) => (
             <div key={course.id}>
+            {/* Course card with hover effects */}
             <Card 
               className="border-white/5 bg-gradient-to-b from-[#0C1423] to-[#0A1220] shadow-lg shadow-blue-900/5 
                         hover:border-blue-500/20 transition-all duration-300 hover:shadow-blue-900/10 hover:-translate-y-0.5"
@@ -52,6 +85,7 @@ export default function Dashboard() {
                 <CardTitle className="text-blue-50 font-medium tracking-tight">{course.title}</CardTitle>
               </CardHeader>
               <CardContent>
+                {/* Progress bar with visual enhancements */}
                 <div className="relative mb-1">
                   <Progress 
                     value={course.progress} 
@@ -61,21 +95,26 @@ export default function Dashboard() {
                       backgroundSize: '10px 10px'
                     }}
                   />
+                  {/* Pulsing indicator for nearly complete courses */}
                   {course.progress >= 75 && (
                     <span className="absolute right-0 top-0 h-full w-1.5 bg-blue-300 rounded-r-full animate-pulse"></span>
                   )}
                 </div>
+                {/* Course completion status with color indicators */}
                 <div className="flex justify-between text-sm font-medium text-slate-400 mb-4">
                   <span className="flex items-center">
+                    {/* Color-coded status dot based on progress percentage */}
                     <div className={`mr-1.5 h-2 w-2 rounded-full ${
                       course.progress < 30 ? 'bg-amber-400' : 
                       course.progress < 70 ? 'bg-blue-400' : 'bg-emerald-400'
                     }`}></div>
+                    {/* Color-coded completion text based on progress percentage */}
                     <span className={`${
                       course.progress < 30 ? 'text-amber-300' : 
                       course.progress < 70 ? 'text-blue-300' : 'text-emerald-300'
                     }`}>{course.progress}% Complete</span>
                   </span>
+                  {/* Total course hours */}
                   <span className="text-indigo-300/90">{course.totalHours} hours</span>
                 </div>
               </CardContent>

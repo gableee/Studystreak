@@ -1,6 +1,32 @@
+/**
+ * AppInterface Components
+ * 
+ * This file contains the primary layout components used across the application:
+ * - Header: The top navigation bar with app branding and user controls
+ * - SideBar: The left sidebar with main navigation links
+ * 
+ * These components provide consistent navigation and branding across all pages.
+ * 
+ * @module Application/AppInterface
+ */
+
 import { NavLink } from 'react-router-dom'
 import { IconContainer } from './components/IconContainer';
 
+/**
+ * Header Component
+ * 
+ * Displays the application's top navigation bar with:
+ * - App logo and name
+ * - Notification bell
+ * - User profile menu
+ * - Search functionality
+ * 
+ * The header remains visible across all pages and provides
+ * access to global app functions.
+ * 
+ * @returns {JSX.Element} The header component
+ */
 export function Header() {
   return (
     <header className="w-full bg-[#0A1220] backdrop-blur-xl text-white p-4 mb-4">
@@ -39,6 +65,19 @@ export function Header() {
   );
 }
 
+/**
+ * SideBar Component
+ * 
+ * Displays the main navigation sidebar with:
+ * - Links to main application sections (Dashboard, Courses, etc.)
+ * - Visual indicators for the current active route
+ * - Category grouping of related features
+ * 
+ * The sidebar is responsive, hiding on smaller screens and
+ * showing on medium and larger viewports.
+ * 
+ * @returns {JSX.Element} The sidebar navigation component
+ */
 export function SideBar() {
   return (
     <aside className="w-72 hidden md:block bg-[#0A1220]/80 backdrop-blur-xl text-white h-full border-r border-white/5">
@@ -48,7 +87,9 @@ export function SideBar() {
             Main Menu
           </div>
         </div>
+        {/* Main navigation links */}
         <ul className="space-y-2">
+          {/* Navigation item */}
           <li>
             <NavLink to="/dashboard" 
               className={({ isActive }) => `

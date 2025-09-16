@@ -1,33 +1,85 @@
-# React + TypeScript + Vite
+# StudyStreak - Learning Management Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+StudyStreak is a modern learning management application that helps users track their educational progress across various platforms and courses.
 
-Currently, two official plugins are available:
+## Project Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+StudyStreak helps users:
+- Track progress in online courses
+- Access external learning platforms in one place
+- Manage study tasks with a todo list
+- Focus on learning with a Pomodoro timer
+- View statistics on learning achievements
 
-## Expanding the ESLint configuration
+## Project Structure
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+```
+studystreak/
+├── src/
+│   ├── Application/          # Core application structure
+│   │   ├── components/       # Shared app-level components
+│   │   ├── App.tsx           # Main application component and routing
+│   │   ├── AppInterface.tsx  # Header and Sidebar components
+│   │   └── main.tsx          # Application entry point
+│   ├── Features/             # Feature-specific components
+│   │   ├── Courses/          # External learning platforms integration
+│   │   ├── Dashboard/        # Main dashboard and statistics
+│   │   ├── Pomodoro/         # Pomodoro timer feature
+│   │   ├── Profile/          # User profile management
+│   │   ├── Settings/         # Application settings
+│   │   └── Todo/             # Task management feature
+│   └── components/           # Reusable UI components
+│       └── ui/               # Design system components
+```
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Key Components
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+### Application Layer
 
-      // Other configs...
-    ],
+- **App.tsx**: The root component that sets up routing and the main application layout
+- **AppInterface.tsx**: Contains the Header and Sidebar navigation components
+- **PageTransition.tsx**: Provides smooth transitions between routes
+
+### Feature Modules
+
+Each feature module is independent and contains its specific functionality:
+
+- **Dashboard**: Main landing page with course summaries and statistics
+- **Courses**: Integration with external learning platforms
+- **Pomodoro**: Focus timer with customizable work/break intervals
+- **Todo**: Task management and tracking
+- **Profile**: User information and preferences
+- **Settings**: Application configuration
+
+### UI Components
+
+The application uses a custom UI component library located in `src/components/ui/`:
+
+- **Button**: Customizable button component with variants
+- **Card**: Container component for content sections
+- **Progress**: Visual progress indicators
+
+## Technology Stack
+
+- **React**: UI library
+- **TypeScript**: Type-safe JavaScript
+- **React Router**: Navigation and routing
+- **Tailwind CSS**: Utility-first styling
+- **Shadcn UI**: Component design system foundation
+- **Vite**: Build tool and development server
+
+## Getting Started
+
+To work on this project:
+
+1. Clone the repository
+2. Run `npm install` to install dependencies
+3. Run `npm run dev` to start the development server
+4. Access the application at `http://localhost:5173`
+
+## Documentation
+
+Each major component and feature has its own documentation in the form of JSDoc comments. Look for the comments at the top of files to understand their purpose and functionality.
     languageOptions: {
       parserOptions: {
         project: ['./tsconfig.node.json', './tsconfig.app.json'],
