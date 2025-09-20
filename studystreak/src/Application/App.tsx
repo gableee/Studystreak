@@ -19,7 +19,6 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { PageTransition } from './components/PageTransition'
 import Dashboard from '../Features/Dashboard/Dashboard'
 import Profile from '../Features/Profile/Profile'
-import Settings from '../Features/Settings/Settings'
 import Pomodoro from '../Features/Pomodoro/Pomodoro'
 import Courses from '../Features/Courses/Courses'
 import Todo from '../Features/Todo/Todo'
@@ -48,11 +47,6 @@ function App() {
                 <Route path="/profile" element={
                   <PageTransition>
                     <Profile />
-                  </PageTransition>
-                } />
-                <Route path="/settings" element={
-                  <PageTransition>
-                    <Settings />
                   </PageTransition>
                 } />
                 <Route path="/pomodoro" element={

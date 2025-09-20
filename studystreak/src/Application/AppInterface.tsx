@@ -138,27 +138,6 @@ export function SideBar() {
             </NavLink>
           </li>
           <li>
-            <NavLink to="/settings" 
-              className={({ isActive }) => `
-                flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200 group
-                ${isActive 
-                  ? 'bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400' 
-                  : 'text-muted-foreground dark:text-white/70 hover:bg-muted dark:hover:bg-white/5'}
-              `}
-            >
-              <IconContainer>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-muted-foreground dark:text-white/70 group-[.active]:text-amber-500 dark:group-[.active]:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-1.14 1.603-1.14 1.902 0a1.724 1.724 0 002.573 1.01c.943-.545 2.042.454 1.497 1.398a1.724 1.724 0 001.01 2.573c1.14.3 1.14 1.603 0 1.902a1.724 1.724 0 00-1.01 2.573c.545.943-.454 2.042-1.398 1.497a1.724 1.724 0 00-2.573 1.01c-.3 1.14-1.603 1.14-1.902 0a1.724 1.724 0 00-2.573-1.01c-.943.545-2.042-.454-1.497-1.398a1.724 1.724 0 00-1.01-2.573c-1.14-.3-1.14-1.603 0-1.902a1.724 1.724 0 001.01-2.573c-.545-.943.454-2.042 1.398-1.497.943.545 2.042-.454 1.497-1.398z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </IconContainer>
-              <div className="flex flex-col">
-                <span className="font-medium">Settings</span>
-                <span className="text-xs text-muted-foreground dark:text-white/50">Preferences</span>
-              </div>
-            </NavLink>
-          </li>
-          <li>
             <NavLink to="/pomodoro" 
               className={({ isActive }) => `
                 flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200 group
