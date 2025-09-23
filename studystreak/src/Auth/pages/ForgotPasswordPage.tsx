@@ -1,0 +1,1 @@
+// ForgotPasswordPage component - password reset request page

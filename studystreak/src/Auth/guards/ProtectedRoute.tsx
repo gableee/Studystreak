@@ -1,0 +1,1 @@
+// ProtectedRoute - route guard for authenticated users only

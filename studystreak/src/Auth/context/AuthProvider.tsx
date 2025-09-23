@@ -1,0 +1,1 @@
+// AuthProvider - React context provider for authentication state

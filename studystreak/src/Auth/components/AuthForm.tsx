@@ -1,0 +1,1 @@
+// AuthForm component - reusable form component for auth pages

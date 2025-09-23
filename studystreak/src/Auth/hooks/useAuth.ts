@@ -1,0 +1,1 @@
+// useAuth hook - main auth hook that wraps the auth context

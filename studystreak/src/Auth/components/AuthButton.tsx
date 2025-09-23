@@ -1,0 +1,1 @@
+// AuthButton component - styled button for auth forms

@@ -1,0 +1,1 @@
+// SignupPage component - user registration page
