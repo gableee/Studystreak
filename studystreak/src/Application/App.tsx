@@ -2,21 +2,19 @@
 /**
  * Main Application Component
  * 
- * This is the root component of the StudyStreak application that sets up:
- * - The overall layout structure (sidebar, header, main content)
- * - Routing configuration for all main features
- * - Page transitions between routes
- * - Background styling and gradient effects
+ * This component defines the routing configuration for the StudyStreak application.
+ * It uses React Router's modern approach with createBrowserRouter and RouterProvider
+ * to handle navigation between different pages.
  * 
- * The component uses React Router for navigation and applies the PageTransition
- * component to create smooth transitions between different pages.
+ * The layout structure is handled by RootLayout component, keeping this file
+ * focused solely on route definitions and making it easier to add new routes.
  * 
  * @module Application/App
  */
 
-import { Header, SideBar } from './AppInterface.tsx'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { PageTransition } from './components/PageTransition'
+import RootLayout from './RouteLayout/RootLayout'
 import Dashboard from '../Features/Dashboard/Dashboard'
 import Profile from '../Features/Profile/Profile'
 import Pomodoro from '../Features/Pomodoro/Pomodoro'
@@ -24,58 +22,76 @@ import Courses from '../Features/Courses/Courses'
 import Todo from '../Features/Todo/Todo'
 
 /**
- * App Component - The root component of the application
- * Defines the main layout and routing structure
+ * Router configuration using React Router v6's createBrowserRouter
+ * Defines all application routes with their corresponding components
+ */
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <RootLayout />,
+    children: [
+      {
+        index: true,
+        element: <Navigate to="/dashboard" replace />
+      },
+      {
+        path: "dashboard",
+        element: (
+          <PageTransition>
+            <Dashboard />
+          </PageTransition>
+        )
+      },
+      {
+        path: "profile", 
+        element: (
+          <PageTransition>
+            <Profile />
+          </PageTransition>
+        )
+      },
+      {
+        path: "pomodoro",
+        element: (
+          <PageTransition>
+            <Pomodoro />
+          </PageTransition>
+        )
+      },
+      {
+        path: "courses",
+        element: (
+          <PageTransition>
+            <Courses />
+          </PageTransition>
+        )
+      },
+      {
+        path: "todo",
+        element: (
+          <PageTransition>
+            <Todo />
+          </PageTransition>
+        )
+      },
+      {
+        path: "*",
+        element: (
+          <PageTransition>
+            <div className="text-foreground">Not Found</div>
+          </PageTransition>
+        )
+      }
+    ]
+  }
+])
+
+/**
+ * App Component - The root component that provides the router
+ * Uses RouterProvider to enable routing throughout the application
  */
 function App() {
-  return (
-    <div className="min-h-screen bg-background dark:bg-[#070B13] overflow-x-hidden transition-colors duration-200">
-      <div className="min-h-screen bg-transparent dark:bg-gradient-to-br dark:from-blue-900/20 dark:via-transparent dark:to-purple-900/30">
-        <div className="flex h-screen">
-          <SideBar />
-          {/* Main content area */}
-          <div className="flex-1 flex flex-col">
-            <Header />
-            <main className="flex-1 p-6 overflow-y-auto">
-              <Routes>
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/dashboard" element={
-                  <PageTransition>
-                    <Dashboard />
-                  </PageTransition>
-                } />
-                <Route path="/profile" element={
-                  <PageTransition>
-                    <Profile />
-                  </PageTransition>
-                } />
-                <Route path="/pomodoro" element={
-                  <PageTransition>
-                    <Pomodoro />
-                  </PageTransition>
-                } />
-                <Route path="/courses" element={
-                  <PageTransition>
-                    <Courses />
-                  </PageTransition>
-                } />
-                <Route path="/todo" element={
-                  <PageTransition>
-                    <Todo />
-                  </PageTransition>
-                } />
-                <Route path="*" element={
-                  <PageTransition>
-                    <div className="text-foreground">Not Found</div>
-                  </PageTransition>
-                } />
-              </Routes>
-            </main>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-                } 
+  return <RouterProvider router={router} />
+}
 
 export default App
