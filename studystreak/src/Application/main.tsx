@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
 import { registerSW } from 'virtual:pwa-register'
+import { AuthProvider } from "@/Auth/context/AuthProvider.tsx";
 
 // Register the service worker. Prompt user when new content is available.
 registerSW({ immediate: true, onNeedRefresh() {}, onOfflineReady() {} })
@@ -27,6 +28,8 @@ initializeTheme();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <AuthProvider>
+      <App />
+    </AuthProvider>
   </StrictMode>
 );
