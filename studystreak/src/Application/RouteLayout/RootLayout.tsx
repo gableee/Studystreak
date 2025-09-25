@@ -22,7 +22,7 @@ import { Header, SideBar } from '../AppInterface'
  */
 function RootLayout() {
   return (
-    <div className="min-h-screen bg-background dark:bg-[#070B13] overflow-x-hidden transition-colors duration-200">
+    <div className="min-h-screen bg-background dark:bg-[#0A1220] overflow-x-hidden transition-colors duration-200">
       <div className="min-h-screen bg-transparent dark:bg-gradient-to-br dark:from-blue-900/20 dark:via-transparent dark:to-purple-900/30">
         <div className="flex h-screen">
           <SideBar />
@@ -31,6 +31,7 @@ function RootLayout() {
             <Header />
             <main className="flex-1 p-6 overflow-y-auto">
               {/* This is where child routes will be rendered */}
+
               <Outlet />
             </main>
           </div>

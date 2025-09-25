@@ -30,7 +30,7 @@ import { ThemeToggle } from './components/LightMode';
  */
 export function Header() {
   return (
-    <header className="w-full bg-background dark:bg-[#0A1220] backdrop-blur-xl text-foreground dark:text-white p-4 mb-4 shadow-sm dark:shadow-none transition-colors duration-200">
+    <header className="w-full bg-background dark:bg-[#0A1220] backdrop-blur-xl text-foreground dark:text-white p-4 mb-4 shadow-sm dark:shadow-none transition-colors duration-200 border-b border-white/5 z-999">
       <div className="container mx-auto flex justify-between items-center px-4">
         
         <div className="flex items-center gap-4">

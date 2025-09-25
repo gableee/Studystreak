@@ -60,8 +60,8 @@ export default function Dashboard() {
       {/* My Courses Section */}
       <section className="relative">
         {/* Background gradient effect */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-72 bg-blue-100/30 dark:bg-blue-600/10 blur-[120px] rounded-full -z-10"></div>
-        
+        <div className="absolute top-10 left-1/2 -translate-x-1/2 w-3/4 h-72 bg-blue-100/30 dark:bg-blue-600/5 rounded-full blur-3xl -z-10"></div>
+
         {/* Section header with add course button */}
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-3xl font-bold text-foreground dark:bg-gradient-to-r 
@@ -133,7 +133,9 @@ export default function Dashboard() {
         {/* Quick Stats */}
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
-            <Card className="border-border bg-card dark:bg-gradient-to-br dark:from-[#0C1423] dark:to-[#0A1220] hover:border-blue-200 dark:hover:border-blue-500/10 transition-all duration-300 hover:-translate-y-1 group overflow-hidden">
+            <Card className="border-border bg-card dark:bg-gradient-to-br dark:from-[#0C1423] dark:to-[#0A1220] hover:border-blue-200 dark:hover:border-blue-500/10 transition-all duration-300 hover:-translate-y-1 group overflow-hidden relative">
+              {/* Blurred background effect */}
+              <div className="absolute top-0 left-0 w-full h-20 bg-blue-500/10 dark:bg-blue-400/5 blur-xl rounded-t-lg"></div>
               <CardContent className="pt-6 relative">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100/50 dark:bg-blue-600/5 rounded-full -mr-16 -mt-16 group-hover:bg-blue-200/50 dark:group-hover:bg-blue-600/10 transition-all duration-500"></div>
                 <h4 className="text-sm text-blue-600/70 dark:text-blue-200/70 font-medium mb-2 tracking-wide uppercase">Total Learning Time</h4>
@@ -145,7 +147,9 @@ export default function Dashboard() {
           </div>
           
           <div>
-            <Card className="border-border bg-card dark:bg-gradient-to-br dark:from-[#0C1423] dark:to-[#0A1220] hover:border-indigo-200 dark:hover:border-indigo-500/10 transition-all duration-300 hover:-translate-y-1 group overflow-hidden">
+            <Card className="border-border bg-card dark:bg-gradient-to-br dark:from-[#0C1423] dark:to-[#0A1220] hover:border-indigo-200 dark:hover:border-indigo-500/10 transition-all duration-300 hover:-translate-y-1 group overflow-hidden relative">
+              {/* Blurred background effect */}
+              <div className="absolute top-0 left-0 w-full h-20 bg-indigo-500/10 dark:bg-indigo-400/5 blur-xl rounded-t-lg"></div>
               <CardContent className="pt-6 relative">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-100/50 dark:bg-indigo-600/5 rounded-full -mr-16 -mt-16 group-hover:bg-indigo-200/50 dark:group-hover:bg-indigo-600/10 transition-all duration-500"></div>
                 <h4 className="text-sm text-indigo-600/70 dark:text-indigo-200/70 font-medium mb-2 tracking-wide uppercase">Courses in Progress</h4>
@@ -157,7 +161,9 @@ export default function Dashboard() {
           </div>
           
           <div>
-            <Card className="border-border bg-card dark:bg-gradient-to-br dark:from-[#0C1423] dark:to-[#0A1220] hover:border-emerald-200 dark:hover:border-emerald-500/10 transition-all duration-300 hover:-translate-y-1 group overflow-hidden">
+            <Card className="border-border bg-card dark:bg-gradient-to-br dark:from-[#0C1423] dark:to-[#0A1220] hover:border-emerald-200 dark:hover:border-emerald-500/10 transition-all duration-300 hover:-translate-y-1 group overflow-hidden relative">
+              {/* Blurred background effect */}
+              <div className="absolute top-0 left-0 w-full h-20 bg-emerald-500/10 dark:bg-emerald-400/5 blur-xl rounded-t-lg"></div>
               <CardContent className="pt-6 relative">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-100/50 dark:bg-emerald-600/5 rounded-full -mr-16 -mt-16 group-hover:bg-emerald-200/50 dark:group-hover:bg-emerald-600/10 transition-all duration-500"></div>
                 <h4 className="text-sm text-emerald-600/70 dark:text-emerald-200/70 font-medium mb-2 tracking-wide uppercase">Completed Courses</h4>

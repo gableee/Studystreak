@@ -50,42 +50,42 @@ export default function Courses() {
       url: 'https://www.coursera.org',
       logo: '/src/assets/images/Coursera-logo.svg',  // Local image path
       description: 'Online courses from top universities',
-      color: 'bg-card dark:bg-slate-800/60'
+      color: 'bg-card dark:bg-[#0A1220]'
     },
     {
       name: 'Khan Academy',
       url: 'https://www.khanacademy.org',
       logo: '/src/assets/images/Khan-Academy-logo.png',
       description: 'Free world-class education for anyone',
-      color: 'bg-card dark:bg-slate-800/60'
+      color: 'bg-card dark:bg-[#0A1220]'
     },
     {
       name: 'Scrimba',
       url: 'https://scrimba.com',
       logo: '/src/assets/images/Scrimba-logo.png',
       description: 'Interactive coding courses',
-      color: 'bg-card dark:bg-slate-800/80'
+      color: 'bg-card dark:bg-[#0A1220]'
     },
     {
       name: 'Udemy',
       url: 'https://www.udemy.com',
       logo: 'https://www.udemy.com/staticx/udemy/images/v7/logo-udemy-inverted.svg',
       description: 'Learn on your schedule',
-      color: 'bg-card dark:bg-slate-800/80'
+      color: 'bg-card dark:bg-[#0A1220]'
     },
     {
       name: 'edX',
       url: 'https://www.edx.org',
       logo: '/src/assets/images/Edx-logo.png',
       description: 'Education for everyone',
-      color: 'bg-card dark:bg-slate-800/80'
+      color: 'bg-card dark:bg-[#0A1220]'
     },
     {
       name: 'freeCodeCamp',
       url: 'https://www.freecodecamp.org',
       logo: 'https://cdn.freecodecamp.org/platform/universal/fcc_primary.svg',
       description: 'Learn to code for free',
-      color: 'bg-card dark:bg-slate-800/80'
+      color: 'bg-card dark:bg-[#0A1220]'
     }
   ];
 
@@ -94,7 +94,7 @@ export default function Courses() {
       {/* Learning Platforms Section */}
       <section className="relative">
         {/* Background gradient effect */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-72 bg-blue-100/30 dark:bg-blue-600/5 blur-[120px] rounded-full -z-10"></div>
+        <div className="absolute top-10 left-1/2 -translate-x-1/2 w-3/4 h-72 bg-blue-100/30 dark:bg-blue-600/5 blur-3xl rounded-full -z-10"></div>
         
         {/* Section header */}
         <div className="flex justify-between items-center mb-8">
