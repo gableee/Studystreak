@@ -20,12 +20,59 @@ import Profile from '../Features/Profile/Profile'
 import Pomodoro from '../Features/Pomodoro/Pomodoro'
 import Courses from '../Features/Courses/Courses'
 import Todo from '../Features/Todo/Todo'
+import ProtectedRoute from '@/Auth/guards/ProtectedRoute'
+import PublicOnlyRoute from '@/Auth/guards/PublicOnlyRoute'
+import SignInPage from '@/Auth/pages/SignInPage'
 
 /**
  * Router configuration using React Router v6's createBrowserRouter
  * Defines all application routes with their corresponding components
  */
 const router = createBrowserRouter([
+  // Auth pages (standalone, no RootLayout)
+  {
+    path: "/signin",
+    element: (
+      <PublicOnlyRoute>
+        <PageTransition>
+          <SignInPage />
+        </PageTransition>
+      </PublicOnlyRoute>
+    )
+  },
+  {
+    path: "/signup",
+    element: (
+      <PublicOnlyRoute>
+        <PageTransition>
+          <div className="text-foreground">Sign Up Page (to be implemented)</div>
+        </PageTransition>
+      </PublicOnlyRoute>
+    )
+  },
+  {
+    path: "/forgot-password",
+    element: (
+      <PublicOnlyRoute>
+        <PageTransition>
+          <div className="text-foreground">Forgot Password Page (to be implemented)</div>
+        </PageTransition>
+      </PublicOnlyRoute>
+    )
+  },
+  {
+    path: "/reset-password",
+    element: (
+      <PublicOnlyRoute>
+        <PageTransition>
+          <div className="text-foreground">Reset Password Page (to be implemented)</div>
+        </PageTransition>
+      </PublicOnlyRoute>
+    )
+  },
+
+
+  //Main app routes (with RootLayout)
   {
     path: "/",
     element: <RootLayout />,
@@ -37,41 +84,51 @@ const router = createBrowserRouter([
       {
         path: "dashboard",
         element: (
-          <PageTransition>
-            <Dashboard />
-          </PageTransition>
+          <ProtectedRoute>
+            <PageTransition>
+              <Dashboard />
+            </PageTransition>
+          </ProtectedRoute>
         )
       },
       {
         path: "profile", 
         element: (
-          <PageTransition>
-            <Profile />
-          </PageTransition>
+          <ProtectedRoute>
+            <PageTransition>
+              <Profile />
+            </PageTransition>
+          </ProtectedRoute>
         )
       },
       {
         path: "pomodoro",
         element: (
-          <PageTransition>
-            <Pomodoro />
-          </PageTransition>
+          <ProtectedRoute>
+            <PageTransition>
+              <Pomodoro />
+            </PageTransition>
+          </ProtectedRoute>
         )
       },
       {
         path: "courses",
         element: (
-          <PageTransition>
-            <Courses />
-          </PageTransition>
+          <ProtectedRoute>
+            <PageTransition>
+              <Courses />
+            </PageTransition>
+          </ProtectedRoute>
         )
       },
       {
         path: "todo",
         element: (
-          <PageTransition>
-            <Todo />
-          </PageTransition>
+          <ProtectedRoute>
+            <PageTransition>
+              <Todo />
+            </PageTransition>
+          </ProtectedRoute>
         )
       },
       {
