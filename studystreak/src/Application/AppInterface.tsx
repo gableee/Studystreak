@@ -18,6 +18,7 @@ import { useAuth } from '@/Auth/hooks/useAuth'
 import { supabase } from '@/lib/supabaseClient'
 import { profileService, type UserProfile } from '@/Auth/services/profileService';
 
+
 /**
  * Header Component
  * 
@@ -48,7 +49,7 @@ export function Header() {
       const { data, error } = await profileService.getProfileByUserId(userId)
       if (!active) return
       if (!error && data) {
-        setProfile(data)
+        setProfile(data as UserProfile)
       } else {
         setProfile(null)
       }
