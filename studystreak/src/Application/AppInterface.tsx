@@ -13,6 +13,8 @@
 import { NavLink } from 'react-router-dom'
 import { IconContainer } from './components/IconContainer';
 import { ThemeToggle } from './components/LightMode';
+import { useAuth } from '@/Auth/hooks/useAuth'
+import { supabase } from '@/lib/supabaseClient'
 
 /**
  * Header Component
@@ -29,6 +31,12 @@ import { ThemeToggle } from './components/LightMode';
  * @returns {JSX.Element} The header component
  */
 export function Header() {
+  const { session } = useAuth()
+  const email = session?.user?.email
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+  }
   return (
     <header className="w-full bg-background dark:bg-[#0A1220] backdrop-blur-xl text-foreground dark:text-white p-4 mb-4 shadow-sm dark:shadow-none transition-colors duration-200 border-b border-white/5 z-999">
       <div className="container mx-auto flex justify-between items-center px-4">
@@ -62,8 +70,13 @@ export function Header() {
           </button>
           
           {/* User Profile */}
-          <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg flex items-center justify-center text-sm font-medium">
-            Lee
+          <div className="flex items-center gap-3">
+            {email && (
+              <span className="text-sm text-muted-foreground dark:text-white/70 hidden sm:inline">{email}</span>
+            )}
+            <button onClick={handleSignOut} className="btn-ghost px-3 py-2 rounded-lg">
+              Sign out
+            </button>
           </div>
         </div>
       </div>

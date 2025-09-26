@@ -1,9 +1,11 @@
 // LoginPage component - main login page
 import Aurora from "@/components/Aurora";
+import AuthForm from "../components/AuthForm";
+
 
 const SignInPage: React.FC = () => {
   return (
-    <div className="flex min-h-screen relative bg-foreground rounded-sm overflow-hidden flex-col md:flex-row 
+    <div className="dark flex min-h-screen relative bg-background rounded-sm overflow-hidden flex-col md:flex-row 
     md:rounded-md md:pd-4">
       {/* Background component */}
       <div className="flex justify-center w-full absolute md:relative
@@ -20,10 +22,9 @@ const SignInPage: React.FC = () => {
       </div>
 
       {/* Login form container */}
-      <div className="flex flex-col justify-center items-center p-6 text-white z-10">
-        <div>
-          <h1 className="text-4xl font-bold mb-4 text-center">Welcome Back</h1>
-        </div>
+      <div className="flex justify-center items-center z-10 w-full md:w-1/2 p-6 min-h-screen">
+          {/* Export from AuthForm*/}
+          <AuthForm/>
       </div>
     </div>
   );
