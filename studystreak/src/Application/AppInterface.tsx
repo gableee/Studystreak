@@ -16,7 +16,7 @@ import { IconContainer } from './components/IconContainer';
 import { ThemeToggle } from './components/LightMode';
 import { useAuth } from '@/Auth/hooks/useAuth'
 import { supabase } from '@/lib/supabaseClient'
-import { profileService } from '@/Auth/services/profileService'
+import { profileService } from '@/Auth/services/profileService';
 
 /**
  * Header Component

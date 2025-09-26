@@ -2,27 +2,22 @@
 import { supabase } from '@/lib/supabaseClient'
 
 export type UserProfile = {
-  id: string // maps to auth.users.id
+  id: string
   first_name: string
   last_name: string
   username: string
+  email: string
   created_at?: string
 }
 
 export const profileService = {
   isUsernameAvailable: async (username: string) => {
-    const { data, error } = await supabase
+    const { count, error } = await supabase
       .from('profiles')
       .select('id', { count: 'exact', head: true })
       .ilike('username', username)
+
     if (error) return { available: false, error }
-    const available = (data === null) // head:true returns null data
-    // For safety, fetch count with a lightweight query
-    const { count, error: countError } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true })
-      .ilike('username', username)
-    if (countError) return { available: false, error: countError }
     return { available: (count ?? 0) === 0, error: null }
   },
 
@@ -34,6 +29,7 @@ export const profileService = {
         first_name: profile.first_name,
         last_name: profile.last_name,
         username: profile.username,
+        email: profile.email, 
       })
       .single()
   },
