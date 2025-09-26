@@ -1,11 +1,9 @@
 // SignupPage component - user registration page
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { authService } from '../services/authService'
 import { profileService } from '../services/profileService'
 
 const SignupPage: React.FC = () => {
-  const navigate = useNavigate()
   const [form, setForm] = useState({
     first_name: '',
     last_name: '',
