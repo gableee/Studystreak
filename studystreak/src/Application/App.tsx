@@ -23,6 +23,9 @@ import Todo from '../Features/Todo/Todo'
 import ProtectedRoute from '@/Auth/guards/ProtectedRoute'
 import PublicOnlyRoute from '@/Auth/guards/PublicOnlyRoute'
 import SignInPage from '@/Auth/pages/SignInPage'
+import SignupPage from '@/Auth/pages/SignupPage'
+import ForgotPasswordPage from '@/Auth/pages/ForgotPasswordPage'
+import ResetPasswordPage from '@/Auth/pages/ResetPasswordPage'
 
 /**
  * Router configuration using React Router v6's createBrowserRouter
@@ -45,7 +48,7 @@ const router = createBrowserRouter([
     element: (
       <PublicOnlyRoute>
         <PageTransition>
-          <div className="text-foreground">Sign Up Page (to be implemented)</div>
+          <SignupPage />
         </PageTransition>
       </PublicOnlyRoute>
     )
@@ -55,7 +58,7 @@ const router = createBrowserRouter([
     element: (
       <PublicOnlyRoute>
         <PageTransition>
-          <div className="text-foreground">Forgot Password Page (to be implemented)</div>
+          <ForgotPasswordPage />
         </PageTransition>
       </PublicOnlyRoute>
     )
@@ -65,7 +68,7 @@ const router = createBrowserRouter([
     element: (
       <PublicOnlyRoute>
         <PageTransition>
-          <div className="text-foreground">Reset Password Page (to be implemented)</div>
+          <ResetPasswordPage />
         </PageTransition>
       </PublicOnlyRoute>
     )

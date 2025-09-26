@@ -11,10 +11,12 @@
  */
 
 import { NavLink } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { IconContainer } from './components/IconContainer';
 import { ThemeToggle } from './components/LightMode';
 import { useAuth } from '@/Auth/hooks/useAuth'
 import { supabase } from '@/lib/supabaseClient'
+import { profileService } from '@/Auth/services/profileService'
 
 /**
  * Header Component
@@ -33,6 +35,28 @@ import { supabase } from '@/lib/supabaseClient'
 export function Header() {
   const { session } = useAuth()
   const email = session?.user?.email
+  const userId = session?.user?.id
+  const [displayName, setDisplayName] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      if (!userId) {
+        setDisplayName(null)
+        return
+      }
+      const { data, error } = await profileService.getProfileByUserId(userId)
+      if (!active) return
+      if (!error && data) {
+        setDisplayName(data.first_name ?? null)
+      } else {
+        setDisplayName(null)
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [userId])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -71,8 +95,8 @@ export function Header() {
           
           {/* User Profile */}
           <div className="flex items-center gap-3">
-            {email && (
-              <span className="text-sm text-muted-foreground dark:text-white/70 hidden sm:inline">{email}</span>
+            {(displayName || email) && (
+              <span className="text-sm text-muted-foreground dark:text-white/70 hidden sm:inline">{displayName ?? email}</span>
             )}
             <button onClick={handleSignOut} className="btn-ghost px-3 py-2 rounded-lg">
               Sign out

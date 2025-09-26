@@ -1,7 +1,7 @@
 // AuthProvider - React context provider for authentication state
 import React, { useEffect, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '@/lib/supabaseClient';
 import { AuthContext } from './useAuthContext';
 
 export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
@@ -33,6 +33,32 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
       }
     });
     return () => sub.subscription.unsubscribe();
+  }, []);
+
+  // Dev-only: sign out automatically when leaving/reloading the page on localhost [Reason: not signing out while on LocalHost]
+  useEffect(() => {
+    const isLocalDev = import.meta.env.DEV || window.location.hostname === 'localhost';
+    if (!isLocalDev) return;
+
+    const signOutQuick = () => {
+      void supabase.auth.signOut();
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        signOutQuick();
+      }
+    };
+
+    window.addEventListener('beforeunload', signOutQuick);
+    window.addEventListener('pagehide', signOutQuick);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      window.removeEventListener('beforeunload', signOutQuick);
+      window.removeEventListener('pagehide', signOutQuick);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, []);
 
   return <AuthContext.Provider value={{ user, session, loading: loading || authSyncing }}>{children}</AuthContext.Provider>;

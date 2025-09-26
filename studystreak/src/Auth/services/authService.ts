@@ -1,8 +1,8 @@
 // authService - API calls for authentication (login, signup, logout, etc.)
 
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '@/lib/supabaseClient';
 
-type OAuthProvider = 'apple' | 'facebook' | 'github' | 'google';
+type OAuthProvider =  'facebook' | 'google';
 
 export const authService = {
   signUp: (email: string, password: string) =>
@@ -17,9 +17,7 @@ export const authService = {
       options: {
         redirectTo: redirectTo ?? window.location.origin + '/dashboard',
         // can add provider-specific scopes below:
-        // scopes: provider === 'github' ? 'read:user user:email' :
         //         provider === 'facebook' ? 'public_profile,email' :
-        //         provider === 'apple' ? 'name email' : undefined,
       },
     }),
 
