@@ -83,9 +83,10 @@ const SignupPage: React.FC = () => {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background text-foreground p-4">
-      <div className="backdrop-blur-2xl bg-white/10 dark:bg-white/10 border border-white/10 shadow-2xl rounded-3xl p-6 md:p-10 w-full max-w-md mx-auto">
-        <h1 className="text-3xl font-bold mb-2 text-center text-white drop-shadow">Create your StudyStreak account</h1>
+    <div className="dark flex min-h-screen items-center justify-center bg-background text-foreground p-4">
+      <div className="backdrop-blur-2xl bg-white/10 dark:bg-white/5 border border-white/10 shadow-2xl rounded-3xl p-6 md:p-10 w-full max-w-md mx-auto">
+        <h1 className="text-3xl font-bold mb-2 text-center text-blue-500 drop-shadow">StudyStreak</h1>
+        <h1 className="text-3xl font-bold mb-2 text-center text-white drop-shadow">Create your account</h1>
         <p className="mb-6 text-center text-white/60">Join and start your streak!</p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex gap-3">
