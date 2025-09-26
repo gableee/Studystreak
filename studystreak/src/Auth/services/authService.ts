@@ -5,8 +5,14 @@ import { supabase } from '@/lib/supabaseClient';
 type OAuthProvider =  'facebook' | 'google';
 
 export const authService = {
-  signUp: (email: string, password: string) =>
-    supabase.auth.signUp({ email, password }),
+  signUp: (email: string, password: string, userData?: any) =>
+    supabase.auth.signUp({ 
+      email, 
+      password,
+      options: {
+        data: userData // This passes the metadata to the trigger
+      }
+    }),
 
   signInWithPassword: (email: string, password: string) =>
     supabase.auth.signInWithPassword({ email, password }),
@@ -16,8 +22,6 @@ export const authService = {
       provider,
       options: {
         redirectTo: redirectTo ?? window.location.origin + '/dashboard',
-        // can add provider-specific scopes below:
-        //         provider === 'facebook' ? 'public_profile,email' :
       },
     }),
 

@@ -36,27 +36,40 @@ export function Header() {
   const { session } = useAuth()
   const email = session?.user?.email
   const userId = session?.user?.id
-  const [displayName, setDisplayName] = useState<string | null>(null)
+  const [profile, setProfile] = useState<any>(null)
 
   useEffect(() => {
     let active = true
     ;(async () => {
       if (!userId) {
-        setDisplayName(null)
+        setProfile(null)
         return
       }
       const { data, error } = await profileService.getProfileByUserId(userId)
       if (!active) return
       if (!error && data) {
-        setDisplayName(data.first_name ?? null)
+        setProfile(data)
       } else {
-        setDisplayName(null)
+        setProfile(null)
       }
     })()
     return () => {
       active = false
     }
   }, [userId])
+
+  // Prefer username, then full name, then first+last, then email
+  let displayName = email
+  if (profile) {
+    if (profile.username) {
+      displayName = profile.username
+    } else if (profile.full_name) {
+      displayName = profile.full_name
+    } else if (profile.first_name || profile.last_name) {
+      displayName = [profile.first_name, profile.last_name].filter(Boolean).join(' ')
+    }
+  }
+  
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()

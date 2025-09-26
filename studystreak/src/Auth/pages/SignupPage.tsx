@@ -1,6 +1,6 @@
 // SignupPage component - user registration page
 import React, { useState } from 'react'
-import { authService } from '../services/authService'
+import { supabase } from '@/lib/supabaseClient' // Make sure to import supabase
 import { profileService } from '../services/profileService'
 
 const SignupPage: React.FC = () => {
@@ -54,32 +54,35 @@ const SignupPage: React.FC = () => {
       return
     }
 
-    // Create user in Supabase Auth
-    const { data, error: signUpError } = await authService.signUp(form.email, form.password)
-    if (signUpError) {
-      setError(signUpError.message)
-      setIsSubmitting(false)
-      return
-    }
-
-    // Insert profile
-    if (data.user) {
-      const { error: profileError } = await profileService.createProfile({
-        id: data.user.id,
-        first_name: form.first_name,
-        last_name: form.last_name,
-        username: form.username,
+    try {
+      // Create user in Supabase Auth WITH metadata (direct call)
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email: form.email,
+        password: form.password,
+        options: {
+          data: {
+            first_name: form.first_name,
+            last_name: form.last_name, 
+            username: form.username
+          }
+        }
       })
-      if (profileError) {
-        setError('Account created, but failed to save profile info.')
+
+      if (signUpError) {
+        console.error('Sign up error:', signUpError)
+        setError(signUpError.message)
         setIsSubmitting(false)
         return
       }
-    }
 
-    setIsSubmitting(false)
-    setMessage('Check your email to confirm your account.')
+      setMessage('Check your email to confirm your account. You can now sign in.')
+      
+    } catch (error) {
+      console.error('Unexpected error:', error)
+      setError('An unexpected error occurred. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (

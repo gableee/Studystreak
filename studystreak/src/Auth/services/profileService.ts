@@ -21,19 +21,6 @@ export const profileService = {
     return { available: (count ?? 0) === 0, error: null }
   },
 
-  createProfile: async (profile: UserProfile) => {
-    return await supabase
-      .from('profiles')
-      .insert({
-        id: profile.id,
-        first_name: profile.first_name,
-        last_name: profile.last_name,
-        username: profile.username,
-        email: profile.email, 
-      })
-      .single()
-  },
-
   getProfileByUserId: async (userId: string) => {
     return await supabase
       .from('profiles')
@@ -61,4 +48,14 @@ export const profileService = {
 
     return { email: withEmail?.email ?? null, error: null }
   },
+
+  updateProfile: async (userId: string, updates: Partial<UserProfile>) => {
+    return await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', userId)
+      .single()
+      
+  },
 }
+
