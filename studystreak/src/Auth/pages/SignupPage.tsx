@@ -56,7 +56,7 @@ const SignupPage: React.FC = () => {
 
     try {
       // Create user in Supabase Auth WITH metadata (direct call)
-      const { data, error: signUpError } = await supabase.auth.signUp({
+      const {error: signUpError } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
         options: {
