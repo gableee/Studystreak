@@ -16,7 +16,7 @@ import { IconContainer } from './components/IconContainer';
 import { ThemeToggle } from './components/LightMode';
 import { useAuth } from '@/Auth/hooks/useAuth'
 import { supabase } from '@/lib/supabaseClient'
-import { profileService } from '@/Auth/services/profileService';
+import { profileService, type UserProfile } from '@/Auth/services/profileService';
 
 /**
  * Header Component
@@ -36,7 +36,7 @@ export function Header() {
   const { session } = useAuth()
   const email = session?.user?.email
   const userId = session?.user?.id
-  const [profile, setProfile] = useState<any>(null)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
 
   useEffect(() => {
     let active = true
@@ -58,17 +58,16 @@ export function Header() {
     }
   }, [userId])
 
-  // Prefer username, then full name, then first+last, then email
-  let displayName = email
-  if (profile) {
-    if (profile.username) {
-      displayName = profile.username
-    } else if (profile.full_name) {
-      displayName = profile.full_name
-    } else if (profile.first_name || profile.last_name) {
-      displayName = [profile.first_name, profile.last_name].filter(Boolean).join(' ')
+  
+  // Prefer username, then first+last, then email
+    let displayName = email
+    if (profile) {
+      if (profile.username) {
+        displayName = profile.username
+      } else if (profile.first_name || profile.last_name) {
+        displayName = [profile.first_name, profile.last_name].filter(Boolean).join(' ')
+      }
     }
-  }
   
 
   const handleSignOut = async () => {

@@ -1,16 +1,23 @@
 // authService - API calls for authentication (login, signup, logout, etc.)
-
 import { supabase } from '@/lib/supabaseClient';
 
-type OAuthProvider =  'facebook' | 'google';
+type OAuthProvider = 'facebook' | 'google';
+
+// Define proper types for user metadata
+type UserMetadata = {
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+  // Add other optional fields you might use
+};
 
 export const authService = {
-  signUp: (email: string, password: string, userData?: any) =>
+  signUp: (email: string, password: string, userData?: UserMetadata) =>
     supabase.auth.signUp({ 
       email, 
       password,
       options: {
-        data: userData // This passes the metadata to the trigger
+        data: userData
       }
     }),
 
