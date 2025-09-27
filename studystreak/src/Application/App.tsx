@@ -26,6 +26,7 @@ import SignInPage from '@/Auth/pages/SignInPage'
 import SignupPage from '@/Auth/pages/SignupPage'
 import ForgotPasswordPage from '@/Auth/pages/ForgotPasswordPage'
 import ResetPasswordPage from '@/Auth/pages/ResetPasswordPage'
+import NotFoundPage from './components/NotFoundPage'
 
 /**
  * Router configuration using React Router v6's createBrowserRouter
@@ -33,6 +34,7 @@ import ResetPasswordPage from '@/Auth/pages/ResetPasswordPage'
  */
 const router = createBrowserRouter([
   // Auth pages (standalone, no RootLayout)
+  
   {
     path: "/signin",
     element: (
@@ -138,7 +140,7 @@ const router = createBrowserRouter([
         path: "*",
         element: (
           <PageTransition>
-            <div className="text-foreground">Not Found</div>
+            <NotFoundPage />
           </PageTransition>
         )
       }
