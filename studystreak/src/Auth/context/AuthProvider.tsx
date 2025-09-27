@@ -35,7 +35,9 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  // Dev-only: sign out automatically when leaving/reloading the page on localhost [Reason: not signing out while on LocalHost]
+  // Dev-only: sign out automatically when leaving/reloading the page on localhost 
+  // [Reason: not signing out while on LocalHost]
+  // Might be from supabase URL changes since we deploy it in vercel and the URL changes
   useEffect(() => {
     const isLocalDev = import.meta.env.DEV || window.location.hostname === 'localhost';
     if (!isLocalDev) return;
@@ -60,8 +62,9 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, []);
+  // End of Dev-only sign out logic 
+  // [Can be deleted when deploying to production]
+  // Using this only so other can test auth flows on localhost without issues
 
   return <AuthContext.Provider value={{ user, session, loading: loading || authSyncing }}>{children}</AuthContext.Provider>;
 };
-
-// Only export the provider from this file to keep fast-refresh happy
