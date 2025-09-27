@@ -1,1 +1,0 @@
-// Auth types - TypeScript interfaces and types for authentication
