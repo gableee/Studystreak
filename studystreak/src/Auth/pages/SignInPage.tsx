@@ -8,7 +8,7 @@ const SignInPage: React.FC = () => {
     <div className="dark flex min-h-screen relative bg-background rounded-sm overflow-hidden flex-col md:flex-row 
     md:rounded-md md:pd-4">
       {/* Background component */}
-      <div className="flex justify-center w-full absolute md:relative
+      <div className="flex justify-center w-full h-full absolute md:relative
       md:w-1/2 md:border-r-4 
       md:border-white 
       md:h-auto 

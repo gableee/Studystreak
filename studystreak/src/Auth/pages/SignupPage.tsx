@@ -7,6 +7,7 @@ const SignupPage: React.FC = () => {
   const [form, setForm] = useState({
     first_name: '',
     last_name: '',
+    birthday: '',
     username: '',
     email: '',
     password: '',
@@ -54,16 +55,31 @@ const SignupPage: React.FC = () => {
       return
     }
 
+    function calculateAge(birthday: string): number {
+      const birthDate = new Date(birthday)
+      const today = new Date()
+      let age = today.getFullYear() - birthDate.getFullYear()
+      const m = today.getMonth() - birthDate.getMonth()
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--
+      }
+      return age
+    }
+
     try {
       // Create user in Supabase Auth WITH metadata (direct call)
-      const {error: signUpError } = await supabase.auth.signUp({
+      const age = calculateAge(form.birthday)
+
+      const { error: signUpError } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
         options: {
           data: {
             first_name: form.first_name,
-            last_name: form.last_name, 
-            username: form.username
+            last_name: form.last_name,
+            username: form.username,
+            birthday: form.birthday, // <-- send birthday
+            age, // <-- send age
           }
         }
       })
@@ -123,6 +139,20 @@ const SignupPage: React.FC = () => {
             </div>
           </div>
           <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2">
+              <label htmlFor="birthday" className="text-sm text-white/70">Birthday</label>
+              <input
+                id="birthday"
+                name="birthday"
+                type="date"
+                autoComplete="bday"
+                value={form.birthday}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 rounded-2xl bg-white/20 dark:bg-white/10 outline-none placeholder:text-white/40 text-white border border-white/10 focus:ring-2 focus:ring-emerald-400 transition"
+                placeholder="Birthday"
+              />
+            </div>
             <label htmlFor="username" className="text-sm text-white/70">Username</label>
             <div className="relative">
               <input

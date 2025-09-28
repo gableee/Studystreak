@@ -76,7 +76,7 @@ export function Header() {
   }
   return (
     <header className="w-full bg-background dark:bg-[#0A1220] backdrop-blur-xl text-foreground dark:text-white p-4 mb-4 shadow-sm dark:shadow-none transition-colors duration-200 border-b border-white/5 z-999">
-      <div className="container mx-auto flex justify-between items-center px-4">
+      <div className="container mx-auto flex justify-between items-center lg:px-4">
         
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg flex items-center justify-center">
@@ -136,7 +136,7 @@ export function Header() {
  */
 export function SideBar() {
   return (
-    <aside className="w-72 hidden md:block bg-background dark:bg-[#0A1220]/80 backdrop-blur-xl text-foreground dark:text-white h-full border-r border-border dark:border-white/5 transition-colors duration-200">
+    <aside className="w-72 hidden lg:block bg-background dark:bg-[#0A1220]/80 backdrop-blur-xl text-foreground dark:text-white h-full border-r border-border dark:border-white/5 transition-colors duration-200">
       <nav className="h-full py-8 px-5">
         <div className="mb-8 px-4">
           <div className="text-xs font-medium text-muted-foreground dark:text-white/50 uppercase tracking-wider">
