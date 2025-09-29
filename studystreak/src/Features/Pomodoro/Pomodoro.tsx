@@ -2,8 +2,9 @@
  * Pomodoro Component - Main container for Pomodoro timer feature
  */
 
-import React, { useState, useCallback } from 'react';
-import { usePomodoro } from './hooks/usePomodoro';
+import { useState, useCallback, useEffect } from 'react';
+import { PomodoroProvider } from './context/PomodoroContext';
+import { usePomodoroContext } from './context/PomodoroContextHooks';
 import type { SessionData } from './types/PomodoroTypes';
 import { TimerDisplay } from './components/TimerDisplay';
 import { Controls } from './components/Controls';
@@ -13,17 +14,22 @@ import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../Auth/hooks/useAuth';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
-export default function Pomodoro() {
+function PomodoroInner() {
   const { user } = useAuth();
-  const pomodoro = usePomodoro();
+  const pomodoro = usePomodoroContext();
+  // Assert provider exists (RootLayout should provide it). Use `p` shorthand so TS sees non-null usage.
+  const p = pomodoro!;
   const [showSettings, setShowSettings] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Helper: attempt insert on likely table names and return supabase response
-  type SupabaseErrorLike = { message?: string };
-  type SupabaseResult = { data?: unknown; error?: SupabaseErrorLike | null };
-  const isSupabaseResult = React.useCallback((r: unknown): r is SupabaseResult => typeof r === 'object' && r !== null && 'error' in (r as Record<string, unknown>), []);
+  // Note: don't return early here — hooks must be called in the same order on every render.
+  // The page is usually wrapped with PomodoroProvider (RootLayout). If pomodoro is undefined
+  // something is wrong with the provider placement; we'll still declare hooks to satisfy
+  // React rules and rely on the provider wrapper in the app.
+
+  type SupabaseResult = { data?: unknown; error?: { message?: string } | null };
+  const isSupabaseResult = useCallback((r: unknown): r is SupabaseResult => typeof r === 'object' && r !== null && 'error' in (r as Record<string, unknown>), []);
 
   const saveSessionToDb = useCallback(async (session: SessionData | Record<string, unknown>, userId: string) => {
     const s = session as SessionData;
@@ -36,7 +42,7 @@ export default function Pomodoro() {
       cycles: s.cyclesCompleted,
     };
 
-    // Ensure the referenced profile exists to satisfy foreign key constraint
+    // Ensure profiles row exists to satisfy FK
     try {
       const { data: profileData, error: profileCheckError } = await supabase
         .from('profiles')
@@ -44,45 +50,32 @@ export default function Pomodoro() {
         .eq('id', userId)
         .single();
 
-      if (profileCheckError && profileCheckError.code !== 'PGRST116') {
-        // PGRST116 = No rows found for .single(); handle below by attempting upsert
-        console.debug('Profile check returned error (non-empty):', profileCheckError);
+      if (profileCheckError) {
+        const code = (profileCheckError as { code?: string } | null)?.code;
+        if (code && code !== 'PGRST116') console.debug('Profile check returned error:', profileCheckError);
       }
 
       if (!profileData) {
-        // Try to upsert a full profile row using auth metadata so FK constraint passes
         try {
           const { data: authData, error: authErr } = await supabase.auth.getUser();
           if (authErr) console.debug('Could not fetch auth user for profile metadata:', authErr);
-          // authData shape: { user?: User } — use optional chaining
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const authUser = (authData as any)?.user ?? null;
-
-          // Extract metadata; fall back to sensible defaults
           const meta = authUser?.user_metadata ?? {};
           const first_name = meta?.first_name ?? 'First';
           const last_name = meta?.last_name ?? 'Last';
           const email = authUser?.email ?? user?.email ?? null;
 
-          // Username should be unique — prefer provided metadata, otherwise derive from email or id
           let username = meta?.username ?? null;
           if (!username && email) username = String(email).split('@')[0];
           if (!username) username = `user_${String(userId).slice(0, 8)}`;
 
-          const upsertPayload: Record<string, unknown> = {
-            id: userId,
-            username,
-            first_name,
-            last_name,
-          };
+          const upsertPayload: Record<string, unknown> = { id: userId, username, first_name, last_name };
           if (email) upsertPayload.email = email;
 
           const { error: upsertErr } = await supabase.from('profiles').upsert([upsertPayload]);
-          if (upsertErr) {
-            console.warn('Failed to upsert profile automatically:', upsertErr);
-          } else {
-            console.debug('Inserted missing profile for user', userId);
-          }
+          if (upsertErr) console.warn('Failed to upsert profile automatically:', upsertErr);
+          else console.debug('Inserted missing profile for user', userId);
         } catch (upsertEx) {
           console.warn('Upsert profile attempt threw:', upsertEx);
         }
@@ -91,18 +84,15 @@ export default function Pomodoro() {
       console.warn('Error while checking/creating profile prior to session insert:', checkErr);
     }
 
-  type SupabaseRes = { data?: unknown; error?: { message?: string } | null };
     const tableCandidates = ['studysession', 'study_session', 'StudySession'];
     let lastError: unknown = null;
     for (const table of tableCandidates) {
       try {
-        const res = (await supabase.from(table).insert([payload]).select()) as SupabaseRes;
+        const res = (await supabase.from(table).insert([payload]).select()) as SupabaseResult;
         console.debug(`Insert attempt to ${table}:`, res);
         if (res.error) {
           lastError = res.error;
-          if (/relation "?\w+"? does not exist/i.test(String(res.error.message || res.error))) {
-            continue;
-          }
+          if (/relation "?\w+"? does not exist/i.test(String(res.error.message || res.error))) continue;
           return res;
         }
         return res;
@@ -114,41 +104,32 @@ export default function Pomodoro() {
     throw lastError ?? new Error('Insert failed for all table candidates');
   }, [user]);
 
-  // Handle session end with Supabase integration
   const handleEndSession = useCallback(async () => {
-    const sessionData = await pomodoro.endSession();
-    if (sessionData && user) {
-      setSaveStatus('saving');
-      setErrorMessage(null);
-      try {
-        const result = await saveSessionToDb(sessionData, user.id);
-        // If result has error, throw to be caught below
-        if (isSupabaseResult(result) && result.error) {
-          throw result.error;
-        }
-        setSaveStatus('success');
-        setTimeout(() => setSaveStatus('idle'), 3000);
-      } catch (err: unknown) {
-        console.error('Failed to save session (detailed):', err);
-        setSaveStatus('error');
-        // Prefer structured supabase error message when available
-        if (err instanceof Error) {
-          setErrorMessage(err.message);
-        } else if (err && typeof err === 'object' && 'message' in err) {
-          const maybeMsg = (err as { message?: unknown }).message;
-          setErrorMessage(typeof maybeMsg === 'string' ? maybeMsg : String(maybeMsg ?? 'Failed to save session'));
-        } else {
-          setErrorMessage(String(err ?? 'Failed to save session'));
-        }
-        // Persist failed session for retry
-        const failedSessions = JSON.parse(localStorage.getItem('failedPomodoros') || '[]');
-        failedSessions.push({ ...sessionData, userId: user.id });
-        localStorage.setItem('failedPomodoros', JSON.stringify(failedSessions));
-      }
-    }
-  }, [pomodoro, user, saveSessionToDb, isSupabaseResult]);
+  const sessionData = await p.endSession();
+  if (!sessionData || !user) return;
 
-  // Retry failed sessions
+    setSaveStatus('saving');
+    setErrorMessage(null);
+    try {
+      const result = await saveSessionToDb(sessionData, user.id);
+      if (isSupabaseResult(result) && result.error) throw result.error;
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } catch (err: unknown) {
+      console.error('Failed to save session (detailed):', err);
+      setSaveStatus('error');
+      if (err instanceof Error) setErrorMessage(err.message);
+      else if (err && typeof err === 'object' && 'message' in err) {
+        const maybeMsg = (err as { message?: unknown }).message;
+        setErrorMessage(typeof maybeMsg === 'string' ? maybeMsg : String(maybeMsg ?? 'Failed to save session'));
+      } else setErrorMessage(String(err ?? 'Failed to save session'));
+
+      const failedSessions = JSON.parse(localStorage.getItem('failedPomodoros') || '[]');
+      failedSessions.push({ ...sessionData, userId: user.id });
+      localStorage.setItem('failedPomodoros', JSON.stringify(failedSessions));
+    }
+  }, [p, user, saveSessionToDb, isSupabaseResult]);
+
   const retryFailedSessions = useCallback(async () => {
     if (!user) return;
     const failedSessions = JSON.parse(localStorage.getItem('failedPomodoros') || '[]');
@@ -156,9 +137,7 @@ export default function Pomodoro() {
     for (const session of failedSessions) {
       try {
         const result = await saveSessionToDb(session as Record<string, unknown>, user.id);
-        if (isSupabaseResult(result) && result.error) {
-          console.error('Retry insert error:', result.error);
-        }
+        if (isSupabaseResult(result) && result.error) console.error('Retry insert error:', result.error);
       } catch (error) {
         console.error('Failed to retry session save:', error);
       }
@@ -166,23 +145,20 @@ export default function Pomodoro() {
     localStorage.removeItem('failedPomodoros');
   }, [user, saveSessionToDb, isSupabaseResult]);
 
-  
-
-  // Try to save failed sessions on component mount
-  React.useEffect(() => {
-    // Always call the effect, but only run retry if user exists
-    if (user) {
-      retryFailedSessions();
-    }
+  useEffect(() => {
+    if (user) retryFailedSessions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   return (
     <section className="p-6 max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-foreground dark:text-slate-100">
-          Pomodoro Timer
-        </h2>
+        <h2 className="text-2xl font-bold text-foreground dark:text-slate-100">Pomodoro Timer</h2>
+        {p.sessionStartTime && (
+          <div className="text-sm text-muted-foreground dark:text-slate-300 mr-4">
+            Session started: {new Date(p.sessionStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </div>
+        )}
         <button
           onClick={() => setShowSettings(!showSettings)}
           className="px-4 py-2 text-sm bg-muted dark:bg-slate-700 text-muted-foreground dark:text-slate-300 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors"
@@ -191,41 +167,28 @@ export default function Pomodoro() {
         </button>
       </div>
 
-      {/* Settings Panel */}
       {showSettings && (
         <div className="mb-6">
-          <PomodoroSettings
-            settings={pomodoro.settings}
-            onUpdateSettings={pomodoro.updateSettings}
-            onClose={() => setShowSettings(false)}
-          />
+          <PomodoroSettings settings={p.settings} onUpdateSettings={p.updateSettings} onClose={() => setShowSettings(false)} />
         </div>
       )}
 
-      {/* Timer Display */}
       <div className="mb-6">
-        <TimerDisplay
-          remainingSeconds={pomodoro.remainingSeconds}
-          mode={pomodoro.mode}
-          progress={pomodoro.progress}
-        />
+  <TimerDisplay remainingSeconds={p.remainingSeconds} mode={p.mode} progress={p.progress} />
       </div>
 
-      {/* Controls */}
       <div className="mb-6">
         <Controls
-          status={pomodoro.status}
-          onStart={pomodoro.startSession}
-          onPause={pomodoro.pauseTimer}
-          onResume={pomodoro.resumeTimer}
-          onStop={pomodoro.stopTimer}
+          status={p.status}
+          onStart={p.startSession}
+          onPause={p.pauseTimer}
+          onResume={p.resumeTimer}
+          onStop={p.stopTimer}
           onEnd={handleEndSession}
-          onSkip={pomodoro.skipInterval}
-          cyclesCompleted={pomodoro.cyclesCompleted}
+          onSkip={p.skipInterval}
         />
       </div>
 
-      {/* Save Status Messages */}
       {saveStatus !== 'idle' && (
         <div className="mb-6">
           {saveStatus === 'saving' && (
@@ -243,24 +206,32 @@ export default function Pomodoro() {
           {saveStatus === 'error' && (
             <div className="flex items-center gap-2 p-3 bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg">
               <AlertCircle size={16} />
-              <span className="text-sm">
-                {errorMessage || 'Failed to save session. It will be retried later.'}
-              </span>
+              <span className="text-sm">{errorMessage || 'Failed to save session. It will be retried later.'}</span>
             </div>
           )}
         </div>
       )}
 
-      {/* Session Statistics */}
-      {pomodoro.status !== 'idle' && (
+      {p.status !== 'idle' && (
         <CycleTracker
-          cyclesCompleted={pomodoro.cyclesCompleted}
-          sessionDuration={pomodoro.sessionDuration}
-          targetCycles={pomodoro.settings.targetCycles}
-          mode={pomodoro.mode}
-          isLastCycleBeforeLongBreak={pomodoro.isLastCycleBeforeLongBreak}
+          cyclesCompleted={p.cyclesCompleted}
+          sessionDuration={p.sessionDuration}
+          targetCycles={p.settings.targetCycles}
+          mode={p.mode}
+          isLastCycleBeforeLongBreak={p.isLastCycleBeforeLongBreak}
         />
       )}
     </section>
   );
 }
+
+export default function Pomodoro() {
+  const ctx = usePomodoroContext();
+  if (ctx) return <PomodoroInner />;
+  return (
+    <PomodoroProvider>
+      <PomodoroInner />
+    </PomodoroProvider>
+  );
+}
+

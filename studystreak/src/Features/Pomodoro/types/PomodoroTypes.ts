@@ -46,6 +46,7 @@ export interface PomodoroHookReturn {
   remainingSeconds: number;
   cyclesCompleted: number;
   sessionDuration: number; // in minutes
+  sessionStartTime: number | null; // epoch ms of when session started
   settings: PomodoroSettings;
   
   // Actions

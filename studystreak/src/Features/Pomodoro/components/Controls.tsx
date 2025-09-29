@@ -2,9 +2,10 @@
  * Controls Component - Control buttons for the Pomodoro timer
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import type { SessionStatus } from '../types/PomodoroTypes';
 import { Play, Pause, RotateCcw, SkipForward, CheckCircle } from 'lucide-react';
+import ResetConfirmModal from './ResetConfirmModal';
 
 interface ControlsProps {
   status: SessionStatus;
@@ -14,7 +15,6 @@ interface ControlsProps {
   onStop: () => void;
   onEnd: () => void;
   onSkip: () => void;
-  cyclesCompleted: number;
 }
 
 export const Controls: React.FC<ControlsProps> = ({
@@ -25,10 +25,12 @@ export const Controls: React.FC<ControlsProps> = ({
   onStop,
   onEnd,
   onSkip,
-  cyclesCompleted,
 }) => {
+  const [showModal, setShowModal] = useState(false);
+
   return (
-    <div className="flex flex-col gap-4">
+    <>
+      <div className="flex flex-col gap-4">
       {/* Primary controls */}
       <div className="flex justify-center gap-3">
         {status === 'idle' && (
@@ -61,14 +63,16 @@ export const Controls: React.FC<ControlsProps> = ({
           </button>
         )}
         
-        {(status === 'running' || status === 'paused') && (
-          <button
-            onClick={onStop}
-            className="flex items-center gap-2 px-6 py-3 bg-muted dark:bg-slate-700 text-muted-foreground dark:text-white rounded-xl hover:bg-gray-300 dark:hover:bg-slate-600 transition-all"
-          >
-            <RotateCcw size={20} />
-            <span className="font-semibold">Reset</span>
-          </button>
+        {status === 'paused' && (
+          <>
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-muted dark:bg-slate-700 text-muted-foreground dark:text-white rounded-xl hover:bg-gray-300 dark:hover:bg-slate-600 transition-all"
+            >
+              <RotateCcw size={20} />
+              <span className="font-semibold">Reset</span>
+            </button>
+          </>
         )}
         
         {status === 'completed' && (
@@ -90,18 +94,17 @@ export const Controls: React.FC<ControlsProps> = ({
             className="flex items-center gap-2 px-4 py-2 text-muted-foreground dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
           >
             <SkipForward size={18} />
-            <span className="text-sm font-medium">Skip Interval</span>
+            <span className="text-sm font-medium">Next Interval</span>
           </button>
           
-          {cyclesCompleted > 0 && (
-            <button
-              onClick={onEnd}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600/10 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-600/20 transition-all"
-            >
-              <CheckCircle size={18} />
-              <span className="text-sm font-medium">End Session</span>
-            </button>
-          )}
+          {/* Always allow ending an active session (running or paused) */}
+          <button
+            onClick={onEnd}
+            className="flex items-center gap-2 px-4 py-2 bg-red-600/10 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-600/20 transition-all"
+          >
+            <CheckCircle size={18} />
+            <span className="text-sm font-medium">End Session</span>
+          </button>
         </div>
       )}
       
@@ -112,7 +115,17 @@ export const Controls: React.FC<ControlsProps> = ({
           </p>
         </div>
       )}
-    </div>
+      </div>
+      {/* Reset confirmation modal */}
+      <ResetConfirmModal
+        open={showModal}
+        onConfirm={() => {
+          setShowModal(false);
+          onStop();
+        }}
+        onCancel={() => setShowModal(false)}
+      />
+    </>
   );
 };
 

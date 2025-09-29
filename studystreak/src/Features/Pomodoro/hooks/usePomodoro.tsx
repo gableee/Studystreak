@@ -62,6 +62,7 @@ export function usePomodoro(): PomodoroHookReturn {
   // Refs for timer interval
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastTickRef = useRef<number>(Date.now());
+  const expectedRef = useRef<number | null>(null);
   
   // Request notification permission on mount
   useEffect(() => {
@@ -111,7 +112,7 @@ export function usePomodoro(): PomodoroHookReturn {
     : 0;
   
   // Handle interval completion
-  const handleIntervalComplete = useCallback(() => {
+  const handleIntervalComplete = useCallback((countCycle = true) => {
     // Play sound and show notification
     if (settings.soundEnabled) {
       playNotificationSound();
@@ -131,7 +132,11 @@ export function usePomodoro(): PomodoroHookReturn {
       
       if (prev.mode === 'focus') {
         // Completed a focus interval
-        newState.cyclesCompleted = prev.cyclesCompleted + 1;
+        if (countCycle) {
+          newState.cyclesCompleted = prev.cyclesCompleted + 1;
+        } else {
+          newState.cyclesCompleted = prev.cyclesCompleted;
+        }
         newState.totalFocusMinutes = prev.totalFocusMinutes + settings.focusDuration;
         
         // Check if we've reached target cycles
@@ -180,6 +185,69 @@ export function usePomodoro(): PomodoroHookReturn {
       return newState;
     });
   }, [state.mode, settings, isLastCycleBeforeLongBreak]);
+
+  // Advance to next interval helper
+  const advanceToNextInterval = useCallback((startImmediately: boolean) => {
+    // We'll compute the next interval duration in seconds so we can update UI immediately
+    setState(prev => {
+      const newState = { ...prev };
+
+      // Determine next mode from current mode
+      if (prev.mode === 'focus') {
+        // Move to break or longBreak
+        newState.totalFocusMinutes = prev.totalFocusMinutes + settings.focusDuration;
+        if (isLastCycleBeforeLongBreak) {
+          newState.mode = 'longBreak';
+        } else {
+          newState.mode = 'break';
+        }
+
+        const durationMinutes = newState.mode === 'longBreak' ? settings.longBreakDuration : settings.breakDuration;
+        const durationSeconds = durationMinutes * 60;
+
+        if (startImmediately) {
+          newState.currentIntervalStartTime = Date.now();
+          newState.targetTimestamp = Date.now() + minutesToMs(durationMinutes);
+          newState.status = 'running';
+          newState.pausedRemaining = null;
+        } else {
+          newState.status = 'paused';
+          newState.currentIntervalStartTime = null;
+          newState.targetTimestamp = null;
+          // When paused and advancing, set pausedRemaining to the full next-interval length
+          newState.pausedRemaining = durationSeconds;
+        }
+      } else {
+        // Currently in a break -> move to focus
+        newState.totalBreakMinutes = prev.totalBreakMinutes + (prev.mode === 'longBreak' ? settings.longBreakDuration : settings.breakDuration);
+        newState.mode = 'focus';
+
+        const durationMinutes = settings.focusDuration;
+        const durationSeconds = durationMinutes * 60;
+
+        if (startImmediately) {
+          newState.currentIntervalStartTime = Date.now();
+          newState.targetTimestamp = Date.now() + minutesToMs(durationMinutes);
+          newState.status = 'running';
+          newState.pausedRemaining = null;
+        } else {
+          newState.status = 'paused';
+          newState.currentIntervalStartTime = null;
+          newState.targetTimestamp = null;
+          newState.pausedRemaining = durationSeconds;
+        }
+      }
+
+      return newState;
+    });
+
+    // Update remainingSeconds immediately for UI feedback using a ref populated inside the setState updater
+    const val = expectedRef.current ?? null;
+    if (val !== null) {
+      setRemainingSeconds(val);
+      expectedRef.current = null;
+    }
+  }, [isLastCycleBeforeLongBreak, settings]);
   
   // Timer tick function
   const tick = useCallback(() => {
@@ -281,26 +349,39 @@ export function usePomodoro(): PomodoroHookReturn {
   const resumeTimer = useCallback(() => {
     if (state.status === 'paused' && state.pausedRemaining !== null) {
       const now = Date.now();
-      setState(prev => ({
-        ...prev,
-        status: 'running',
-        currentIntervalStartTime: now,
-        targetTimestamp: now + prev.pausedRemaining! * 1000,
-        pausedRemaining: null,
-      }));
+      setState(prev => {
+        const fullDurationSeconds = getCurrentIntervalDuration();
+        const paused = prev.pausedRemaining ?? 0;
+        const elapsedSeconds = Math.max(0, fullDurationSeconds - paused);
+        const currentIntervalStartTime = now - elapsedSeconds * 1000;
+        const targetTimestamp = now + paused * 1000;
+  // Debug to help reproduce progress issues
+  console.debug('Resuming timer', { mode: prev.mode, fullDurationSeconds, paused, elapsedSeconds, currentIntervalStartTime, targetTimestamp });
+
+        return {
+          ...prev,
+          status: 'running',
+          currentIntervalStartTime,
+          targetTimestamp,
+          pausedRemaining: null,
+        };
+      });
     }
-  }, [state.status, state.pausedRemaining]);
+  }, [state.status, state.pausedRemaining, getCurrentIntervalDuration]);
   
   // Action: Stop timer (reset current interval)
   const stopTimer = useCallback(() => {
+    // Reset the current interval to its full duration and pause.
+    const fullDuration = getCurrentIntervalDuration();
     setState(prev => ({
       ...prev,
       status: 'paused',
       currentIntervalStartTime: null,
       targetTimestamp: null,
-      pausedRemaining: null,
+      // Set pausedRemaining so resumeTimer can restart the interval
+      pausedRemaining: fullDuration,
     }));
-    setRemainingSeconds(getCurrentIntervalDuration());
+    setRemainingSeconds(fullDuration);
   }, [getCurrentIntervalDuration]);
   
   // Action: End session (save to database)
@@ -340,12 +421,16 @@ export function usePomodoro(): PomodoroHookReturn {
     return sessionData;
   }, [state.sessionStartTime, state.cyclesCompleted, settings.focusDuration]);
   
-  // Action: Skip current interval
+  // Action: Skip current interval / go to next interval immediately
   const skipInterval = useCallback(() => {
-    if (state.status === 'running' || state.status === 'paused') {
-      handleIntervalComplete();
+    if (state.status === 'running') {
+      // Immediately advance and start the next interval
+      advanceToNextInterval(true);
+    } else if (state.status === 'paused') {
+      // When paused, advance mode but keep paused (so resume will start the next interval full length)
+      advanceToNextInterval(false);
     }
-  }, [state.status, handleIntervalComplete]);
+  }, [state.status, advanceToNextInterval]);
   
   // Action: Update settings
   const updateSettings = useCallback((newSettings: Partial<PomodoroSettings>) => {
@@ -366,6 +451,7 @@ export function usePomodoro(): PomodoroHookReturn {
     remainingSeconds,
     cyclesCompleted: state.cyclesCompleted,
     sessionDuration,
+    sessionStartTime: state.sessionStartTime,
     settings,
     
     // Actions

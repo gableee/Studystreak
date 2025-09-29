@@ -15,6 +15,8 @@
 
 import { Outlet } from 'react-router-dom'
 import { Header, SideBar } from '../AppInterface'
+import { PomodoroProvider } from '../../Features/Pomodoro/context/PomodoroContext'
+import PomodoroModal from '../../Features/Pomodoro/components/PomodoroModal'
 
 /**
  * RootLayout Component - The main layout wrapper for all pages
@@ -31,8 +33,10 @@ function RootLayout() {
             <Header />
             <main className="flex-1 p-6 overflow-y-auto">
               {/* This is where child routes will be rendered */}
-
-              <Outlet />
+              <PomodoroProvider>
+                <Outlet />
+                <PomodoroModal />
+              </PomodoroProvider>
             </main>
           </div>
         </div>
