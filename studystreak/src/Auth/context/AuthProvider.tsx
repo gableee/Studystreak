@@ -38,30 +38,30 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
   // // Dev-only: sign out automatically when leaving/reloading the page on localhost 
   // // [Reason: not signing out while on LocalHost]
   // // Might be from supabase URL changes since we deploy it in vercel and the URL changes
-  useEffect(() => {
-    const isLocalDev = import.meta.env.DEV || window.location.hostname === 'localhost';
-    if (!isLocalDev) return;
+  // useEffect(() => {
+  //   const isLocalDev = import.meta.env.DEV || window.location.hostname === 'localhost';
+  //   if (!isLocalDev) return;
 
-    const signOutQuick = () => {
-      void supabase.auth.signOut();
-    };
+  //   const signOutQuick = () => {
+  //     void supabase.auth.signOut();
+  //   };
 
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        signOutQuick();
-      }
-    };
+  //   const onVisibilityChange = () => {
+  //     if (document.visibilityState === 'hidden') {
+  //       signOutQuick();
+  //     }
+  //   };
 
-    window.addEventListener('beforeunload', signOutQuick);
-    window.addEventListener('pagehide', signOutQuick);
-    document.addEventListener('visibilitychange', onVisibilityChange);
+  //   window.addEventListener('beforeunload', signOutQuick);
+  //   window.addEventListener('pagehide', signOutQuick);
+  //   document.addEventListener('visibilitychange', onVisibilityChange);
 
-    return () => {
-      window.removeEventListener('beforeunload', signOutQuick);
-      window.removeEventListener('pagehide', signOutQuick);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-    };
-  }, []);
+  //   return () => {
+  //     window.removeEventListener('beforeunload', signOutQuick);
+  //     window.removeEventListener('pagehide', signOutQuick);
+  //     document.removeEventListener('visibilitychange', onVisibilityChange);
+  //   };
+  // }, []);
   // // End of Dev-only sign out logic 
   // // [Can be deleted when deploying to production]
   // // Using this only so other can test auth flows on localhost without issues

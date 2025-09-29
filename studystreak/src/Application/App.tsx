@@ -18,6 +18,7 @@ import RootLayout from './RouteLayout/RootLayout'
 import Dashboard from '../Features/Dashboard/Dashboard'
 import Profile from '../Features/Profile/Profile'
 import Pomodoro from '../Features/Pomodoro/Pomodoro'
+import ErrorBoundary from './components/ErrorBoundary'
 import Courses from '../Features/Courses/Courses'
 import Todo from '../Features/Todo/Todo'
 import ProtectedRoute from '@/Auth/guards/ProtectedRoute'
@@ -111,7 +112,9 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <PageTransition>
-              <Pomodoro />
+              <ErrorBoundary>
+                <Pomodoro />
+              </ErrorBoundary>
             </PageTransition>
           </ProtectedRoute>
         )
