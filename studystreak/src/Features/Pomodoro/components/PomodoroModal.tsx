@@ -103,7 +103,7 @@ export default function PomodoroModal() {
                 <button aria-label="Close" title="Close" className="text-xs text-muted-foreground px-2" onClick={() => setHidden(true)}>✕</button>
             </div>
             {pomodoro.status === 'running' ? (
-                <button className="px-2 py-1 border-2 border-yellow-500/50 text-white rounded text-sm" onClick={pomodoro.pauseTimer}>Pause</button>
+                <button className="px-2 py-1 border-2 border-yellow-500/50 text-yellow-700 dark:text-white rounded text-sm" onClick={pomodoro.pauseTimer}>Pause</button>
             ) : (
                 <button className="px-2 py-1 bg-green-500 text-white rounded text-sm" onClick={pomodoro.resumeTimer}>Resume</button>
             )}
