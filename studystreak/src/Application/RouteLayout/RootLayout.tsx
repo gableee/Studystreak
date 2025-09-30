@@ -17,6 +17,7 @@ import { Outlet } from 'react-router-dom'
 import { Header, SideBar } from '../AppInterface'
 import { PomodoroProvider } from '../../Features/Pomodoro/context/PomodoroContext'
 import PomodoroModal from '../../Features/Pomodoro/components/PomodoroModal'
+import PwaInstallToast from '@/PWA/components/PwaInstallToast'
 
 /**
  * RootLayout Component - The main layout wrapper for all pages
@@ -36,6 +37,7 @@ function RootLayout() {
               <PomodoroProvider>
                 <Outlet />
                 <PomodoroModal />
+                <PwaInstallToast />
               </PomodoroProvider>
             </main>
           </div>

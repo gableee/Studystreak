@@ -17,7 +17,8 @@ export default defineConfig({
       includeAssets: [
         'favicon.ico',
         'apple-touch-icon.png',
-        'icons/mask-icon.svg'
+        'icons/mask-icon.svg',
+        'offline.html'
       ],
       manifest: {
         name: 'StudyStreak',
@@ -49,6 +50,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        navigateFallback: '/offline.html',
+        navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
             urlPattern: ({ request }) => request.destination === 'image',
