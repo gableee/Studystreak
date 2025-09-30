@@ -6,7 +6,71 @@ import { registerSW } from 'virtual:pwa-register'
 import { AuthProvider } from "@/Auth/context/AuthProvider.tsx";
 
 // Register the service worker. Prompt user when new content is available.
-registerSW({ immediate: true, onNeedRefresh() {}, onOfflineReady() {} })
+// registerSW returns a function to trigger update when available; we capture update handler and the prompt event
+const updateSW = registerSW({
+});
+
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform?: string }>
+}
+
+let deferredInstallPrompt: BeforeInstallPromptEvent | null = null;
+
+// re-register with callbacks handled inline (we captured updateSW above)
+registerSW({
+  immediate: true,
+  onNeedRefresh() {
+    console.info('Service worker update available');
+    window.dispatchEvent(new CustomEvent('pwa-update-available'));
+  },
+  onOfflineReady() {
+    console.info('Offline ready');
+    window.dispatchEvent(new CustomEvent('pwa-offline-ready'));
+  }
+});
+
+// Capture beforeinstallprompt to show a custom Install button in the UI
+window.addEventListener('beforeinstallprompt', (e: Event) => {
+  // Prevent the mini-infobar from appearing on mobile
+  e.preventDefault();
+  // Save the event for later to trigger prompt on user gesture
+  deferredInstallPrompt = e as BeforeInstallPromptEvent;
+  // You can dispatch a custom event or set a global so your UI can show an install button
+  window.dispatchEvent(new CustomEvent('pwa-install-available'));
+});
+
+// Expose simple helpers on window for UI code to use (optional)
+declare global {
+  interface Window {
+    __pwa?: {
+  promptInstall: () => Promise<{ outcome: 'accepted' | 'dismissed' } | false>
+      updateServiceWorker: () => void
+    }
+  }
+}
+
+window.__pwa = {
+  promptInstall: async () => {
+    if (!deferredInstallPrompt) return false;
+    try {
+      await deferredInstallPrompt.prompt();
+      const choiceResult = await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      return choiceResult;
+    } catch (err) {
+      console.warn('Install prompt failed', err);
+      return false;
+    }
+  },
+  updateServiceWorker: () => {
+    if (typeof updateSW === 'function') {
+      updateSW();
+    } else {
+      console.info('No update function available');
+    }
+  }
+};
 
 // Detect in-app browsers and suggest opening in external browser
 function isInAppBrowser() {
