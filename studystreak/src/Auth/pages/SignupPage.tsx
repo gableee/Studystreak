@@ -133,6 +133,7 @@ const SignupPage: React.FC = () => {
         username: form.username,
         birthday: form.birthday,
         age,
+        email: form.email,
       })
 
       setMessage('Check your email to confirm your account. You can now sign in.')

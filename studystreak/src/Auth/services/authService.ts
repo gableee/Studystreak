@@ -11,6 +11,7 @@ type UserMetadata = {
   username?: string;
   birthday?: string;
   age?: number;
+  email?: string;
   // Add other optional fields you might use
 };
 
