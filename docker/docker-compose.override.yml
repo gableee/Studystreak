@@ -1,0 +1,4 @@
+services:
+  php-backend:
+    ports:
+      - "8081:8080"

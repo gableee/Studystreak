@@ -1,0 +1,78 @@
+openapi: 3.0.3
+info:
+  title: StudyStreak PHP backend API
+  version: "1.0.0"
+  description: Minimal contract for the /api/todos endpoints used by StudyStreak frontend.
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/todos:
+    get:
+      summary: List todos
+      description: Returns a list of todos. Optional query param `user_id` filters by owner.
+      parameters:
+        - in: query
+          name: user_id
+          schema:
+            type: integer
+          description: Filter todos by user id
+      responses:
+        '200':
+          description: A JSON array of todos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Todo'
+        '401':
+          description: Unauthorized
+    post:
+      summary: Create a todo
+      description: Create a new todo. Requires Authorization: Bearer &lt;user_jwt&gt; header.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewTodo'
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Created - returns the created todo representation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '401':
+          description: Unauthorized
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Todo:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        user_id:
+          type: integer
+        completed:
+          type: boolean
+      required: [id, title, user_id, completed]
+    NewTodo:
+      type: object
+      properties:
+        title:
+          type: string
+        user_id:
+          type: integer
+        completed:
+          type: boolean
+      required: [title, user_id]

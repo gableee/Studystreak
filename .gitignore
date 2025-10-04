@@ -1,0 +1,7 @@
+# Ignore backend env
+php-backend/.env
+
+# node and general
+node_modules/
+.env
+.DS_Store

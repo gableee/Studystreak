@@ -1,0 +1,15 @@
+services:
+  php-backend:
+    build:
+      context: ../php-backend
+    ports:
+      - "8080:8080"
+    env_file:
+      - ../php-backend/.env
+    command: php -d variables_order=EGPCS -S 0.0.0.0:8080 -t public
+
+  context7-mcp:
+    build:
+      context: ./
+    ports:
+      - "8090:8080"
