@@ -19,7 +19,7 @@ export const PomodoroSettings: React.FC<PomodoroSettingsProps> = ({
 }) => {
   const [localSettings, setLocalSettings] = useState<Settings>(settings);
 
-  const handleChange = (key: keyof Settings, value: any) => {
+  const handleChange = <K extends keyof Settings>(key: K, value: Settings[K]) => {
     setLocalSettings(prev => ({ ...prev, [key]: value }));
   };
 
