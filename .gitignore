@@ -1,0 +1,10 @@
+# Ignore backend env
+php-backend/.env
+
+# node and general
+node_modules/
+.env
+.DS_Store
+
+# VS Code MCP local secrets
+.vscode/.env.local

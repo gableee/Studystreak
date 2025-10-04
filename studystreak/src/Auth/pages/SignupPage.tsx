@@ -1,105 +1,156 @@
 // SignupPage component - user registration page
-import React, { useState } from 'react'
-import { supabase } from '@/lib/supabaseClient' // Make sure to import supabase
+import React, { useCallback, useMemo, useState } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
+import { authService } from '../services/authService'
 import { profileService } from '../services/profileService'
+import { ApiError } from '@/lib/apiClient'
+
+type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken'
+
+type SignupFormState = {
+  first_name: string
+  last_name: string
+  birthday: string
+  username: string
+  email: string
+  password: string
+  confirmPassword: string
+}
+
+const defaultFormState: SignupFormState = {
+  first_name: '',
+  last_name: '',
+  birthday: '',
+  username: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+}
+
+const requiredFields: Array<keyof SignupFormState> = [
+  'first_name',
+  'last_name',
+  'birthday',
+  'username',
+  'email',
+  'password',
+  'confirmPassword',
+]
 
 const SignupPage: React.FC = () => {
-  const [form, setForm] = useState({
-    first_name: '',
-    last_name: '',
-    birthday: '',
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-  })
+  const [form, setForm] = useState<SignupFormState>(defaultFormState)
+  const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
-  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'taken' | 'available'>('idle')
 
-  // Username uniqueness check (onBlur)
-  const checkUsername = async () => {
-    if (!form.username) return
-    setUsernameStatus('checking')
-    const { available } = await profileService.isUsernameAvailable(form.username)
-    setUsernameStatus(available ? 'available' : 'taken')
-  }
+  const isSubmitDisabled = useMemo(() => {
+    if (isSubmitting) return true
+    return requiredFields.some((field) => !form[field])
+  }, [form, isSubmitting])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
-    if (e.target.name === 'username') setUsernameStatus('idle')
-  }
-
-  const handleSubmit: React.FormEventHandler<HTMLFormElement> = async (e) => {
-    e.preventDefault()
+  const resetMessages = useCallback(() => {
     setError(null)
     setMessage(null)
+  }, [])
 
-    // Basic validation
-    if (!form.first_name || !form.last_name || !form.username || !form.email || !form.password || !form.confirmPassword) {
+  const handleChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target
+    resetMessages()
+    setForm((previous) => ({ ...previous, [name]: value }))
+    if (name === 'username') {
+      setUsernameStatus('idle')
+    }
+  }, [resetMessages])
+
+  const calculateAge = useCallback((birthday: string) => {
+    const birthDate = new Date(birthday)
+    const today = new Date()
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const monthDiff = today.getMonth() - birthDate.getMonth()
+
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age -= 1
+    }
+
+    return age
+  }, [])
+
+  const verifyUsernameAvailability = useCallback(async () => {
+    if (!form.username) {
+      setUsernameStatus('idle')
+      return true
+    }
+
+    setUsernameStatus('checking')
+
+    try {
+      const { available } = await profileService.isUsernameAvailable(form.username)
+      setUsernameStatus(available ? 'available' : 'taken')
+      return available
+    } catch (err) {
+      console.error('Username availability check failed:', err)
+      setUsernameStatus('idle')
+      setError('Unable to check username availability right now. Please try again later.')
+      return false
+    }
+  }, [form.username])
+
+  const checkUsername = useCallback(async () => {
+    if (!form.username) return
+    await verifyUsernameAvailability()
+  }, [form.username, verifyUsernameAvailability])
+
+  const handleSubmit = useCallback(async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    resetMessages()
+
+    const hasEmptyFields = requiredFields.some((field) => !form[field])
+    if (hasEmptyFields) {
       setError('Please fill in all fields.')
       return
     }
+
     if (form.password !== form.confirmPassword) {
       setError('Passwords do not match.')
       return
     }
+
     setIsSubmitting(true)
 
-    // Username check
-    const { available } = await profileService.isUsernameAvailable(form.username)
-    if (!available) {
-      setError('Username is already taken.')
-      setIsSubmitting(false)
-      return
-    }
-
-    function calculateAge(birthday: string): number {
-      const birthDate = new Date(birthday)
-      const today = new Date()
-      let age = today.getFullYear() - birthDate.getFullYear()
-      const m = today.getMonth() - birthDate.getMonth()
-      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        age--
-      }
-      return age
-    }
-
     try {
-      // Create user in Supabase Auth WITH metadata (direct call)
-      const age = calculateAge(form.birthday)
-
-      const { error: signUpError } = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
-        options: {
-          data: {
-            first_name: form.first_name,
-            last_name: form.last_name,
-            username: form.username,
-            birthday: form.birthday, // <-- send birthday
-            age, // <-- send age
-          }
-        }
-      })
-
-      if (signUpError) {
-        console.error('Sign up error:', signUpError)
-        setError(signUpError.message)
-        setIsSubmitting(false)
+      const usernameAvailable = await verifyUsernameAvailability()
+      if (!usernameAvailable) {
+        setError('Username is already taken.')
         return
       }
 
+      const age = calculateAge(form.birthday)
+
+      await authService.signUp(form.email, form.password, {
+        first_name: form.first_name,
+        last_name: form.last_name,
+        username: form.username,
+        birthday: form.birthday,
+        age,
+      })
+
       setMessage('Check your email to confirm your account. You can now sign in.')
-      
-    } catch (error) {
-      console.error('Unexpected error:', error)
-      setError('An unexpected error occurred. Please try again.')
+      setForm(defaultFormState)
+      setUsernameStatus('idle')
+    } catch (err) {
+      console.error('Unexpected signup error:', err)
+      if (err instanceof ApiError) {
+        setError(err.message)
+      } else if (err instanceof Error) {
+        setError(err.message)
+      } else {
+        setError('An unexpected error occurred. Please try again.')
+      }
     } finally {
       setIsSubmitting(false)
     }
-  }
+  }, [calculateAge, form, resetMessages, verifyUsernameAvailability])
 
   return (
     <div className="dark flex min-h-screen items-center justify-center bg-background text-foreground p-4">
@@ -226,7 +277,7 @@ const SignupPage: React.FC = () => {
           {message && <div className="text-emerald-400 text-sm rounded-xl bg-emerald-500/10 border border-emerald-400/20 px-3 py-2">{message}</div>}
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitDisabled}
             className="w-full px-5 py-3 rounded-full bg-gradient-to-b from-emerald-400 to-green-600 text-white font-medium shadow-lg hover:scale-[1.02] transition disabled:opacity-60"
           >
             {isSubmitting ? 'Creating account…' : 'Sign up'}

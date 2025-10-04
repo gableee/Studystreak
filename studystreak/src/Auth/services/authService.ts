@@ -1,4 +1,5 @@
 // authService - API calls for authentication (login, signup, logout, etc.)
+import { apiClient } from '@/lib/apiClient';
 import { supabase } from '@/lib/supabaseClient';
 
 type OAuthProvider = 'facebook' | 'google';
@@ -8,21 +9,35 @@ type UserMetadata = {
   first_name?: string;
   last_name?: string;
   username?: string;
+  birthday?: string;
+  age?: number;
   // Add other optional fields you might use
 };
 
 export const authService = {
-  signUp: (email: string, password: string, userData?: UserMetadata) =>
-    supabase.auth.signUp({ 
-      email, 
+  signUp: async (email: string, password: string, userData?: UserMetadata) => {
+    const payload = {
+      email,
       password,
-      options: {
-        data: userData
-      }
-    }),
+      data: userData ?? undefined,
+    };
+    return apiClient.post('/api/auth/signup', payload);
+  },
 
-  signInWithPassword: (email: string, password: string) =>
-    supabase.auth.signInWithPassword({ email, password }),
+  signInWithPassword: async (email: string, password: string) => {
+    const response = await apiClient.post<{ access_token: string; refresh_token: string }>(
+      '/api/auth/signin',
+      { email, password },
+    );
+
+    const { data, error } = await supabase.auth.setSession({
+      access_token: response.access_token,
+      refresh_token: response.refresh_token,
+    });
+
+    if (error) throw error;
+    return data.session ?? null;
+  },
 
   signInWithOAuth: (provider: OAuthProvider, redirectTo?: string) =>
     supabase.auth.signInWithOAuth({

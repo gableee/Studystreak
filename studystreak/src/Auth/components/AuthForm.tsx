@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '@/lib/supabaseClient'
+import { authService } from '../services/authService'
 import SocialLoginButton from './SocialLoginButton'
 
 const AuthForm: React.FC = () => {
@@ -16,14 +16,18 @@ const AuthForm: React.FC = () => {
     e.preventDefault()
     setError(null)
     setIsSubmitting(true)
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-    setIsSubmitting(false)
-    if (signInError) {
-      setError(signInError.message)
-      return
-    }
-    if (data.session) {
+    try {
+      const session = await authService.signInWithPassword(email, password)
+      setIsSubmitting(false)
+      if (!session) {
+        setError('Unable to start session')
+        return
+      }
       navigate('/dashboard', { replace: true })
+    } catch (signInErr: unknown) {
+      setIsSubmitting(false)
+      const message = signInErr instanceof Error ? signInErr.message : 'Failed to sign in'
+      setError(message)
     }
   }
 

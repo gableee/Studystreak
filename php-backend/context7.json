@@ -1,0 +1,7 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "StudyStreak PHP Backend",
+  "folders": ["docs"],
+  "excludeFiles": [],
+  "rules": ["Index OpenAPI contracts in docs/"]
+}
