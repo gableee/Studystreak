@@ -12,7 +12,7 @@ type UserMetadata = {
   birthday?: string;
   age?: number;
   email?: string;
-  // Add other optional fields you might use
+  //  other optional fields
 };
 
 export const authService = {

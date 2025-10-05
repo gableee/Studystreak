@@ -6,5 +6,8 @@ node_modules/
 .env
 .DS_Store
 
+#md files
+status.md
+todo.md
 # VS Code MCP local secrets
 .vscode/.env.local
