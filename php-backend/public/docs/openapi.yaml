@@ -2,24 +2,30 @@ openapi: 3.0.3
 info:
   title: StudyStreak PHP backend API
   version: "1.0.0"
-  description: Minimal contract for the /api/todos endpoints used by StudyStreak frontend.
+  description: >-
+    Minimal contract for the /api/todos endpoints consumed by the StudyStreak
+    frontend.
 servers:
   - url: https://studystreak-backend.onrender.com
+    description: Production deployment
   - url: http://localhost:8080
+    description: Local development server
 paths:
   /api/todos:
     get:
       summary: List todos
-      description: Returns a list of todos. Optional query param `user_id` filters by owner.
+      description: >-
+        Returns a list of todos. Optional `user_id` query parameter filters the
+        result set by owner.
       parameters:
         - in: query
           name: user_id
           schema:
             type: integer
-          description: Filter todos by user id
+          description: Filter todos by owner id
       responses:
         '200':
-          description: A JSON array of todos
+          description: Successful response containing a JSON array of todos
           content:
             application/json:
               schema:
@@ -27,10 +33,12 @@ paths:
                 items:
                   $ref: '#/components/schemas/Todo'
         '401':
-          description: Unauthorized
+          description: Unauthorized – missing or invalid bearer token
     post:
       summary: Create a todo
-      description: Create a new todo. Requires Authorization: Bearer <user_jwt> header.
+      description: >-
+        Create a new todo. Requires an `Authorization: Bearer <user_jwt>` header
+        with a valid Supabase user JWT.
       requestBody:
         required: true
         content:
@@ -41,13 +49,13 @@ paths:
         - bearerAuth: []
       responses:
         '201':
-          description: Created - returns the created todo representation
+          description: Created – returns the newly created todo representation
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Todo'
         '401':
-          description: Unauthorized
+          description: Unauthorized – missing or invalid bearer token
 components:
   securitySchemes:
     bearerAuth:
@@ -57,23 +65,38 @@ components:
   schemas:
     Todo:
       type: object
+      required:
+        - id
+        - title
+        - user_id
+        - completed
       properties:
         id:
           type: integer
+          example: 42
         title:
           type: string
+          example: Finish TypeScript homework
         user_id:
           type: integer
+          example: 123
         completed:
           type: boolean
-      required: [id, title, user_id, completed]
+          example: false
     NewTodo:
       type: object
+      required:
+        - title
+        - user_id
       properties:
         title:
           type: string
+          example: Finish TypeScript homework
         user_id:
           type: integer
+          description: Supabase auth user id associated with the todo
+          example: 123
         completed:
           type: boolean
-      required: [title, user_id]
+          description: Optional initial completion state (defaults to false)
+          example: false
