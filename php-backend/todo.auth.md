@@ -100,7 +100,7 @@ Use this file to track progress on the PHP auth migration. Start with the first 
 	- Purpose: Replace direct superglobal use in `public/index.php` and controllers; enforce auth for user-scoped endpoints.
 	- Acceptance: `TodoController::index` and `create` require auth and receive user id from context to filter/insert rows.
 
-- [ ] 6) Frontend API client (`studystreak/src/lib/apiClient.ts`)
+- [x] 6) Frontend API client (`studystreak/src/lib/apiClient.ts`)
 	- Purpose: Attach Supabase access token automatically to requests and handle 401 refresh/retry logic.
 	- Acceptance: Frontend calls backend endpoints using `apiClient` and includes fresh tokens.
 

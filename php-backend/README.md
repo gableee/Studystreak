@@ -9,6 +9,9 @@ Create `.env` based on `.env.example` and fill in the following values:
 - `SUPABASE_URL` – your Supabase project URL (e.g. `https://xyzcompany.supabase.co`).
 - `SUPABASE_ANON_KEY` – anon/public API key (used for REST queries).
 - `SUPABASE_SERVICE_ROLE_KEY` – optional service key for privileged server-side flows.
+- `API_ALLOWED_ORIGINS` – comma-separated list of frontend origins permitted to call this API (e.g. `http://localhost:5173,https://app.example.com`).
+
+For production, be sure to include the fully-qualified Vercel URL (and any custom domains) in `API_ALLOWED_ORIGINS` or requests will be rejected with `403 Origin not allowed`.
 
 ### Running with Docker (recommended)
 

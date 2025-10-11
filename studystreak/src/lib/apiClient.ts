@@ -22,7 +22,28 @@ export class ApiError extends Error {
 }
 
 const DEFAULT_BASE_URL = 'http://localhost:8080';
-const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') || DEFAULT_BASE_URL;
+
+function resolveApiBaseUrl(): string {
+  const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim();
+
+  if (rawBaseUrl && rawBaseUrl !== '') {
+    return rawBaseUrl.replace(/\/$/, '');
+  }
+
+  if (import.meta.env.PROD) {
+    throw new Error(
+      'VITE_API_BASE_URL is not defined. Set it to your backend URL in the deployment environment.'
+    );
+  }
+
+  console.warn(
+    '[apiClient] Falling back to local API at http://localhost:8080 because VITE_API_BASE_URL is not set.'
+  );
+
+  return DEFAULT_BASE_URL;
+}
+
+const apiBaseUrl = resolveApiBaseUrl();
 
 async function getAccessToken(): Promise<string | null> {
   const { data, error } = await supabase.auth.getSession();
