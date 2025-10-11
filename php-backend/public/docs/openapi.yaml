@@ -4,6 +4,7 @@ info:
   version: "1.0.0"
   description: Minimal contract for the /api/todos endpoints used by StudyStreak frontend.
 servers:
+  - url: https://studystreak-backend.onrender.com
   - url: http://localhost:8080
 paths:
   /api/todos:
@@ -29,7 +30,7 @@ paths:
           description: Unauthorized
     post:
       summary: Create a todo
-      description: Create a new todo. Requires Authorization: Bearer &lt;user_jwt&gt; header.
+      description: Create a new todo. Requires Authorization: Bearer <user_jwt> header.
       requestBody:
         required: true
         content:

@@ -42,3 +42,8 @@ php -S 127.0.0.1:8080 -t public
 
 - `GET /api/todos?user_id=123`
 - `POST /api/todos` (requires `Authorization: Bearer <user_jwt>`)
+
+### API documentation
+
+- Interactive Swagger UI is available at `GET /docs` once the server is running (Render URL: `https://studystreak-backend.onrender.com/docs`).
+- The underlying OpenAPI schema is served at `/docs/openapi.yaml` and lives in `public/docs/openapi.yaml` within this repo.

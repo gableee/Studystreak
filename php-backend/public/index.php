@@ -4,6 +4,18 @@ declare(strict_types=1);
 // Quick health probe responder: respond immediately to /health (and /) so platform
 // health checks succeed even if autoload or env is not yet available during deploy.
 $probePath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
+if ($probePath === '/docs') {
+  header('Content-Type: text/html; charset=UTF-8');
+  readfile(__DIR__ . '/docs/index.html');
+  exit;
+}
+
+if ($probePath === '/docs/openapi.yaml') {
+  header('Content-Type: application/yaml; charset=UTF-8');
+  readfile(__DIR__ . '/docs/openapi.yaml');
+  exit;
+}
+
 if ($probePath === '/health' || $probePath === '/') {
   header('Content-Type: application/json');
   echo json_encode(['status' => 'ok']);
@@ -39,7 +51,7 @@ header('Vary: Origin');
 
 // Quick path: if this is the health endpoint, allow any origin so platform probes succeed.
 $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
-if ($requestPath === '/health' || $requestPath === '/') {
+if ($requestPath === '/health' || $requestPath === '/' || str_starts_with($requestPath, '/docs')) {
   header('Access-Control-Allow-Origin: *');
   header('Access-Control-Allow-Headers: Content-Type, Authorization');
   header('Access-Control-Allow-Methods: GET, POST, OPTIONS');

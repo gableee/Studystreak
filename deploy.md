@@ -77,6 +77,8 @@ Tips:
    Expected output: `{ status = ok, routes = [/api/todos] }`.
 4. If you receive a `403 Origin not allowed`, double-check `API_ALLOWED_ORIGINS` and redeploy.
 
+Once the deploy succeeds, the interactive API docs are available at `https://studystreak-backend.onrender.com/docs`.
+
 ---
 
 ## 5. Connect the frontend (Vercel)
