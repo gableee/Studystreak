@@ -1,6 +1,15 @@
 <?php
 declare(strict_types=1);
 
+// Quick health probe responder: respond immediately to /health (and /) so platform
+// health checks succeed even if autoload or env is not yet available during deploy.
+$probePath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
+if ($probePath === '/health' || $probePath === '/') {
+  header('Content-Type: application/json');
+  echo json_encode(['status' => 'ok']);
+  exit;
+}
+
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use App\Config\SupabaseConfig;
@@ -23,27 +32,40 @@ $todoController = new TodoController($config);
 $authController = new AuthController($supabaseAuth);
 
 // Basic CORS (dev) - adjust origin in production
+// Allow the health endpoint to be checked by probes that do not send an Origin header.
 $origin = $_SERVER['HTTP_ORIGIN'] ?? null;
 $allowedOrigins = $config->getAllowedOrigins();
 header('Vary: Origin');
 
-if ($origin !== null && $config->isOriginAllowed($origin)) {
-  header('Access-Control-Allow-Origin: ' . $origin);
-} elseif ($allowedOrigins === []) {
-  // No allowlist configured, assume local development
-  header('Access-Control-Allow-Origin: http://localhost:5173');
+// Quick path: if this is the health endpoint, allow any origin so platform probes succeed.
+$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
+if ($requestPath === '/health' || $requestPath === '/') {
+  header('Access-Control-Allow-Origin: *');
+  header('Access-Control-Allow-Headers: Content-Type, Authorization');
+  header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+  if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+  }
 } else {
-  header('Content-Type: application/json');
-  http_response_code(403);
-  echo json_encode(['error' => 'Origin not allowed']);
-  exit;
-}
+  if ($origin !== null && $config->isOriginAllowed($origin)) {
+    header('Access-Control-Allow-Origin: ' . $origin);
+  } elseif ($allowedOrigins === []) {
+    // No allowlist configured, assume local development
+    header('Access-Control-Allow-Origin: http://localhost:5173');
+  } else {
+    header('Content-Type: application/json');
+    http_response_code(403);
+    echo json_encode(['error' => 'Origin not allowed']);
+    exit;
+  }
 
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-  http_response_code(204);
-  exit;
+  header('Access-Control-Allow-Headers: Content-Type, Authorization');
+  header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+  if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+  }
 }
 
 // Simple routing
