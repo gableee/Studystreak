@@ -8,7 +8,7 @@ Create a `.env.local` (or copy from `.env.example`) and set the following values
 
 - `VITE_SUPABASE_URL` – Supabase project URL.
 - `VITE_SUPABASE_ANON_KEY` – Supabase anon key used by the client SDK.
-- `VITE_API_BASE_URL` – **Required in production.** Points to the publicly reachable PHP backend (e.g. `https://api.example.com`).
+- `VITE_API_BASE_URL` – **Required in production.** Set this to `https://studystreak-backend.onrender.com` (or your custom domain once you add one). Use `http://localhost:8080` only when running the PHP backend locally.
 
 During local development the frontend falls back to `http://localhost:8080` if `VITE_API_BASE_URL` is omitted, but production builds will now throw on startup when the value is missing.
 
@@ -16,7 +16,7 @@ During local development the frontend falls back to `http://localhost:8080` if `
 
 1. Open your Vercel project → **Settings → Environment Variables**.
 2. Add the three variables above for each environment (`Production`, `Preview`, `Development`).
-3. For `VITE_API_BASE_URL`, supply the HTTPS URL that fronts your PHP backend (for example the domain bound to your Docker host, Fly.io app, or reverse proxy).
+3. For `VITE_API_BASE_URL`, paste `https://studystreak-backend.onrender.com` (or your future custom domain pointing to the Render service).
 4. Trigger a redeploy so the build picks up the new values.
 
 ## Coordinating with the PHP backend

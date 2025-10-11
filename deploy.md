@@ -20,7 +20,7 @@ This document walks through everything needed to ship the StudyStreak PHP backen
 
 1. **Update `.env` (local reference file)** – verify `API_ALLOWED_ORIGINS` contains every frontend origin you plan to support, for example:
    ```bash
-   API_ALLOWED_ORIGINS=http://localhost:5173,https://study-streak.vercel.app,https://app.yourdomain.com
+   API_ALLOWED_ORIGINS=http://localhost:5173,https://studystreak-peach.vercel.app,https://app.yourdomain.com
    ```
 2. **Run backend tests/build locally** (optional but recommended):
    ```powershell
@@ -58,7 +58,7 @@ In the **Environment** panel for the service, add the following key/value pairs:
 | `SUPABASE_URL` | `https://<your-project>.supabase.co` | Same as local |
 | `SUPABASE_ANON_KEY` | `<anon key>` | Safe to expose to the backend |
 | `SUPABASE_SERVICE_ROLE_KEY` | `<service role key>` | **Never** put this in the frontend |
-| `API_ALLOWED_ORIGINS` | `http://localhost:5173,https://study-streak.vercel.app,https://app.yourdomain.com` | Include every frontend origin |
+| `API_ALLOWED_ORIGINS` | `http://localhost:5173,https://studystreak-peach.vercel.app,https://app.yourdomain.com` | Include every frontend origin |
 
 Tips:
 - You can add/update env vars at any time; Render will prompt you to redeploy for changes to take effect.
@@ -85,7 +85,7 @@ Tips:
 2. Add or update the following variables in all environments (Production, Preview, Development):
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
-   - `VITE_API_BASE_URL` = the Render URL from step 4 (or your custom domain once added).
+   - `VITE_API_BASE_URL` = `https://studystreak-backend.onrender.com` (or your custom domain once you map one).
 3. Trigger a redeploy (e.g., by clicking **Deploy** in Vercel or pushing a trivial commit) so the build picks up the new values.
 4. After the deploy finishes, open the Production site and verify in DevTools → Network tab that API calls target the Render URL and return `200`.
 
