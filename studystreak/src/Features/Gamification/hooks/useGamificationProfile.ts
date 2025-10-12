@@ -4,13 +4,22 @@ import { gamificationService, initializeUserTimezone } from '../services/gamific
 import type { GamificationProfile } from '../types/gamification'
 
 type RefreshListener = () => void
+type ProfileUpdateListener = (profile: GamificationProfile) => void
 
 const refreshListeners = new Set<RefreshListener>()
+const profileUpdateListeners = new Set<ProfileUpdateListener>()
 
 const subscribeToRefresh = (listener: RefreshListener) => {
   refreshListeners.add(listener)
   return () => {
     refreshListeners.delete(listener)
+  }
+}
+
+const subscribeToProfileUpdate = (listener: ProfileUpdateListener) => {
+  profileUpdateListeners.add(listener)
+  return () => {
+    profileUpdateListeners.delete(listener)
   }
 }
 
@@ -24,8 +33,22 @@ const broadcastRefresh = () => {
   })
 }
 
+const broadcastProfileUpdate = (profile: GamificationProfile) => {
+  profileUpdateListeners.forEach((listener) => {
+    try {
+      listener(profile)
+    } catch (error) {
+      console.debug('[useGamificationProfile] profile update listener failed', error)
+    }
+  })
+}
+
 export const triggerGamificationProfileRefresh = () => {
   broadcastRefresh()
+}
+
+export const updateGamificationProfile = (profile: GamificationProfile) => {
+  broadcastProfileUpdate(profile)
 }
 
 export const useGamificationProfile = () => {
@@ -40,10 +63,16 @@ export const useGamificationProfile = () => {
   }, [])
 
   useEffect(() => {
-    const unsubscribe = subscribeToRefresh(() => {
+    const unsubscribeRefresh = subscribeToRefresh(() => {
       setRefreshNonce((nonce) => nonce + 1)
     })
-    return unsubscribe
+    const unsubscribeUpdate = subscribeToProfileUpdate((profile) => {
+      setProfile(profile)
+    })
+    return () => {
+      unsubscribeRefresh()
+      unsubscribeUpdate()
+    }
   }, [])
 
   // Refresh profile when a service worker activation finishes (new app version)

@@ -13,7 +13,7 @@ export function StreakTierTooltip({ currentStreak, isActive }: StreakTierTooltip
   }, [currentStreak])
 
   return (
-    <div className="absolute top-full right-0 mt-2 w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+    <div className="fixed md:absolute top-16 md:top-full left-4 right-4 md:left-auto md:right-0 md:mt-2 w-auto md:w-80 max-w-sm md:max-w-none bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200 max-h-[80vh] overflow-y-auto">
       <div className="mb-3">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Streak Tiers</h3>
         <p className="text-xs text-gray-600 dark:text-gray-400">

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '@/Auth/hooks/useAuth'
 import { gamificationService } from '../services/gamificationService'
-import { triggerGamificationProfileRefresh } from './useGamificationProfile'
+import { triggerGamificationProfileRefresh, updateGamificationProfile } from './useGamificationProfile'
 import type { UseStreakSaverResult } from '../types/gamification'
 
 export const useStreakSaver = () => {
@@ -19,6 +19,11 @@ export const useStreakSaver = () => {
 
     try {
   const result = await gamificationService.useStreakSaver(session.access_token)
+      // If the result includes an updated profile, use it immediately
+      if (result.profile) {
+        updateGamificationProfile(result.profile)
+      }
+      // Also trigger a refresh for any other listeners
       triggerGamificationProfileRefresh()
       return result
     } catch (err) {

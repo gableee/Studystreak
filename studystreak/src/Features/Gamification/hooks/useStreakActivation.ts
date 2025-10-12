@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { useAuth } from '@/Auth/hooks/useAuth'
 import { gamificationService } from '../services/gamificationService'
-import { triggerGamificationProfileRefresh } from './useGamificationProfile'
+import { triggerGamificationProfileRefresh, updateGamificationProfile } from './useGamificationProfile'
 import { ensureUserTimezone } from '@/lib/timezone'
 
 type ActivateOptions = {
@@ -38,6 +38,9 @@ export const useStreakActivation = () => {
           timezone,
           studyMinutes,
         })
+        // Immediately update the profile with the fresh data from the response
+        updateGamificationProfile(result.profile)
+        // Also trigger a refresh for any other listeners
         triggerGamificationProfileRefresh()
         return { ok: true as const, result }
       } catch (error) {
