@@ -21,7 +21,7 @@ export class ApiError extends Error {
   }
 }
 
-const DEFAULT_BASE_URL = 'http://localhost:8080';
+const DEFAULT_BASE_URL = 'http://localhost:8181';
 
 function resolveApiBaseUrl(): string {
   const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim();
@@ -37,7 +37,7 @@ function resolveApiBaseUrl(): string {
   }
 
   console.warn(
-    '[apiClient] Falling back to local API at http://localhost:8080 because VITE_API_BASE_URL is not set.'
+  '[apiClient] Falling back to local API at http://localhost:8181 because VITE_API_BASE_URL is not set.'
   );
 
   return DEFAULT_BASE_URL;

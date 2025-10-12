@@ -12,10 +12,12 @@ import { CycleTracker } from './components/CycleTracker';
 import { PomodoroSettings } from './components/PomodoroSettings';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../Auth/hooks/useAuth';
+import { useStreakActivation } from '@/Features/Gamification/hooks/useStreakActivation';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 function PomodoroInner() {
   const { user } = useAuth();
+  const { activate: activateStreak } = useStreakActivation();
   const pomodoro = usePomodoroContext();
   // Assert provider exists (RootLayout should provide it). Use `p` shorthand so TS sees non-null usage.
   const p = pomodoro!;
@@ -105,8 +107,8 @@ function PomodoroInner() {
   }, [user]);
 
   const handleEndSession = useCallback(async () => {
-  const sessionData = await p.endSession();
-  if (!sessionData || !user) return;
+    const sessionData = await p.endSession();
+    if (!sessionData || !user) return;
 
     setSaveStatus('saving');
     setErrorMessage(null);
@@ -115,6 +117,7 @@ function PomodoroInner() {
       if (isSupabaseResult(result) && result.error) throw result.error;
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 3000);
+      void activateStreak({ occurredAt: sessionData.endTime, studyMinutes: sessionData.durationMinutes });
     } catch (err: unknown) {
       console.error('Failed to save session (detailed):', err);
       setSaveStatus('error');
@@ -128,7 +131,7 @@ function PomodoroInner() {
       failedSessions.push({ ...sessionData, userId: user.id });
       localStorage.setItem('failedPomodoros', JSON.stringify(failedSessions));
     }
-  }, [p, user, saveSessionToDb, isSupabaseResult]);
+  }, [p, user, saveSessionToDb, isSupabaseResult, activateStreak]);
 
   const retryFailedSessions = useCallback(async () => {
     if (!user) return;
@@ -137,13 +140,25 @@ function PomodoroInner() {
     for (const session of failedSessions) {
       try {
         const result = await saveSessionToDb(session as Record<string, unknown>, user.id);
-        if (isSupabaseResult(result) && result.error) console.error('Retry insert error:', result.error);
+        if (isSupabaseResult(result) && result.error) {
+          console.error('Retry insert error:', result.error);
+          continue;
+        }
+        await activateStreak({
+          occurredAt: (session as SessionData).endTime ?? undefined,
+          studyMinutes: (session as SessionData).durationMinutes,
+        });
       } catch (error) {
         console.error('Failed to retry session save:', error);
       }
     }
     localStorage.removeItem('failedPomodoros');
-  }, [user, saveSessionToDb, isSupabaseResult]);
+  }, [user, saveSessionToDb, isSupabaseResult, activateStreak]);
+
+  const handleStartSession = useCallback(() => {
+    p.startSession();
+    void activateStreak({ occurredAt: new Date().toISOString(), studyMinutes: 0 });
+  }, [p, activateStreak]);
 
   useEffect(() => {
     if (user) retryFailedSessions();
@@ -180,7 +195,7 @@ function PomodoroInner() {
       <div className="mb-6">
         <Controls
           status={p.status}
-          onStart={p.startSession}
+          onStart={handleStartSession}
           onPause={p.pauseTimer}
           onResume={p.resumeTimer}
           onStop={p.stopTimer}
