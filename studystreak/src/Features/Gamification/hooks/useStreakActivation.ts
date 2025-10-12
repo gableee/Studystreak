@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { useAuth } from '@/Auth/hooks/useAuth'
 import { gamificationService } from '../services/gamificationService'
 import { triggerGamificationProfileRefresh } from './useGamificationProfile'
+import { ensureUserTimezone } from '@/lib/timezone'
 
 type ActivateOptions = {
   occurredAt?: string
@@ -31,6 +32,7 @@ export const useStreakActivation = () => {
       const timezone = timezoneOverride ?? deriveTimezone()
 
       try {
+        await ensureUserTimezone()
         const result = await gamificationService.activateStreak(session.access_token, {
           occurredAt,
           timezone,
