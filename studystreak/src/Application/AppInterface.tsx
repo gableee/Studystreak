@@ -29,11 +29,12 @@ type StreakTier = {
 }
 
 const STREAK_TIERS: StreakTier[] = [
-  { min: 0, max: 9, color: 'text-gray-400', glow: 'shadow-gray-400/20', animation: '' },
-  { min: 10, max: 29, color: 'text-orange-500', glow: 'shadow-orange-500/40', animation: 'animate-pulse' },
-  { min: 30, max: 49, color: 'text-rose-500', glow: 'shadow-rose-500/50', animation: 'animate-pulse' },
-  { min: 50, max: 99, color: 'text-purple-500', glow: 'shadow-purple-500/60', animation: 'animate-pulse' },
-  { min: 100, max: Infinity, color: 'text-yellow-400', glow: 'shadow-yellow-400/70', animation: 'animate-pulse' },
+  { min: 0, max: 0, color: 'text-gray-400', glow: 'shadow-gray-400/20', animation: '' },
+  { min: 1, max: 9, color: 'text-red-400', glow: 'shadow-red-400/30', animation: '' },
+  { min: 10, max: 29, color: 'text-red-500', glow: 'shadow-red-500/40', animation: 'animate-pulse' },
+  { min: 30, max: 49, color: 'text-red-600', glow: 'shadow-red-600/50', animation: 'animate-pulse' },
+  { min: 50, max: 99, color: 'text-red-700', glow: 'shadow-red-700/60', animation: 'animate-pulse' },
+  { min: 100, max: Infinity, color: 'text-orange-500', glow: 'shadow-orange-500/70', animation: 'animate-pulse' },
 ]
 
 const SYSTEM_TIMEZONE = (() => {
@@ -51,20 +52,22 @@ function getStreakTier(streak: number): StreakTier {
 
 function getStreakBorderClass(colorClass: string): string {
   const colorMap: { [key: string]: string } = {
+    'text-red-400': 'border-red-400/30 bg-red-400/10',
+    'text-red-500': 'border-red-500/30 bg-red-500/10',
+    'text-red-600': 'border-red-600/30 bg-red-600/10',
+    'text-red-700': 'border-red-700/30 bg-red-700/10',
     'text-orange-500': 'border-orange-500/30 bg-orange-500/10',
-    'text-rose-500': 'border-rose-500/30 bg-rose-500/10',
-    'text-purple-500': 'border-purple-500/30 bg-purple-500/10',
-    'text-yellow-400': 'border-yellow-400/30 bg-yellow-400/10',
   }
   return colorMap[colorClass] || 'border-gray-400/20 bg-gray-400/5'
 }
 
 function getStreakBackgroundClass(colorClass: string): string {
   const colorMap: { [key: string]: string } = {
+    'text-red-400': 'bg-gradient-to-br from-red-300 to-red-500',
+    'text-red-500': 'bg-gradient-to-br from-red-400 to-red-600',
+    'text-red-600': 'bg-gradient-to-br from-red-500 to-red-700',
+    'text-red-700': 'bg-gradient-to-br from-red-600 to-red-800',
     'text-orange-500': 'bg-gradient-to-br from-orange-400 to-orange-600',
-    'text-rose-500': 'bg-gradient-to-br from-rose-400 to-rose-600',
-    'text-purple-500': 'bg-gradient-to-br from-purple-400 to-purple-600',
-    'text-yellow-400': 'bg-gradient-to-br from-yellow-400 to-yellow-600',
   }
   return colorMap[colorClass] || 'bg-gray-300 dark:bg-gray-700'
 }
