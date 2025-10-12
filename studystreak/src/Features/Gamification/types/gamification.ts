@@ -1,13 +1,19 @@
-export type GamificationProfile = {
-  username: string | null
-  streakCount: number
-  streakLongest: number
-  streakLastActiveAt: string | null
-  streakTimezone: string | null
-  totalStudyTimeMinutes: number
-  level: number
-  experiencePoints: number
-  createdAt: string | null
+export interface GamificationProfile {
+  level: number;
+  experiencePoints: number;
+  streakCount: number;
+  streakLongest: number;
+  totalStudyTimeMinutes: number;
+  streakLastActiveAt: string | null;
+  streakTimezone: string | null;
+  username: string | null;
+  isStreakActive: boolean;
+  
+  // Streak saver fields
+  streakSaversAvailable: number;
+  streakSaversUsed: number;
+  streakSaversMaxPerMonth: number;
+  streakSaversLastReset: string | null;
 }
 
 export type GamificationApiResponse = {
@@ -20,6 +26,11 @@ export type GamificationApiResponse = {
   level?: number | null
   experience_points?: number | null
   created_at?: string | null
+  streak_savers_available?: number | null
+  streak_savers_used?: number | null
+  streak_savers_max_per_month?: number | null
+  streak_savers_last_reset?: string | null
+  is_streak_active?: boolean | null
 }
 
 export type StreakActivationPayload = {
@@ -34,4 +45,12 @@ export type StreakActivationResult = {
   streakWasIncremented: boolean
   streakWasReset: boolean
   studyMinutesApplied: number
+  streakSaverWasUsed: boolean
+}
+
+export type UseStreakSaverResult = {
+  success: boolean
+  message: string
+  saversRemaining?: number
+  profile?: GamificationProfile
 }

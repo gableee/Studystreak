@@ -16,6 +16,8 @@ import { Flame, Sparkles, Star, Menu, X, LogOut } from 'lucide-react'
 import { IconContainer } from './components/IconContainer';
 import { ThemeToggle } from './components/LightMode';
 import { useAuth } from '@/Auth/hooks/useAuth'
+import { StreakSaverDisplay } from '@/Features/Gamification/components/StreakSaverDisplay'
+import { StreakTierTooltip } from '@/Features/Gamification/components/StreakTierTooltip'
 import { supabase } from '@/lib/supabaseClient'
 import { profileService, type UserProfile } from '@/Auth/services/profileService';
 import { useGamificationProfile } from '@/Features/Gamification/hooks/useGamificationProfile'
@@ -103,6 +105,7 @@ function getDateKey(date: Date, timeZone: string): string {
 
 function hasStudiedToday(profile: ReturnType<typeof useGamificationProfile>['profile']): boolean {
   if (!profile) return false
+  if (profile.isStreakActive) return true
 
   const lastActiveAt = parseTimestamp(profile.streakLastActiveAt)
   if (!lastActiveAt) return false
@@ -136,6 +139,7 @@ export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   const { profile: gamificationProfile, loading: gamificationLoading } = useGamificationProfile()
   const isAuthenticated = Boolean(session)
   const numberFormatter = useMemo(() => new Intl.NumberFormat(), [])
+  const [showStreakTooltip, setShowStreakTooltip] = useState(false)
 
   const gamificationStats = useMemo(() => {
     if (!isAuthenticated || !gamificationProfile) return null
@@ -209,40 +213,57 @@ export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
               </div>
 
               {/* Streak - TikTok style with tier colors */}
-              <div
-                className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 md:px-3 md:py-2 transition-all duration-300 ${
-                  gamificationStats.isStreakActive
-                    ? getStreakBorderClass(gamificationStats.streakTier.color)
-                    : 'border-gray-400/20 bg-gray-400/5 dark:border-gray-600/20 dark:bg-gray-600/10'
-                }`}
-              >
+              <div className="relative">
                 <div
-                  className={`flex h-6 w-6 md:h-7 md:w-7 items-center justify-center rounded-md transition-all duration-300 ${
+                  className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 md:px-3 md:py-2 transition-all duration-300 cursor-pointer hover:scale-105 ${
                     gamificationStats.isStreakActive
-                      ? getStreakBackgroundClass(gamificationStats.streakTier.color) + ` ${gamificationStats.streakTier.glow} ${gamificationStats.streakTier.animation}`
-                      : 'bg-gray-300 dark:bg-gray-700'
+                      ? getStreakBorderClass(gamificationStats.streakTier.color)
+                      : 'border-gray-400/20 bg-gray-400/5 dark:border-gray-600/20 dark:bg-gray-600/10'
                   }`}
+                  onMouseEnter={() => setShowStreakTooltip(true)}
+                  onMouseLeave={() => setShowStreakTooltip(false)}
+                  onClick={() => setShowStreakTooltip((prev) => !prev)}
                 >
-                  <Flame
-                    size={14}
-                    className={`${
+                  <div
+                    className={`flex h-6 w-6 md:h-7 md:w-7 items-center justify-center rounded-md transition-all duration-300 ${
                       gamificationStats.isStreakActive
-                        ? 'text-white drop-shadow-lg'
+                        ? getStreakBackgroundClass(gamificationStats.streakTier.color) + ` ${gamificationStats.streakTier.glow} ${gamificationStats.streakTier.animation}`
+                        : 'bg-gray-300 dark:bg-gray-700'
+                    }`}
+                  >
+                    <Flame
+                      size={14}
+                      className={`${
+                        gamificationStats.isStreakActive
+                          ? 'text-white drop-shadow-lg'
+                          : 'text-gray-500 dark:text-gray-600'
+                      } transition-colors duration-300`}
+                    />
+                  </div>
+                  <span
+                    className={`text-xs md:text-sm font-bold transition-colors duration-300 ${
+                      gamificationStats.isStreakActive
+                        ? gamificationStats.streakTier.color
                         : 'text-gray-500 dark:text-gray-600'
-                    } transition-colors duration-300`}
-                  />
+                    }`}
+                  >
+                    {gamificationLoading ? '...' : gamificationStats.streak}
+                  </span>
                 </div>
-                <span
-                  className={`text-xs md:text-sm font-bold transition-colors duration-300 ${
-                    gamificationStats.isStreakActive
-                      ? gamificationStats.streakTier.color
-                      : 'text-gray-500 dark:text-gray-600'
-                  }`}
-                >
-                  {gamificationLoading ? '...' : gamificationStats.streak}
-                </span>
+
+                {/* Tooltip */}
+                {showStreakTooltip && (
+                  <StreakTierTooltip
+                    currentStreak={gamificationStats.streak}
+                    isActive={gamificationStats.isStreakActive}
+                  />
+                )}
               </div>
             </div>
+          )}
+
+          {gamificationProfile && (
+            <StreakSaverDisplay profile={gamificationProfile} />
           )}
 
           {/* Theme Toggle */}

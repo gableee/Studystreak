@@ -10,6 +10,7 @@ Create `.env` based on `.env.example` and fill in the following values:
 - `SUPABASE_ANON_KEY` – anon/public API key (used for REST queries).
 - `SUPABASE_SERVICE_ROLE_KEY` – optional service key for privileged server-side flows.
 - `API_ALLOWED_ORIGINS` – comma-separated list of frontend origins permitted to call this API (e.g. `http://localhost:5173,https://app.example.com`).
+- `SUPABASE_STUDY_SESSION_TABLE` – optional override for the Supabase table that stores study sessions (defaults to `studysession`).
 
 For production, be sure to include the fully-qualified Vercel URL (and any custom domains) in `API_ALLOWED_ORIGINS` or requests will be rejected with `403 Origin not allowed`.
 
@@ -40,8 +41,14 @@ php -S 127.0.0.1:8080 -t public
 
 ### Endpoints
 
+- `GET /api/gamification/profile`
+- `POST /api/gamification/streak/activate`
+- `POST /api/gamification/streak/use-saver`
+- `POST /api/gamification/set-timezone`
 - `GET /api/todos?user_id=123`
 - `POST /api/todos` (requires `Authorization: Bearer <user_jwt>`)
+
+Related database helpers for the streak trigger and saver logic can be found in `sql/2025-10-13-streak-saver.sql`.
 
 ### API documentation
 

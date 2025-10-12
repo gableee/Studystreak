@@ -6,6 +6,7 @@ use App\Config\SupabaseConfig;
 use App\Http\JsonResponder;
 use App\Http\Request;
 use GuzzleHttp\Client;
+use DateInterval;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -14,6 +15,7 @@ final class GamificationController
 	private string $supabaseUrl;
 	private string $anonKey;
 	private Client $client;
+	private string $studySessionTable = 'studysession';
 
 	/** @var string[] */
 	private array $profileColumns = [
@@ -26,6 +28,10 @@ final class GamificationController
 		'streak_longest',
 		'streak_last_active_at',
 		'streak_timezone',
+		'streak_savers_available',
+		'streak_savers_used',
+		'streak_savers_max_per_month',
+		'streak_savers_last_reset',
 	];
 
 	public function __construct(SupabaseConfig $config)
@@ -33,6 +39,10 @@ final class GamificationController
 		$this->supabaseUrl = $config->getUrl();
 		$this->anonKey = $config->getAnonKey();
 		$this->client = new Client(['base_uri' => $this->supabaseUrl]);
+		$configuredTable = getenv('SUPABASE_STUDY_SESSION_TABLE');
+		if (is_string($configuredTable) && $configuredTable !== '') {
+			$this->studySessionTable = $configuredTable;
+		}
 	}
 
 	public function getProfile(Request $request): void
@@ -69,111 +79,126 @@ final class GamificationController
 		$body = $request->getBody() ?? [];
 		$occurredAtRaw = is_string($body['occurred_at'] ?? null) ? trim((string)$body['occurred_at']) : null;
 		$timezoneRaw = is_string($body['timezone'] ?? null) ? trim((string)$body['timezone']) : null;
+		$sessionTypeRaw = is_string($body['session_type'] ?? null) ? trim((string)$body['session_type']) : '';
 		$studyMinutes = $this->toInt($body['study_minutes'] ?? ($body['duration_minutes'] ?? 0));
 		if ($studyMinutes < 0) {
 			$studyMinutes = 0;
 		}
 
-		$profile = $this->loadProfile($token, $user->getId());
-		if ($profile === null) {
+		$profileBefore = $this->loadProfile($token, $user->getId());
+		if ($profileBefore === null) {
 			JsonResponder::withStatus(404, ['error' => 'Profile not found']);
 			return;
 		}
 
-		$timezoneName = $this->sanitizeTimezone($timezoneRaw ?? ($profile['streak_timezone'] ?? null));
-		$timezone = new DateTimeZone($timezoneName);
-		$eventInstant = $this->parseTimestamp($occurredAtRaw) ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
-		$eventInstant = $eventInstant->setTimezone(new DateTimeZone('UTC'));
-		$eventLocal = $eventInstant->setTimezone($timezone);
-
-		$lastActiveInstant = $this->parseTimestamp($profile['streak_last_active_at'] ?? null);
-		if ($lastActiveInstant instanceof DateTimeImmutable) {
-			$lastActiveInstant = $lastActiveInstant->setTimezone(new DateTimeZone('UTC'));
-		}
-
-		$shouldUpdateStreakCount = false;
-		$shouldUpdateLastActive = false;
-		$streakIncremented = false;
-		$streakReset = false;
-		$newStreakCount = max(0, $this->toInt($profile['streak_count'] ?? 0));
-
-		if ($lastActiveInstant === null) {
-			$shouldUpdateStreakCount = true;
-			$shouldUpdateLastActive = true;
-			$newStreakCount = max(1, $newStreakCount);
-			$streakIncremented = true;
-		} else {
-			$lastActiveLocal = $lastActiveInstant->setTimezone($timezone);
-			$dayDiff = (int)$lastActiveLocal->diff($eventLocal)->format('%r%a');
-
-			if ($dayDiff < 0) {
-				// Ignore out-of-order events that predate the stored streak day.
-			} elseif ($dayDiff === 0) {
-				// Same day: keep the larger timestamp so progress appears recent.
-				if ($eventInstant > $lastActiveInstant) {
-					$shouldUpdateLastActive = true;
-				}
-				if ($newStreakCount === 0) {
-					$newStreakCount = 1;
-					$shouldUpdateStreakCount = true;
-					$streakIncremented = true;
-				}
-			} elseif ($dayDiff === 1) {
-				$shouldUpdateStreakCount = true;
-				$shouldUpdateLastActive = true;
-				$newStreakCount = max(0, $newStreakCount) + 1;
-				$streakIncremented = true;
-			} else {
-				$shouldUpdateStreakCount = true;
-				$shouldUpdateLastActive = true;
-				$newStreakCount = 1;
-				$streakReset = true;
-			}
-		}
-
-		$updatePayload = [];
-		if ($shouldUpdateLastActive) {
-			$updatePayload['streak_last_active_at'] = $eventInstant->format(DATE_ATOM);
-		}
-		if ($shouldUpdateStreakCount) {
-			$updatePayload['streak_count'] = $newStreakCount;
-			$currentLongest = $this->toInt($profile['streak_longest'] ?? 0);
-			$updatePayload['streak_longest'] = max($currentLongest, $newStreakCount);
-		}
-		if ($studyMinutes > 0) {
-			$updatePayload['total_study_time'] = max(0, $this->toInt($profile['total_study_time'] ?? 0)) + $studyMinutes;
-		}
-		if (($profile['streak_timezone'] ?? null) !== $timezoneName) {
-			$updatePayload['streak_timezone'] = $timezoneName;
-		}
-
-		if ($updatePayload !== []) {
-			[$status, $updatedPayload] = $this->forward('PATCH', '/rest/v1/profiles?id=eq.' . $user->getId(), [
-				'headers' => [
-					'Authorization' => 'Bearer ' . $token,
-					'apikey' => $this->anonKey,
-					'Content-Type' => 'application/json',
-					'Prefer' => 'return=representation',
-				],
-				'json' => $updatePayload,
-			]);
-
-			if ($status >= 400 || !is_array($updatedPayload) || count($updatedPayload) === 0) {
-				JsonResponder::withStatus($status, [
-					'error' => 'Unable to update streak',
-					'details' => $updatedPayload,
-				]);
+		$timezoneName = $this->sanitizeTimezone($timezoneRaw ?? ($profileBefore['streak_timezone'] ?? null));
+		if (($profileBefore['streak_timezone'] ?? null) !== $timezoneName) {
+			if (!$this->updateProfileTimezone($token, $user->getId(), $timezoneName)) {
+				JsonResponder::withStatus(500, ['error' => 'Unable to update timezone']);
 				return;
 			}
+			$profileBefore['streak_timezone'] = $timezoneName;
+		}
 
-			$profile = $this->normalizeProfile($updatedPayload[0]);
+		$eventInstant = $this->parseTimestamp($occurredAtRaw) ?? new DateTimeImmutable('now', new DateTimeZone('UTC'));
+		$eventInstant = $eventInstant->setTimezone(new DateTimeZone('UTC'));
+		$durationSeconds = max(0, $studyMinutes * 60);
+		if ($durationSeconds > 365 * 24 * 60 * 60) {
+			$durationSeconds = 365 * 24 * 60 * 60;
+		}
+		$sessionEnd = $durationSeconds > 0
+			? $eventInstant->add(new DateInterval('PT' . $durationSeconds . 'S'))
+			: $eventInstant;
+
+		$sessionType = $sessionTypeRaw !== '' ? $sessionTypeRaw : 'manual';
+		$sessionPayload = [
+			'user_id' => $user->getId(),
+			'session_type' => $sessionType,
+			'duration' => $durationSeconds,
+			'time_started' => $eventInstant->format(DATE_ATOM),
+			'time_end' => $sessionEnd->format(DATE_ATOM),
+		];
+
+		[$sessionStatus, $sessionResponse] = $this->forward('POST', '/rest/v1/' . $this->studySessionTable, [
+			'headers' => [
+				'Authorization' => 'Bearer ' . $token,
+				'apikey' => $this->anonKey,
+				'Content-Type' => 'application/json',
+				'Prefer' => 'return=representation',
+			],
+			'json' => $sessionPayload,
+		]);
+
+		if ($sessionStatus >= 400) {
+			JsonResponder::withStatus($sessionStatus, [
+				'error' => 'Unable to record study session',
+				'details' => $sessionResponse,
+			]);
+			return;
+		}
+
+		$profileAfter = $this->loadProfile($token, $user->getId());
+		if ($profileAfter === null) {
+			JsonResponder::withStatus(500, ['error' => 'Unable to refresh profile']);
+			return;
+		}
+
+		$previousStreak = $this->toInt($profileBefore['streak_count'] ?? 0);
+		$currentStreak = $this->toInt($profileAfter['streak_count'] ?? 0);
+		$streakWasIncremented = $currentStreak > $previousStreak;
+		$streakWasReset = $previousStreak > 0 && $currentStreak === 1 && !$streakWasIncremented;
+		$saversBefore = $this->toInt($profileBefore['streak_savers_available'] ?? 0);
+		$saversAfter = $this->toInt($profileAfter['streak_savers_available'] ?? 0);
+		$streakSaverWasUsed = $saversAfter < $saversBefore;
+
+		JsonResponder::ok([
+			'profile' => $profileAfter,
+			'streak_was_incremented' => $streakWasIncremented,
+			'streak_was_reset' => $streakWasReset,
+			'streak_saver_was_used' => $streakSaverWasUsed,
+			'study_minutes_applied' => $studyMinutes,
+			'session' => $sessionResponse,
+		]);
+	}
+
+	public function useStreakSaver(Request $request): void
+	{
+		/** @var \App\Auth\AuthenticatedUser|null $user */
+		$user = $request->getAttribute('user');
+		$token = (string) $request->getAttribute('access_token');
+
+		if ($user === null || $token === '') {
+			JsonResponder::unauthorized();
+			return;
+		}
+
+		[$status, $rpcPayload] = $this->forward('POST', '/rest/v1/rpc/use_streak_saver', [
+			'headers' => [
+				'Authorization' => 'Bearer ' . $token,
+				'apikey' => $this->anonKey,
+				'Content-Type' => 'application/json',
+			],
+			'json' => new \stdClass(),
+		]);
+
+		if ($status >= 400) {
+			JsonResponder::withStatus($status, [
+				'error' => 'Unable to use streak saver',
+				'details' => $rpcPayload,
+			]);
+			return;
+		}
+
+		$profile = $this->loadProfile($token, $user->getId());
+		if ($profile === null) {
+			JsonResponder::withStatus(500, ['error' => 'Unable to refresh profile']);
+			return;
 		}
 
 		JsonResponder::ok([
+			'success' => ($rpcPayload['success'] ?? null) === true,
+			'payload' => $rpcPayload,
 			'profile' => $profile,
-			'streak_was_incremented' => $streakIncremented,
-			'streak_was_reset' => $streakReset,
-			'study_minutes_applied' => $studyMinutes,
 		]);
 	}
 
@@ -257,6 +282,26 @@ final class GamificationController
 		}
 	}
 
+	private function updateProfileTimezone(string $accessToken, string $userId, string $timezone): bool
+	{
+		$now = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM);
+
+		[$status, $payload] = $this->forward('PATCH', '/rest/v1/profiles?id=eq.' . $userId, [
+			'headers' => [
+				'Authorization' => 'Bearer ' . $accessToken,
+				'apikey' => $this->anonKey,
+				'Content-Type' => 'application/json',
+				'Prefer' => 'return=minimal',
+			],
+			'json' => [
+				'streak_timezone' => $timezone,
+				'updated_at' => $now,
+			],
+		]);
+
+		return $status >= 200 && $status < 300 && (!is_array($payload) || $payload === []);
+	}
+
 	/**
 	 * @return array<string, mixed>|null
 	 */
@@ -289,6 +334,12 @@ final class GamificationController
 	 */
 	private function normalizeProfile(array $record): array
 	{
+		$streakTimezone = $this->sanitizeTimezone($record['streak_timezone'] ?? null);
+		$lastActiveRaw = $record['streak_last_active_at'] ?? null;
+		$lastActiveFormatted = $this->formatTimestamp($lastActiveRaw);
+		$lastResetFormatted = $this->formatTimestamp($record['streak_savers_last_reset'] ?? null);
+		$isActive = $this->isStreakActiveForTimezone($lastActiveRaw, $streakTimezone);
+
 		return [
 			'username' => $record['username'] ?? null,
 			'level' => $this->toInt($record['level'] ?? 0),
@@ -297,8 +348,13 @@ final class GamificationController
 			'streak_longest' => $this->toInt($record['streak_longest'] ?? 0),
 			'total_study_time' => $this->toInt($record['total_study_time'] ?? 0),
 			'created_at' => $this->formatTimestamp($record['created_at'] ?? null),
-			'streak_last_active_at' => $this->formatTimestamp($record['streak_last_active_at'] ?? null),
-			'streak_timezone' => $record['streak_timezone'] ?? null,
+			'streak_last_active_at' => $lastActiveFormatted,
+			'streak_timezone' => $streakTimezone,
+			'streak_savers_available' => max(0, $this->toInt($record['streak_savers_available'] ?? 0)),
+			'streak_savers_used' => max(0, $this->toInt($record['streak_savers_used'] ?? 0)),
+			'streak_savers_max_per_month' => max(0, $this->toInt($record['streak_savers_max_per_month'] ?? 0)),
+			'streak_savers_last_reset' => $lastResetFormatted,
+			'is_streak_active' => $isActive,
 		];
 	}
 
@@ -329,6 +385,25 @@ final class GamificationController
 				return null;
 			}
 		}
+	}
+
+	private function isStreakActiveForTimezone($value, string $timezone): bool
+	{
+		$timestamp = is_string($value) ? $this->parseTimestamp($value) : null;
+		if ($timestamp === null) {
+			return false;
+		}
+
+		try {
+			$tz = new DateTimeZone($timezone);
+		} catch (\Throwable $e) {
+			$tz = new DateTimeZone('UTC');
+		}
+
+		$today = new DateTimeImmutable('now', $tz);
+		$lastActiveLocal = $timestamp->setTimezone($tz);
+
+		return $today->format('Y-m-d') === $lastActiveLocal->format('Y-m-d');
 	}
 
 	private function sanitizeTimezone(?string $timezone): string

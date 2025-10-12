@@ -149,6 +149,14 @@ if ($path === '/api/gamification/streak/activate' && $method === 'POST') {
   exit;
 }
 
+// Gamification route: POST /api/gamification/streak/use-saver (auth required)
+if ($path === '/api/gamification/streak/use-saver' && $method === 'POST') {
+  $authMiddleware->handle($request, function(Request $authedRequest) use ($gamificationController): void {
+    $gamificationController->useStreakSaver($authedRequest);
+  });
+  exit;
+}
+
 // Route: GET /api/todos and POST /api/todos (auth required)
 if ($path === '/api/todos') {
   $authMiddleware->handle($request, function(Request $authedRequest) use ($todoController, $method): void {

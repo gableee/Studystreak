@@ -3,6 +3,7 @@ import type {
   GamificationProfile,
   StreakActivationPayload,
   StreakActivationResult,
+  UseStreakSaverResult,
 } from '../types/gamification'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
@@ -56,17 +57,60 @@ const normalizeTimestamp = (value: unknown): string | null => {
   return Number.isNaN(parsed.getTime()) ? null : isoCandidate
 }
 
+const normalizeTimezone = (value: unknown): string | null => {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  return trimmed ? trimmed : null
+}
+
+const toPositiveInt = (value: unknown): number => {
+  const numeric = toNumber(value, 0)
+  return numeric > 0 ? Math.trunc(numeric) : 0
+}
+
+const getDateKey = (date: Date, timeZone: string): string => {
+  try {
+    return date.toLocaleDateString('en-CA', { timeZone })
+  } catch (error) {
+    console.debug('[gamificationService] Failed to format date key', { error, timeZone })
+    return date.toISOString().split('T')[0]
+  }
+}
+
+const computeIsStreakActive = (timestamp: string | null, timeZone: string | null): boolean => {
+  if (!timestamp) return false
+
+  const parsed = new Date(timestamp)
+  if (Number.isNaN(parsed.getTime())) return false
+
+  const effectiveTimeZone = timeZone && timeZone.trim() ? timeZone : 'UTC'
+  const today = new Date()
+  const todayKey = getDateKey(today, effectiveTimeZone)
+  const lastActiveKey = getDateKey(parsed, effectiveTimeZone)
+
+  return todayKey === lastActiveKey
+}
+
 const normalizeProfile = (payload: GamificationApiResponse | null): GamificationProfile => {
+  const streakTimezone = normalizeTimezone(payload?.streak_timezone) ?? 'UTC'
+  const streakLastActiveAt = normalizeTimestamp(payload?.streak_last_active_at)
+  const isStreakActiveFromApi = typeof payload?.is_streak_active === 'boolean' ? payload.is_streak_active : null
+  const isStreakActive = isStreakActiveFromApi ?? computeIsStreakActive(streakLastActiveAt, streakTimezone)
+
   return {
     username: payload?.username ?? null,
-    streakCount: toNumber(payload?.streak_count),
-    streakLongest: toNumber(payload?.streak_longest),
-    streakLastActiveAt: normalizeTimestamp(payload?.streak_last_active_at),
-    streakTimezone: typeof payload?.streak_timezone === 'string' ? payload.streak_timezone : null,
-    totalStudyTimeMinutes: toNumber(payload?.total_study_time),
     level: Math.max(0, Math.trunc(toNumber(payload?.level))),
     experiencePoints: Math.max(0, Math.round(toNumber(payload?.experience_points))),
-    createdAt: normalizeTimestamp(payload?.created_at),
+    streakCount: toPositiveInt(payload?.streak_count),
+    streakLongest: toPositiveInt(payload?.streak_longest),
+    totalStudyTimeMinutes: toPositiveInt(payload?.total_study_time),
+    streakLastActiveAt,
+    streakTimezone,
+    isStreakActive,
+    streakSaversAvailable: toPositiveInt(payload?.streak_savers_available),
+    streakSaversUsed: toPositiveInt(payload?.streak_savers_used),
+    streakSaversMaxPerMonth: toPositiveInt(payload?.streak_savers_max_per_month ?? 3),
+    streakSaversLastReset: normalizeTimestamp(payload?.streak_savers_last_reset),
   }
 }
 
@@ -168,6 +212,7 @@ export const gamificationService = {
       streak_was_incremented?: unknown
       streak_was_reset?: unknown
       study_minutes_applied?: unknown
+      streak_saver_was_used?: unknown
     }
 
     const normalizedProfile = normalizeProfile(raw.profile ?? null)
@@ -177,6 +222,51 @@ export const gamificationService = {
       streakWasIncremented: Boolean(raw.streak_was_incremented),
       streakWasReset: Boolean(raw.streak_was_reset),
       studyMinutesApplied: toNumber(raw.study_minutes_applied),
+      streakSaverWasUsed: Boolean(raw.streak_saver_was_used),
+    }
+  },
+
+  async useStreakSaver(accessToken: string, signal?: AbortSignal): Promise<UseStreakSaverResult> {
+    const url = buildUrl('/api/gamification/streak/use-saver')
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      signal,
+    })
+
+    if (!response.ok) {
+      const { message } = await extractErrorMessage(response)
+      throw new Error(message)
+    }
+
+    const raw = (await response.json()) as {
+      success?: unknown
+      payload?: {
+        success?: unknown
+        message?: unknown
+        savers_remaining?: unknown
+      } | null
+      profile?: GamificationApiResponse | null
+    }
+
+    const payload = raw.payload ?? {}
+    const message = typeof payload?.message === 'string' ? payload.message : 'Streak saver processed'
+    const saversRemainingCandidate = toNumber(payload?.savers_remaining, Number.NaN)
+    const saversRemaining = Number.isFinite(saversRemainingCandidate) ? Math.max(0, Math.trunc(saversRemainingCandidate)) : undefined
+
+    const profile = raw.profile ? normalizeProfile(raw.profile) : undefined
+
+    const successFromPayload = typeof payload?.success === 'boolean' ? payload.success : undefined
+
+    return {
+      success: typeof raw.success === 'boolean' ? raw.success : Boolean(successFromPayload),
+      message,
+      saversRemaining,
+      profile,
     }
   },
 }
