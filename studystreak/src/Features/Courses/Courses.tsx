@@ -14,9 +14,10 @@
  * @module Features/Courses
  */
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExternalLink } from "lucide-react";
+import { useStreakActivation } from "@/Features/Gamification/hooks/useStreakActivation";
 
 export default function Courses() {
   /**
@@ -24,6 +25,15 @@ export default function Courses() {
    * Key: platform name, Value: boolean indicating if image is loaded
    */
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+  const { activate: activateStreak } = useStreakActivation();
+  const handlePlatformClick = useCallback(
+    (platformName: string) => {
+      console.debug('[Courses] Activating streak from platform click', platformName);
+      void activateStreak({ occurredAt: new Date().toISOString(), studyMinutes: 1 });
+    },
+    [activateStreak],
+  );
+
   
   /**
    * Handler function called when a platform image finishes loading
@@ -130,6 +140,7 @@ export default function Courses() {
                     href={platform.url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() => handlePlatformClick(platform.name)}
                     className="block h-full w-full p-8"
                   >
                     {/* Card content layout structure */}

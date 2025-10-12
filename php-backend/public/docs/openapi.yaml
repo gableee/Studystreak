@@ -8,7 +8,7 @@ info:
 servers:
   - url: https://studystreak-backend.onrender.com
     description: Production deployment
-  - url: http://localhost:8080
+  - url: http://localhost:8181
     description: Local development server
 paths:
   /api/todos:
@@ -56,6 +56,54 @@ paths:
                 $ref: '#/components/schemas/Todo'
         '401':
           description: Unauthorized – missing or invalid bearer token
+  /api/gamification/profile:
+    get:
+      summary: Current user gamification profile
+      description: >-
+        Fetches the authenticated user's gamification stats (level, streak,
+        experience points) from the Supabase `profiles` table.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Gamification profile for the signed-in user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GamificationProfile'
+        '401':
+          description: Unauthorized – missing or invalid bearer token
+        '404':
+          description: Profile not found
+  /api/gamification/streak/activate:
+    post:
+      summary: Record a study activity and update streak
+      description: >-
+        Marks the authenticated user's streak as active for the supplied
+        activity time. The backend will increment or reset the streak based on
+        the user's previous activity and timezone, update the longest streak,
+        and optionally add to the tracked study minutes.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GamificationStreakActivationRequest'
+      responses:
+        '200':
+          description: Updated streak state along with the latest profile summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GamificationStreakActivationResponse'
+        '400':
+          description: Invalid payload
+        '401':
+          description: Unauthorized – missing or invalid bearer token
+        '404':
+          description: Profile not found
 components:
   securitySchemes:
     bearerAuth:
@@ -100,3 +148,87 @@ components:
           type: boolean
           description: Optional initial completion state (defaults to false)
           example: false
+    GamificationProfile:
+      type: object
+      properties:
+        username:
+          type: string
+          nullable: true
+          example: studybuddy
+        streak_count:
+          type: integer
+          nullable: true
+          example: 12
+          description: Consecutive study days tracked by the system
+        total_study_time:
+          type: integer
+          nullable: true
+          example: 540
+          description: Total tracked study time in minutes
+        level:
+          type: integer
+          nullable: true
+          example: 3
+        experience_points:
+          type: integer
+          nullable: true
+          example: 1250
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        streak_longest:
+          type: integer
+          nullable: true
+          example: 25
+          description: Longest streak achieved by the user
+        streak_last_active_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp (UTC) when the streak was last activated
+        streak_timezone:
+          type: string
+          nullable: true
+          example: Asia/Manila
+          description: IANA timezone identifier used for streak calculations
+    GamificationStreakActivationRequest:
+      type: object
+      properties:
+        occurred_at:
+          type: string
+          format: date-time
+          description: ISO timestamp for when the study activity ended (defaults to now)
+        timezone:
+          type: string
+          description: Preferred IANA timezone for streak evaluation (defaults to stored timezone or UTC)
+          example: Asia/Manila
+        study_minutes:
+          type: integer
+          minimum: 0
+          description: Minutes of focused study to add to the cumulative total
+          example: 25
+        duration_minutes:
+          type: integer
+          minimum: 0
+          description: Alias for study_minutes to maintain backwards compatibility
+          example: 25
+    GamificationStreakActivationResponse:
+      type: object
+      required:
+        - profile
+        - streak_was_incremented
+        - streak_was_reset
+        - study_minutes_applied
+      properties:
+        profile:
+          $ref: '#/components/schemas/GamificationProfile'
+        streak_was_incremented:
+          type: boolean
+          description: Indicates whether the streak increased by one
+        streak_was_reset:
+          type: boolean
+          description: Indicates whether the streak was reset to 1 due to a lapse
+        study_minutes_applied:
+          type: integer
+          description: Total minutes applied from the request payload (rounded to an integer)

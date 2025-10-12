@@ -28,6 +28,6 @@ COPY . ./
 # Ensure optimized autoloader after sources are copied
 RUN composer dump-autoload --optimize
 
-EXPOSE 8080
+EXPOSE 8181
 
-CMD ["php", "-d", "variables_order=EGPCS", "-S", "0.0.0.0:8080", "-t", "public"]
+CMD ["php", "-d", "variables_order=EGPCS", "-d", "auto_prepend_file=", "-d", "auto_append_file=", "-S", "0.0.0.0:8181", "-t", "public"]

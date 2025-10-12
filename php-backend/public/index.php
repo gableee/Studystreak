@@ -31,6 +31,8 @@ use App\Auth\SupabaseAuth;
 use App\Controllers\TodoController;
 use App\Controllers\AuthController;
 use App\Middleware\AuthMiddleware;
+use App\Controllers\GamificationController;
+
 
 // Load env
 $dotenvClass = '\\Dotenv\\Dotenv';
@@ -42,6 +44,7 @@ $supabaseAuth = new SupabaseAuth($config->getUrl(), $config->getAnonKey(), $conf
 $authMiddleware = new AuthMiddleware($supabaseAuth);
 $todoController = new TodoController($config);
 $authController = new AuthController($supabaseAuth);
+$gamificationController = new GamificationController($config);
 
 // Basic CORS (dev) - adjust origin in production
 // Allow the health endpoint to be checked by probes that do not send an Origin header.
@@ -86,6 +89,10 @@ $request = new Request();
 $path = $request->getPath();
 $method = $request->getMethod();
 
+// Debug: log incoming requests to aid troubleshooting (method, path, host, origin)
+// This will appear in the PHP built-in server console or platform logs.
+error_log(sprintf('[request] %s %s Host:%s Origin:%s', $method, $path, $_SERVER['HTTP_HOST'] ?? '-', $_SERVER['HTTP_ORIGIN'] ?? '-'));
+
 // deprecated helper replaced by Request::getBearerToken()
 
 // Health route: GET / or /health
@@ -114,6 +121,22 @@ if ($path === '/api/auth/refresh' && $method === 'POST') {
 if ($path === '/api/auth/me' && $method === 'GET') {
   $authMiddleware->handle($request, function(Request $authedRequest) use ($authController): void {
     $authController->me($authedRequest);
+  });
+  exit;
+}
+
+// Gamification route: GET /api/gamification/profile (auth required)
+if ($path === '/api/gamification/profile' && $method === 'GET') {
+  $authMiddleware->handle($request, function(Request $authedRequest) use ($gamificationController): void {
+    $gamificationController->getProfile($authedRequest);
+  });
+  exit;
+}
+
+// Gamification route: POST /api/gamification/streak/activate (auth required)
+if ($path === '/api/gamification/streak/activate' && $method === 'POST') {
+  $authMiddleware->handle($request, function(Request $authedRequest) use ($gamificationController): void {
+    $gamificationController->activateStreak($authedRequest);
   });
   exit;
 }
