@@ -13,7 +13,7 @@ import { PomodoroSettings } from './components/PomodoroSettings';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../Auth/hooks/useAuth';
 import { ensureUserTimezone } from '@/lib/timezone';
-import { triggerGamificationProfileRefresh } from '@/Features/Gamification/hooks/useGamificationProfile';
+import { useStreakActivation } from '@/Features/Gamification/hooks/useStreakActivation';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 function PomodoroInner() {
@@ -24,6 +24,7 @@ function PomodoroInner() {
   const [showSettings, setShowSettings] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { activate: activateStreak } = useStreakActivation();
 
   // Note: don't return early here — hooks must be called in the same order on every render.
   // The page is usually wrapped with PomodoroProvider (RootLayout). If pomodoro is undefined
@@ -116,9 +117,18 @@ function PomodoroInner() {
     try {
       const result = await saveSessionToDb(sessionData, user.id);
       if (isSupabaseResult(result) && result.error) throw result.error;
+
+      const activationResult = await activateStreak({
+        occurredAt: sessionData.endTime ?? new Date().toISOString(),
+        studyMinutes: sessionData.durationMinutes,
+      });
+
+      if (!activationResult.ok) {
+        console.warn('[Pomodoro] Streak activation failed after session save', activationResult.error);
+      }
+
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 3000);
-  triggerGamificationProfileRefresh();
     } catch (err: unknown) {
       console.error('Failed to save session (detailed):', err);
       setSaveStatus('error');
@@ -132,7 +142,7 @@ function PomodoroInner() {
       failedSessions.push({ ...sessionData, userId: user.id });
       localStorage.setItem('failedPomodoros', JSON.stringify(failedSessions));
     }
-  }, [p, user, saveSessionToDb, isSupabaseResult]);
+  }, [p, user, saveSessionToDb, isSupabaseResult, activateStreak]);
 
   const retryFailedSessions = useCallback(async () => {
     if (!user) return;
@@ -146,13 +156,20 @@ function PomodoroInner() {
           console.error('Retry insert error:', result.error);
           continue;
         }
-        triggerGamificationProfileRefresh();
+        const activationResult = await activateStreak({
+          occurredAt: (session as SessionData).endTime ?? new Date().toISOString(),
+          studyMinutes: (session as SessionData).durationMinutes,
+        });
+
+        if (!activationResult.ok) {
+          console.warn('[Pomodoro] Streak activation failed for retried session', activationResult.error);
+        }
       } catch (error) {
         console.error('Failed to retry session save:', error);
       }
     }
     localStorage.removeItem('failedPomodoros');
-  }, [user, saveSessionToDb, isSupabaseResult]);
+  }, [user, saveSessionToDb, isSupabaseResult, activateStreak]);
 
   const handleStartSession = useCallback(() => {
     void ensureUserTimezone();
