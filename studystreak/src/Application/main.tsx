@@ -72,6 +72,13 @@ window.__pwa = {
   }
 };
 
+// When a new service worker takes control, notify the app so it can refresh data
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.dispatchEvent(new CustomEvent('sw-activated'));
+  });
+}
+
 // Detect in-app browsers and suggest opening in external browser
 function isInAppBrowser() {
   const userAgent = navigator.userAgent || '';

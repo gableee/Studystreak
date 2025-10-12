@@ -46,6 +46,19 @@ export const useGamificationProfile = () => {
     return unsubscribe
   }, [])
 
+  // Refresh profile when a service worker activation finishes (new app version)
+  useEffect(() => {
+    const handler = () => {
+      try {
+        broadcastRefresh()
+      } catch (e) {
+        console.debug('[useGamificationProfile] sw-activated handler failed', e)
+      }
+    }
+    window.addEventListener('sw-activated', handler)
+    return () => window.removeEventListener('sw-activated', handler)
+  }, [])
+
   useEffect(() => {
     let isMounted = true
     const controller = new AbortController()

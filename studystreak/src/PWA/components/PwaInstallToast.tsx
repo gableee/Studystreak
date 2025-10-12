@@ -43,10 +43,35 @@ export default function PwaInstallToast() {
         )}
         {updateAvailable && (
           <button
-            onClick={() => {
-              window.__pwa?.updateServiceWorker()
-              // reload to activate new content
-              setTimeout(() => window.location.reload(), 300)
+            onClick={async () => {
+              try {
+                // Request the service worker to update/skip waiting
+                window.__pwa?.updateServiceWorker?.();
+
+                // Wait for the new service worker to take control before reloading
+                let reloaded = false
+                const onControllerChange = () => {
+                  if (reloaded) return
+                  reloaded = true
+                  // small timeout to ensure updated assets are ready
+                  setTimeout(() => window.location.reload(), 50)
+                }
+
+                if ('serviceWorker' in navigator) {
+                  navigator.serviceWorker.addEventListener('controllerchange', onControllerChange)
+                }
+
+                // Fallback: if controllerchange doesn't fire, reload after 2s
+                setTimeout(() => {
+                  if (!reloaded) {
+                    reloaded = true
+                    window.location.reload()
+                  }
+                }, 2000)
+              } catch (err) {
+                console.warn('SW update failed, reloading anyway', err)
+                window.location.reload()
+              }
             }}
             className="px-3 py-1 bg-green-600 text-white rounded"
           >
