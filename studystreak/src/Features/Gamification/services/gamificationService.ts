@@ -12,6 +12,32 @@ const buildUrl = (path: string) => {
   return `${API_BASE_URL}${normalizedPath}`
 }
 
+export const initializeUserTimezone = async (accessToken: string, signal?: AbortSignal) => {
+  try {
+    const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const url = buildUrl('/api/gamification/set-timezone')
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ timezone: userTimeZone }),
+      signal,
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to set timezone')
+    }
+
+    return (await response.json()) as unknown
+  } catch (error) {
+    console.error('Error setting user timezone:', error)
+    throw error
+  }
+}
+
 const toNumber = (value: unknown, fallback = 0): number => {
   if (typeof value === 'number') return Number.isFinite(value) ? value : fallback
   if (typeof value === 'string') {

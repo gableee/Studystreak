@@ -49,10 +49,30 @@ function getStreakTier(streak: number): StreakTier {
   return STREAK_TIERS.find((tier) => streak >= tier.min && streak <= tier.max) ?? STREAK_TIERS[0]
 }
 
+function getStreakBorderClass(colorClass: string): string {
+  const colorMap: { [key: string]: string } = {
+    'text-orange-500': 'border-orange-500/30 bg-orange-500/10',
+    'text-rose-500': 'border-rose-500/30 bg-rose-500/10',
+    'text-purple-500': 'border-purple-500/30 bg-purple-500/10',
+    'text-yellow-400': 'border-yellow-400/30 bg-yellow-400/10',
+  }
+  return colorMap[colorClass] || 'border-gray-400/20 bg-gray-400/5'
+}
+
+function getStreakBackgroundClass(colorClass: string): string {
+  const colorMap: { [key: string]: string } = {
+    'text-orange-500': 'bg-gradient-to-br from-orange-400 to-orange-600',
+    'text-rose-500': 'bg-gradient-to-br from-rose-400 to-rose-600',
+    'text-purple-500': 'bg-gradient-to-br from-purple-400 to-purple-600',
+    'text-yellow-400': 'bg-gradient-to-br from-yellow-400 to-yellow-600',
+  }
+  return colorMap[colorClass] || 'bg-gray-300 dark:bg-gray-700'
+}
+
 function normalizeTimezone(candidate?: string | null): string {
   if (!candidate) return SYSTEM_TIMEZONE
   try {
-    new Intl.DateTimeFormat('en-US', { timeZone: candidate })
+    Intl.DateTimeFormat('en-US', { timeZone: candidate }).format(new Date())
     return candidate
   } catch {
     return SYSTEM_TIMEZONE
@@ -61,43 +81,34 @@ function normalizeTimezone(candidate?: string | null): string {
 
 function parseTimestamp(value?: string | null): Date | null {
   if (!value) return null
-  const trimmed = value.trim()
-  if (!trimmed) return null
-  const isoCandidate = !trimmed.includes('T') && trimmed.includes(' ') ? trimmed.replace(' ', 'T') : trimmed
-  const parsed = new Date(isoCandidate)
-  return Number.isNaN(parsed.getTime()) ? null : parsed
+  try {
+    const date = new Date(value)
+    return isNaN(date.getTime()) ? null : date
+  } catch {
+    return null
+  }
 }
 
-function getDateKey(date: Date, timeZone: string): string | null {
+function getDateKey(date: Date, timeZone: string): string {
   try {
-    const formatter = new Intl.DateTimeFormat('en-CA', {
-      timeZone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    })
-    const parts = formatter.formatToParts(date)
-    const year = parts.find((part) => part.type === 'year')?.value
-    const month = parts.find((part) => part.type === 'month')?.value
-    const day = parts.find((part) => part.type === 'day')?.value
-    if (!year || !month || !day) return null
-    return `${year}-${month}-${day}`
+    return date.toLocaleDateString('en-CA', { timeZone })
   } catch (error) {
-    console.debug('[AppInterface] Failed to derive date key', { error, timeZone })
-    return null
+    console.debug('[AppInterface] Failed to get date key, using UTC', { error, timeZone })
+    return date.toISOString().split('T')[0]
   }
 }
 
 function hasStudiedToday(profile: ReturnType<typeof useGamificationProfile>['profile']): boolean {
   if (!profile) return false
+
   const lastActiveAt = parseTimestamp(profile.streakLastActiveAt)
   if (!lastActiveAt) return false
 
   const timeZone = normalizeTimezone(profile.streakTimezone)
-  const todayKey = getDateKey(new Date(), timeZone)
-  const lastActiveKey = getDateKey(lastActiveAt, timeZone)
+  const today = new Date()
 
-  if (!todayKey || !lastActiveKey) return false
+  const todayKey = getDateKey(today, timeZone)
+  const lastActiveKey = getDateKey(lastActiveAt, timeZone)
 
   return todayKey === lastActiveKey
 }
@@ -198,14 +209,14 @@ export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
               <div
                 className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 md:px-3 md:py-2 transition-all duration-300 ${
                   gamificationStats.isStreakActive
-                    ? `border-${gamificationStats.streakTier.color.split('-')[1]}-500/30 bg-${gamificationStats.streakTier.color.split('-')[1]}-500/10`
+                    ? getStreakBorderClass(gamificationStats.streakTier.color)
                     : 'border-gray-400/20 bg-gray-400/5 dark:border-gray-600/20 dark:bg-gray-600/10'
                 }`}
               >
                 <div
                   className={`flex h-6 w-6 md:h-7 md:w-7 items-center justify-center rounded-md transition-all duration-300 ${
                     gamificationStats.isStreakActive
-                      ? `bg-gradient-to-br from-${gamificationStats.streakTier.color.split('-')[1]}-400 to-${gamificationStats.streakTier.color.split('-')[1]}-600 shadow-lg ${gamificationStats.streakTier.glow} ${gamificationStats.streakTier.animation}`
+                      ? getStreakBackgroundClass(gamificationStats.streakTier.color) + ` ${gamificationStats.streakTier.glow} ${gamificationStats.streakTier.animation}`
                       : 'bg-gray-300 dark:bg-gray-700'
                   }`}
                 >

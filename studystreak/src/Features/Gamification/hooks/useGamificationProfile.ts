@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/Auth/hooks/useAuth'
-import { gamificationService } from '../services/gamificationService'
+import { gamificationService, initializeUserTimezone } from '../services/gamificationService'
 import type { GamificationProfile } from '../types/gamification'
 
 type RefreshListener = () => void
@@ -67,6 +67,7 @@ export const useGamificationProfile = () => {
       }
 
       try {
+        await initializeUserTimezone(session.access_token, controller.signal)
         console.debug('[useGamificationProfile] loading profile', { hasToken: Boolean(session.access_token) })
         const data = await gamificationService.getProfile(session.access_token, controller.signal)
         if (isMounted) {

@@ -133,6 +133,14 @@ if ($path === '/api/gamification/profile' && $method === 'GET') {
   exit;
 }
 
+// Gamification route: POST /api/gamification/set-timezone (auth required)
+if ($path === '/api/gamification/set-timezone' && $method === 'POST') {
+  $authMiddleware->handle($request, function(Request $authedRequest) use ($gamificationController): void {
+    $gamificationController->setTimezone($authedRequest);
+  });
+  exit;
+}
+
 // Gamification route: POST /api/gamification/streak/activate (auth required)
 if ($path === '/api/gamification/streak/activate' && $method === 'POST') {
   $authMiddleware->handle($request, function(Request $authedRequest) use ($gamificationController): void {

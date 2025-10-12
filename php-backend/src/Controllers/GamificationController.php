@@ -177,6 +177,67 @@ final class GamificationController
 		]);
 	}
 
+	public function setTimezone(Request $request): void
+	{
+		/** @var \App\Auth\AuthenticatedUser|null $user */
+		$user = $request->getAttribute('user');
+		$token = (string) $request->getAttribute('access_token');
+
+		if ($user === null || $token === '') {
+			JsonResponder::unauthorized();
+			return;
+		}
+
+		$body = $request->getBody() ?? [];
+		$timezoneRaw = is_string($body['timezone'] ?? null) ? trim((string)$body['timezone']) : null;
+		if ($timezoneRaw === null || $timezoneRaw === '') {
+			JsonResponder::withStatus(400, ['error' => 'Timezone is required']);
+			return;
+		}
+
+		$timezoneName = $this->sanitizeTimezone($timezoneRaw);
+		$profile = $this->loadProfile($token, $user->getId());
+		if ($profile === null) {
+			JsonResponder::withStatus(404, ['error' => 'Profile not found']);
+			return;
+		}
+
+		if (($profile['streak_timezone'] ?? null) === $timezoneName) {
+			JsonResponder::ok([
+				'success' => true,
+				'timezone' => $timezoneName,
+			]);
+			return;
+		}
+
+		$now = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM);
+		[$status, $payload] = $this->forward('PATCH', '/rest/v1/profiles?id=eq.' . $user->getId(), [
+			'headers' => [
+				'Authorization' => 'Bearer ' . $token,
+				'apikey' => $this->anonKey,
+				'Content-Type' => 'application/json',
+				'Prefer' => 'return=representation',
+			],
+			'json' => [
+				'streak_timezone' => $timezoneName,
+				'updated_at' => $now,
+			],
+		]);
+
+		if ($status >= 400 || !is_array($payload) || count($payload) === 0) {
+			JsonResponder::withStatus($status, [
+				'error' => 'Unable to update timezone',
+				'details' => $payload,
+			]);
+			return;
+		}
+
+		JsonResponder::ok([
+			'success' => true,
+			'timezone' => $timezoneName,
+		]);
+	}
+
 	/**
 	 * @return array{int, array<string, mixed>|null}
 	 */
