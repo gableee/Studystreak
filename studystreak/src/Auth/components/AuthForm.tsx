@@ -1,7 +1,7 @@
 // AuthForm component - reusable form component for auth pages
 
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { authService } from '../services/authService'
 import SocialLoginButton from './SocialLoginButton'
 
@@ -132,9 +132,9 @@ const AuthForm: React.FC = () => {
         </div>
 
         <div className="mt-6 text-center text-sm text-white/60">
-          <a href="/forgot-password" className="hover:text-white transition-colors">Forgot password?</a>
+          <Link to="/forgot-password" className="hover:text-white transition-colors">Forgot password?</Link>
           <span className="mx-2">|</span>
-          <a href="/signup" className="hover:text-white transition-colors">Create account</a>
+          <Link to="/signup" className="hover:text-white transition-colors">Create account</Link>
         </div>
       </div>
     </div>

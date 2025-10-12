@@ -1,5 +1,6 @@
 // SignupPage component - user registration page
 import React, { useCallback, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { ChangeEvent, FormEvent } from 'react'
 import { authService } from '../services/authService'
 import { profileService } from '../services/profileService'
@@ -285,7 +286,7 @@ const SignupPage: React.FC = () => {
           </button>
         </form>
         <div className="mt-6 text-center text-sm text-white/60">
-          <a href="/signin" className="hover:text-white transition-colors">Have an account? Sign in</a>
+          <Link to="/signin" className="hover:text-white transition-colors">Have an account? Sign in</Link>
         </div>
       </div>
     </div>
