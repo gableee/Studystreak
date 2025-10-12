@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabaseClient';
+import { ensureUserTimezone, resetTimezoneCache } from '@/lib/timezone';
 import { AuthContext } from './useAuthContext';
 
 export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
@@ -30,10 +31,16 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
       if (event === 'SIGNED_OUT') {
         setSession(null);
         setUser(null);
+        resetTimezoneCache();
       }
     });
     return () => sub.subscription.unsubscribe();
   }, []);
+
+    useEffect(() => {
+      if (!session?.user?.id) return;
+      void ensureUserTimezone();
+    }, [session?.user?.id]);
 
   // // Dev-only: sign out automatically when leaving/reloading the page on localhost 
   // // [Reason: not signing out while on LocalHost]
