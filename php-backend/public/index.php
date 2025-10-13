@@ -102,7 +102,7 @@ if ($path === '/' || $path === '/health') {
   exit;
 }
 
-// Auth routes
+// Auth routes.
 if ($path === '/api/auth/signin' && $method === 'POST') {
   $authController->signIn($request);
   exit;
