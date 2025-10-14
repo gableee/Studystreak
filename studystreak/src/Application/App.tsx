@@ -98,17 +98,27 @@ const router = createBrowserRouter([
         )
       },
       {
-        path: "profile", 
+        path: "study-plan",
         element: (
           <ProtectedRoute>
             <PageTransition>
-              <Profile />
+              <Todo />
             </PageTransition>
           </ProtectedRoute>
         )
       },
       {
-        path: "pomodoro",
+        path: "learn",
+        element: (
+          <ProtectedRoute>
+            <PageTransition>
+              <Courses />
+            </PageTransition>
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "focus-session",
         element: (
           <ProtectedRoute>
             <PageTransition>
@@ -120,24 +130,36 @@ const router = createBrowserRouter([
         )
       },
       {
-        path: "courses",
+        path: "progress",
         element: (
           <ProtectedRoute>
             <PageTransition>
-              <Courses />
+              <Dashboard />
             </PageTransition>
           </ProtectedRoute>
         )
       },
       {
-        path: "todo",
+        path: "profile", 
         element: (
           <ProtectedRoute>
             <PageTransition>
-              <Todo />
+              <Profile />
             </PageTransition>
           </ProtectedRoute>
         )
+      },
+      {
+        path: "pomodoro",
+        element: <Navigate to="/focus-session" replace />
+      },
+      {
+        path: "courses",
+        element: <Navigate to="/learn" replace />
+      },
+      {
+        path: "todo",
+        element: <Navigate to="/study-plan" replace />
       },
       {
         path: "*",
