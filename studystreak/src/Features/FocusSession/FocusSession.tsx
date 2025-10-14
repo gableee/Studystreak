@@ -14,7 +14,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../Auth/hooks/useAuth';
 import { ensureUserTimezone } from '@/lib/timezone';
 import { useStreakActivation } from '@/Features/Gamification/hooks/useStreakActivation';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock3 } from 'lucide-react';
 
 function PomodoroInner() {
   const { user } = useAuth();
@@ -182,33 +182,47 @@ function PomodoroInner() {
   }, [user]);
 
   return (
-    <section className="p-6 max-w-4xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-foreground dark:text-slate-100">Pomodoro Timer</h2>
-        {p.sessionStartTime && (
-          <div className="text-sm text-muted-foreground dark:text-slate-300 mr-4">
-            Session started: {new Date(p.sessionStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+    <div className="relative mx-auto max-w-4xl space-y-6 pb-12">
+      <header className="surface-section space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="space-y-2">
+            <span className="badge badge-info uppercase tracking-wide">Focus session</span>
+            <h2 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">Pomodoro timer</h2>
+            <p className="max-w-xl text-sm text-slate-600 dark:text-slate-300">
+              Keep your deep work sprints, short breaks, and streak tracking aligned with the rest of StudyStreak’s calm design system.
+            </p>
           </div>
-        )}
-        <button
-          onClick={() => setShowSettings(!showSettings)}
-          className="px-4 py-2 text-sm bg-muted dark:bg-slate-700 text-muted-foreground dark:text-slate-300 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors"
-        >
-          {showSettings ? 'Hide' : 'Show'} Settings
-        </button>
-      </div>
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="pill-tab-active inline-flex items-center gap-2"
+          >
+            {showSettings ? 'Hide settings' : 'Adjust settings'}
+          </button>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-300">
+          {p.sessionStartTime && (
+            <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 font-medium text-slate-600 dark:bg-white/10 dark:text-slate-200">
+              <Clock3 className="h-3.5 w-3.5" />
+              Started {new Date(p.sessionStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
+          <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 font-medium text-slate-600 dark:bg-white/10 dark:text-slate-200">
+            Remaining {Math.max(0, Math.floor(p.remainingSeconds / 60))}m
+          </span>
+        </div>
+      </header>
 
       {showSettings && (
-        <div className="mb-6">
+        <div className="surface-card border border-white/15 bg-white/70 p-6 shadow-sm dark:border-white/10 dark:bg-white/5">
           <PomodoroSettings settings={p.settings} onUpdateSettings={p.updateSettings} onClose={() => setShowSettings(false)} />
         </div>
       )}
 
-      <div className="mb-6">
-  <TimerDisplay remainingSeconds={p.remainingSeconds} mode={p.mode} progress={p.progress} />
+      <div className="surface-card border border-white/15 bg-white/80 p-6 shadow-sm dark:border-white/10 dark:bg-white/5">
+        <TimerDisplay remainingSeconds={p.remainingSeconds} mode={p.mode} progress={p.progress} />
       </div>
 
-      <div className="mb-6">
+      <div className="surface-card border border-white/15 bg-white/80 p-6 shadow-sm dark:border-white/10 dark:bg-white/5">
         <Controls
           status={p.status}
           onStart={handleStartSession}
@@ -221,25 +235,27 @@ function PomodoroInner() {
       </div>
 
       {saveStatus !== 'idle' && (
-        <div className="mb-6">
-          {saveStatus === 'saving' && (
-            <div className="flex items-center gap-2 p-3 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg">
-              <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full" />
-              <span className="text-sm">Saving session...</span>
-            </div>
+        <div
+          className={`surface-card flex items-center gap-3 border-l-4 border-white/0 bg-white/80 p-4 text-sm shadow-sm dark:bg-white/5 ${
+            saveStatus === 'saving'
+              ? 'border-blue-400 text-blue-600 dark:text-blue-300'
+              : saveStatus === 'success'
+              ? 'border-emerald-400 text-emerald-600 dark:text-emerald-300'
+              : 'border-rose-400 text-rose-600 dark:text-rose-300'
+          }`}
+        >
+          {saveStatus === 'saving' ? (
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          ) : saveStatus === 'success' ? (
+            <CheckCircle2 className="h-5 w-5" />
+          ) : (
+            <AlertCircle className="h-5 w-5" />
           )}
-          {saveStatus === 'success' && (
-            <div className="flex items-center gap-2 p-3 bg-green-500/10 text-green-600 dark:text-green-400 rounded-lg">
-              <CheckCircle2 size={16} />
-              <span className="text-sm">Session saved successfully!</span>
-            </div>
-          )}
-          {saveStatus === 'error' && (
-            <div className="flex items-center gap-2 p-3 bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg">
-              <AlertCircle size={16} />
-              <span className="text-sm">{errorMessage || 'Failed to save session. It will be retried later.'}</span>
-            </div>
-          )}
+          <span>
+            {saveStatus === 'saving' && 'Saving session...'}
+            {saveStatus === 'success' && 'Session saved successfully!'}
+            {saveStatus === 'error' && (errorMessage || 'Failed to save session. It will be retried later.')}
+          </span>
         </div>
       )}
 
@@ -252,7 +268,7 @@ function PomodoroInner() {
           isLastCycleBeforeLongBreak={p.isLastCycleBeforeLongBreak}
         />
       )}
-    </section>
+    </div>
   );
 }
 

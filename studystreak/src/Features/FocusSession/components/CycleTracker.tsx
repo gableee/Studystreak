@@ -21,87 +21,76 @@ export const CycleTracker: React.FC<CycleTrackerProps> = ({
   mode,
   isLastCycleBeforeLongBreak,
 }) => {
+  const hasTarget = typeof targetCycles === 'number' && targetCycles > 0;
+  const targetTotal = hasTarget ? targetCycles ?? 1 : 1;
   return (
-    <div className="bg-card dark:bg-slate-800 rounded-xl p-6 border border-border dark:border-transparent">
-      <h3 className="text-lg font-semibold mb-4 text-card-foreground dark:text-slate-100">
-        Session Statistics
-      </h3>
-      
-      <div className="grid grid-cols-2 gap-4">
-        {/* Cycles completed */}
-        <div className="bg-muted dark:bg-slate-700 p-4 rounded-lg">
-          <div className="flex items-center gap-2 mb-2">
-            <Target className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-            <span className="text-sm text-muted-foreground dark:text-slate-400">
-              Cycles Completed
-            </span>
-          </div>
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-card-foreground dark:text-slate-100">
-              {cyclesCompleted}
-            </span>
-            {targetCycles && (
-              <span className="text-sm text-muted-foreground dark:text-slate-400">
-                / {targetCycles}
-              </span>
+    <div className="surface-section space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-base font-semibold text-slate-900 dark:text-white">Session statistics</h3>
+        <span className="badge badge-info text-xs">
+          {mode === 'focus' ? 'Focus block' : mode === 'longBreak' ? 'Long break' : 'Short break'}
+        </span>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="surface-card border border-white/15 bg-white/80 p-4 shadow-sm dark:border-white/10 dark:bg-white/5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Cycles completed</span>
+            </div>
+            {hasTarget && (
+              <span className="text-xs text-slate-500 dark:text-slate-300">Goal {targetCycles}</span>
             )}
           </div>
-          {targetCycles && (
-            <div className="mt-2">
-              <div className="h-1.5 bg-muted dark:bg-slate-600 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min(100, (cyclesCompleted / targetCycles) * 100)}%` }}
-                />
-              </div>
+          <div className="mt-3 flex items-baseline gap-1">
+            <span className="text-2xl font-semibold text-slate-900 dark:text-white">{cyclesCompleted}</span>
+            {hasTarget && <span className="text-sm text-slate-500 dark:text-slate-300">/ {targetCycles}</span>}
+          </div>
+          {hasTarget && (
+            <div className="mt-4 h-1.5 rounded-full bg-slate-200/70 dark:bg-white/10">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500"
+                style={{ width: `${Math.min(100, (cyclesCompleted / targetTotal) * 100)}%` }}
+              />
             </div>
           )}
         </div>
-        
-        {/* Session duration */}
-        <div className="bg-muted dark:bg-slate-700 p-4 rounded-lg">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock className="w-4 h-4 text-green-500 dark:text-green-400" />
-            <span className="text-sm text-muted-foreground dark:text-slate-400">
-              Session Duration
-            </span>
+
+        <div className="surface-card border border-white/15 bg-white/80 p-4 shadow-sm dark:border-white/10 dark:bg-white/5">
+          <div className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">Session duration</span>
           </div>
-          <p className="text-2xl font-bold text-card-foreground dark:text-slate-100">
-            {formatDuration(sessionDuration)}
-          </p>
+          <p className="mt-3 text-2xl font-semibold text-slate-900 dark:text-white">{formatDuration(sessionDuration)}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-300">Includes both focus and break time.</p>
         </div>
       </div>
-      
-      {/* Current status */}
-      <div className="mt-4 p-3 bg-muted dark:bg-slate-700 rounded-lg">
-        <div className="flex items-center justify-between">
+
+      <div className="surface-card border border-white/15 bg-white/80 p-4 shadow-sm dark:border-white/10 dark:bg-white/5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Timer className="w-4 h-4 text-purple-500 dark:text-purple-400" />
-            <span className="text-sm font-medium text-muted-foreground dark:text-slate-300">
-              Current:
-            </span>
-            <span className="text-sm font-semibold text-card-foreground dark:text-slate-100">
-              {mode === 'focus' ? 'Focus' : mode === 'longBreak' ? 'Long Break' : 'Short Break'}
-            </span>
+            <Timer className="h-5 w-5 text-purple-500 dark:text-purple-300" />
+            <span className="text-sm font-medium text-slate-600 dark:text-slate-200">Current interval</span>
           </div>
-          
           {isLastCycleBeforeLongBreak && mode === 'focus' && (
-            <span className="text-xs bg-purple-500/20 text-purple-600 dark:text-purple-400 px-2 py-1 rounded-full">
-              Long break next!
-            </span>
+            <span className="badge badge-info text-xs">Long break next</span>
           )}
         </div>
+        <p className="mt-2 text-base font-semibold text-slate-900 dark:text-white">
+          {mode === 'focus' ? 'Focus' : mode === 'longBreak' ? 'Long break' : 'Short break'}
+        </p>
+        <p className="text-xs text-slate-500 dark:text-slate-300">
+          Stay aware of your energy so transitions feel intentional.
+        </p>
       </div>
-      
-      {/* Motivational message */}
+
       {cyclesCompleted > 0 && (
-        <div className="mt-4 text-center">
-          <p className="text-sm text-muted-foreground dark:text-slate-400 italic">
-            {cyclesCompleted < 2 && "Great start! Keep the momentum going! 💪"}
-            {cyclesCompleted >= 2 && cyclesCompleted < 4 && "You're doing amazing! Stay focused! 🎯"}
-            {cyclesCompleted >= 4 && cyclesCompleted < 8 && "Incredible progress! You're in the zone! ⚡"}
-            {cyclesCompleted >= 8 && "Productivity champion! You're unstoppable! 🏆"}
-          </p>
+        <div className="surface-card border border-dashed border-white/25 bg-white/70 p-4 text-center text-sm text-slate-600 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+          {cyclesCompleted < 2 && 'Great start! Keep the momentum building.'}
+          {cyclesCompleted >= 2 && cyclesCompleted < 4 && 'You are on a roll—stay with the rhythm.'}
+          {cyclesCompleted >= 4 && cyclesCompleted < 8 && 'Impressive focus! Consider a longer reset soon.'}
+          {cyclesCompleted >= 8 && 'Productivity champion! Take a mindful break when you need it.'}
         </div>
       )}
     </div>
