@@ -335,7 +335,7 @@ export function SideBar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
     {
       to: '/dashboard',
       label: 'Dashboard',
-      subtitle: 'Overview & Stats',
+      subtitle: '',
       color: 'blue',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -344,32 +344,20 @@ export function SideBar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
       ),
     },
     {
-      to: '/profile',
-      label: 'Profile',
-      subtitle: 'Your Progress',
+      to: '/study-plan',
+      label: 'My Study Plan',
+      subtitle: '',
       color: 'green',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5.121 17.804A9 9 0 1112 21a9 9 0 01-6.879-3.196z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
         </svg>
       ),
     },
     {
-      to: '/pomodoro',
-      label: 'Pomodoro',
-      subtitle: 'Focus Timer',
-      color: 'red',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
-    },
-    {
-      to: '/courses',
-      label: 'Courses',
-      subtitle: 'Your Learning',
+      to: '/learn',
+      label: 'Learning Materials',
+      subtitle: '',
       color: 'purple',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -378,13 +366,35 @@ export function SideBar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
       ),
     },
     {
-      to: '/todo',
-      label: 'Todo List',
-      subtitle: 'Track Tasks',
+      to: '/focus-session',
+      label: 'Focus Session',
+      subtitle: '',
+      color: 'red',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+    },
+    {
+      to: '/progress',
+      label: 'Progress & Achievements',
+      subtitle: '',
+      color: 'amber',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      ),
+    },
+    {
+      to: '/profile',
+      label: 'Profile',
+      subtitle: '',
       color: 'indigo',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
         </svg>
       ),
     },
@@ -439,29 +449,38 @@ export function SideBar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
 
           {/* Navigation Items */}
           <div className="flex-1 px-3 space-y-2 overflow-y-auto">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                onClick={onClose}
-                className={({ isActive }) => `
-                  flex items-center gap-4 px-3 py-3 rounded-lg transition-all duration-200 group
-                  ${isActive
-                    ? `bg-${item.color}-100 dark:bg-${item.color}-500/10 text-${item.color}-600 dark:text-${item.color}-400`
-                    : 'text-muted-foreground dark:text-white/70 hover:bg-muted dark:hover:bg-white/5'}
-                `}
-              >
-                <IconContainer>{item.icon}</IconContainer>
-                {showExpanded && (
-                  <div className="flex flex-col min-w-0">
+            {navItems.map((item) => {
+              const getActiveClasses = (color: string) => {
+                const colorMap: { [key: string]: string } = {
+                  blue: 'bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400',
+                  green: 'bg-green-100 dark:bg-green-500/10 text-green-600 dark:text-green-400',
+                  purple: 'bg-purple-100 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400',
+                  red: 'bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400',
+                  amber: 'bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400',
+                  indigo: 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
+                }
+                return colorMap[color] || colorMap.blue
+              }
+
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  onClick={onClose}
+                  className={({ isActive }) => `
+                    flex items-center gap-4 px-3 py-3 rounded-lg transition-all duration-200 group
+                    ${isActive
+                      ? getActiveClasses(item.color)
+                      : 'text-muted-foreground dark:text-white/70 hover:bg-muted dark:hover:bg-white/5'}
+                  `}
+                >
+                  <IconContainer>{item.icon}</IconContainer>
+                  {showExpanded && (
                     <span className="font-medium truncate">{item.label}</span>
-                    <span className="text-xs text-muted-foreground dark:text-white/50 truncate">
-                      {item.subtitle}
-                    </span>
-                  </div>
-                )}
-              </NavLink>
-            ))}
+                  )}
+                </NavLink>
+              )
+            })}
           </div>
 
           {/* User Info + Sign Out */}
