@@ -12,7 +12,7 @@
 
 import { NavLink } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
-import { Flame, Sparkles, Star, Menu, X, LogOut } from 'lucide-react'
+import { Flame, Sparkles, Star, Menu, X, LogOut, Trophy } from 'lucide-react'
 import { IconContainer } from './components/IconContainer';
 import { ThemeToggle } from './components/LightMode';
 import { useAuth } from '@/Auth/hooks/useAuth'
@@ -380,7 +380,7 @@ export function SideBar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
       to: '/progress-analytics',
       label: 'Progress & Analytics',
       subtitle: '',
-      color: 'amber',
+      color: 'indigo',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -393,16 +393,14 @@ export function SideBar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
       subtitle: '',
       color: 'yellow',
       icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17l-3 3-3-3m3-13a4 4 0 014 4c0 3-4 6-4 6s-4-3-4-6a4 4 0 014-4z" />
-        </svg>
+        <Trophy className="h-5 w-5" />
       ),
     },
     {
       to: '/profile',
       label: 'Profile',
       subtitle: '',
-      color: 'indigo',
+      color: 'teal',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -470,6 +468,7 @@ export function SideBar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
                   amber: 'bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400',
                   yellow: 'bg-yellow-100 dark:bg-yellow-500/10 text-yellow-600 dark:text-yellow-400',
                   indigo: 'bg-indigo-100 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
+                  teal: 'bg-teal-100 dark:bg-teal-500/10 text-teal-600 dark:text-teal-400',
                 }
                 return colorMap[color] || colorMap.blue
               }

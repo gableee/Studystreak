@@ -8,7 +8,6 @@
 import {
   Activity,
   Award,
-  BarChart3,
   Calendar,
   Clock,
   Download,
@@ -95,52 +94,6 @@ const comparisonSeries = [
   },
 ]
 
-const skillTimelines = [
-  {
-    title: 'Clinical communication',
-    discipline: 'Health sciences',
-    level: 'Advanced',
-    checkpoints: [
-      { label: 'Foundations', done: true },
-      { label: 'Interdisciplinary rounds', done: true },
-      { label: 'Mentor simulations', done: true },
-      { label: 'Community teaching', done: false },
-    ],
-  },
-  {
-    title: 'Sustainable studio systems',
-    discipline: 'Built environment',
-    level: 'Intermediate',
-    checkpoints: [
-      { label: 'Concept research', done: true },
-      { label: 'Inclusive prototyping', done: true },
-      { label: 'Cross-cohort critique', done: false },
-      { label: 'Field testing', done: false },
-    ],
-  },
-  {
-    title: 'Ethical data practice',
-    discipline: 'Data and analytics',
-    level: 'Intermediate',
-    checkpoints: [
-      { label: 'Bias audits', done: true },
-      { label: 'Stakeholder mapping', done: true },
-      { label: 'Responsible release', done: false },
-      { label: 'Community reporting', done: false },
-    ],
-  },
-  {
-    title: 'Restorative scheduling',
-    discipline: 'Wellbeing',
-    level: 'Developing',
-    checkpoints: [
-      { label: 'Sleep cadence', done: true },
-      { label: 'Energy journaling', done: false },
-      { label: 'Mentor pairing', done: false },
-      { label: 'Recovery showcase', done: false },
-    ],
-  },
-]
 
 export default function ProgressAnalytics() {
   const maxComparison = Math.max(
@@ -298,60 +251,6 @@ export default function ProgressAnalytics() {
         </div>
         <div className="rounded-2xl border border-emerald-200/60 bg-emerald-50/80 p-4 text-sm font-medium text-emerald-900 shadow-sm dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
           Current streak holds at eighteen days; longest stands at twenty-eight. Contribution peaks map to collaborative studio weeks.
-        </div>
-      </section>
-
-      <section className="surface-section space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-orange-500 dark:text-orange-300" />
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Skill progression timelines</h2>
-          </div>
-          <button className="pill-tab inline-flex items-center gap-2">
-            View timeline report
-          </button>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          {skillTimelines.map((skill) => {
-            const completed = skill.checkpoints.filter((checkpoint) => checkpoint.done).length
-            const completionPercent = Math.round((completed / skill.checkpoints.length) * 100)
-
-            return (
-              <article key={skill.title} className="surface-card space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{skill.title}</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-300">{skill.discipline}</p>
-                  </div>
-                  <span className="rounded-full bg-white/60 px-2 py-1 text-xs font-semibold text-slate-600 dark:bg-white/10 dark:text-slate-100">
-                    {skill.level}
-                  </span>
-                </div>
-                <div className="h-2 w-full rounded-full bg-white/40 dark:bg-white/10">
-                  <div
-                    className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500"
-                    style={{ width: `${completionPercent}%` }}
-                  />
-                </div>
-                <div className="grid gap-2 text-xs text-slate-500 dark:text-slate-300">
-                  {skill.checkpoints.map((checkpoint) => (
-                    <div key={checkpoint.label} className="flex items-center gap-2">
-                      <span
-                        className={`inline-flex h-5 w-5 items-center justify-center rounded-full border ${
-                          checkpoint.done
-                            ? 'border-blue-500 bg-blue-500 text-white'
-                            : 'border-slate-400 bg-white/40 text-slate-500 dark:border-white/20 dark:bg-white/5 dark:text-slate-300'
-                        }`}
-                      >
-                        {checkpoint.done ? '✓' : ''}
-                      </span>
-                      <span>{checkpoint.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </article>
-            )
-          })}
         </div>
       </section>
     </div>
