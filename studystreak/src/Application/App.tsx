@@ -20,7 +20,8 @@ import Profile from '../Features/Profile/Profile'
 import LearningMaterials from '../Features/LearningMaterials/LearningMaterials'
 import FocusSession from '../Features/FocusSession/FocusSession'
 import MyStudyPlan from '../Features/MyStudyPlan/MyStudyPlan'
-import ProgressAchievements from '../Features/ProgressAchievements/ProgressAchievements'
+import ProgressAnalytics from '../Features/ProgressAnalytics/ProgressAnalytics'
+import AchievementsRewards from '../Features/AchievementsRewards/AchievementsRewards'
 import ErrorBoundary from './components/ErrorBoundary'
 import ProtectedRoute from '@/Auth/guards/ProtectedRoute'
 import PublicOnlyRoute from '@/Auth/guards/PublicOnlyRoute'
@@ -131,11 +132,21 @@ const router = createBrowserRouter([
         )
       },
       {
-        path: "progress-achievements",
+        path: "progress-analytics",
         element: (
           <ProtectedRoute>
             <PageTransition>
-              <ProgressAchievements />
+              <ProgressAnalytics />
+            </PageTransition>
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "achievements-rewards",
+        element: (
+          <ProtectedRoute>
+            <PageTransition>
+              <AchievementsRewards />
             </PageTransition>
           </ProtectedRoute>
         )
@@ -172,7 +183,11 @@ const router = createBrowserRouter([
       },
       {
         path: "progress",
-        element: <Navigate to="/progress-achievements" replace />
+        element: <Navigate to="/progress-analytics" replace />
+      },
+      {
+        path: "progress-achievements",
+        element: <Navigate to="/progress-analytics" replace />
       },
       {
         path: "*",

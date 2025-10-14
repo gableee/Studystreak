@@ -83,6 +83,44 @@
     @apply transition-all duration-300 hover:border-white/10;
   }
 
+  /* Glass Surfaces */
+  .glass-panel {
+    /* Universal frosted surface for light/dark themes */
+    @apply rounded-3xl border border-white/10 bg-white/70 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-white/5;
+  }
+
+  .surface-section {
+    /* Section wrapper spacing and rhythm */
+    @apply glass-panel p-6 md:p-8 space-y-6;
+  }
+
+  .surface-card {
+    /* Nested card for lists or sub-panels */
+    @apply rounded-2xl border border-white/10 bg-white/80 p-5 shadow-sm dark:bg-white/5;
+  }
+
+  /* Metric + Badge Patterns */
+  .stat-tile {
+    /* Metric summary with flexible layout */
+    @apply rounded-2xl border border-white/10 bg-white/80 p-6 shadow-sm flex flex-col gap-6 md:gap-4 dark:bg-white/5;
+  }
+
+  .stat-header {
+    @apply flex items-start justify-between gap-4;
+  }
+
+  .stat-icon {
+    @apply h-12 w-12 rounded-2xl grid place-items-center bg-white/60 text-blue-600 shadow-sm dark:bg-white/10 dark:text-blue-300;
+  }
+
+  .pill-tab {
+    @apply px-4 py-2 rounded-2xl border border-transparent bg-white/70 text-sm font-medium text-slate-600 transition-colors hover:bg-white hover:text-slate-900 dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/15;
+  }
+
+  .pill-tab-active {
+    @apply pill-tab bg-blue-600 text-white shadow-md hover:bg-blue-600 dark:text-white;
+  }
+
   /* Badge Components */
   .badge {
     /* Small status labels - Base styling */
