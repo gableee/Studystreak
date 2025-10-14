@@ -16,8 +16,8 @@
 import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Header, SideBar } from '../AppInterface'
-import { PomodoroProvider } from '../../Features/Pomodoro/context/PomodoroContext'
-import PomodoroModal from '../../Features/Pomodoro/components/PomodoroModal'
+import { PomodoroProvider } from '../../Features/FocusSession/context/PomodoroContext'
+import PomodoroModal from '../../Features/FocusSession/components/PomodoroModal'
 import PwaInstallToast from '@/PWA/components/PwaInstallToast'
 
 /**

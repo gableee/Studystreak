@@ -17,10 +17,11 @@ import { PageTransition } from './components/PageTransition'
 import RootLayout from './RouteLayout/RootLayout'
 import Dashboard from '../Features/Dashboard/Dashboard'
 import Profile from '../Features/Profile/Profile'
-import Pomodoro from '../Features/Pomodoro/Pomodoro'
+import LearningMaterials from '../Features/LearningMaterials/LearningMaterials'
+import FocusSession from '../Features/FocusSession/FocusSession'
+import MyStudyPlan from '../Features/MyStudyPlan/MyStudyPlan'
+import ProgressAchievements from '../Features/ProgressAchievements/ProgressAchievements'
 import ErrorBoundary from './components/ErrorBoundary'
-import Courses from '../Features/Courses/Courses'
-import Todo from '../Features/Todo/Todo'
 import ProtectedRoute from '@/Auth/guards/ProtectedRoute'
 import PublicOnlyRoute from '@/Auth/guards/PublicOnlyRoute'
 import SignInPage from '@/Auth/pages/SignInPage'
@@ -98,21 +99,21 @@ const router = createBrowserRouter([
         )
       },
       {
-        path: "study-plan",
+        path: "my-study-plan",
         element: (
           <ProtectedRoute>
             <PageTransition>
-              <Todo />
+              <MyStudyPlan />
             </PageTransition>
           </ProtectedRoute>
         )
       },
       {
-        path: "learn",
+        path: "learning-materials",
         element: (
           <ProtectedRoute>
             <PageTransition>
-              <Courses />
+              <LearningMaterials />
             </PageTransition>
           </ProtectedRoute>
         )
@@ -123,18 +124,18 @@ const router = createBrowserRouter([
           <ProtectedRoute>
             <PageTransition>
               <ErrorBoundary>
-                <Pomodoro />
+                <FocusSession />
               </ErrorBoundary>
             </PageTransition>
           </ProtectedRoute>
         )
       },
       {
-        path: "progress",
+        path: "progress-achievements",
         element: (
           <ProtectedRoute>
             <PageTransition>
-              <Dashboard />
+              <ProgressAchievements />
             </PageTransition>
           </ProtectedRoute>
         )
@@ -155,11 +156,23 @@ const router = createBrowserRouter([
       },
       {
         path: "courses",
-        element: <Navigate to="/learn" replace />
+        element: <Navigate to="/learning-materials" replace />
+      },
+      {
+        path: "learn",
+        element: <Navigate to="/learning-materials" replace />
       },
       {
         path: "todo",
-        element: <Navigate to="/study-plan" replace />
+        element: <Navigate to="/my-study-plan" replace />
+      },
+      {
+        path: "study-plan",
+        element: <Navigate to="/my-study-plan" replace />
+      },
+      {
+        path: "progress",
+        element: <Navigate to="/progress-achievements" replace />
       },
       {
         path: "*",

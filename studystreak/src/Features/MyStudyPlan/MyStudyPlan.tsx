@@ -1,10 +1,10 @@
-export default function Todo() {
+export default function MyStudyPlan() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-foreground dark:text-slate-100">Todo List</h2>
-          <p className="text-muted-foreground dark:text-slate-400 mt-1">Keep track of your tasks and deadlines</p>
+          <h2 className="text-2xl font-bold text-foreground dark:text-slate-100">My Study Plan</h2>
+          <p className="text-muted-foreground dark:text-slate-400 mt-1">Organize goals, tasks, and study commitments</p>
         </div>
         <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

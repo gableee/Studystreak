@@ -278,7 +278,7 @@ export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
  * SideBar Component
  * 
  * Displays the main navigation sidebar with:
- * - Links to main application sections (Dashboard, Courses, etc.)
+ * - Links to main application sections (Dashboard, Learning Materials, etc.)
  * - Visual indicators for the current active route
  * - Collapsible/expandable behavior with hover state on desktop
  * - User info and sign out button at the bottom
@@ -344,7 +344,7 @@ export function SideBar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
       ),
     },
     {
-      to: '/study-plan',
+      to: '/my-study-plan',
       label: 'My Study Plan',
       subtitle: '',
       color: 'green',
@@ -355,7 +355,7 @@ export function SideBar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
       ),
     },
     {
-      to: '/learn',
+      to: '/learning-materials',
       label: 'Learning Materials',
       subtitle: '',
       color: 'purple',
@@ -377,7 +377,7 @@ export function SideBar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
       ),
     },
     {
-      to: '/progress',
+      to: '/progress-achievements',
       label: 'Progress & Achievements',
       subtitle: '',
       color: 'amber',

@@ -28,10 +28,16 @@ export default function PomodoroModal() {
     localStorage.setItem(HIDDEN_KEY, hidden ? '1' : '');
   }, [hidden]);
 
+  const isPomodoroRoute = (pathname: string) =>
+    pathname === '/pomodoro' ||
+    pathname.startsWith('/pomodoro/') ||
+    pathname === '/focus-session' ||
+    pathname.startsWith('/focus-session/');
+
   // If user navigates to the Pomodoro page, clear the 'hidden' flag so the modal will
   // re-appear once they leave that page (close becomes temporary until they visit Pomodoro page).
   useEffect(() => {
-    const isOnPomodoroPage = location.pathname === '/pomodoro' || location.pathname.startsWith('/pomodoro/');
+    const isOnPomodoroPage = isPomodoroRoute(location.pathname);
     if (isOnPomodoroPage && hidden) {
       setHidden(false);
       localStorage.removeItem(HIDDEN_KEY);
@@ -52,7 +58,7 @@ export default function PomodoroModal() {
   if (pomodoro.status === 'idle') return null;
 
   // Only show modal when we're NOT on the pomodoro page itself (so it only appears on other routes)
-  const isOnPomodoroPage = location.pathname === '/pomodoro' || location.pathname.startsWith('/pomodoro/');
+  const isOnPomodoroPage = isPomodoroRoute(location.pathname);
   if (isOnPomodoroPage) return null;
 
   if (hidden) return null;

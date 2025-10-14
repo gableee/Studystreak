@@ -1,5 +1,5 @@
 /**
- * Courses Component
+ * Learning Materials Component
  * 
  * This component displays a grid of educational platform cards that users can access
  * for their learning. Each platform card shows the platform logo, name, description, 
@@ -11,7 +11,7 @@
  * - Hover effects for interactive feedback
  * - External links to learning platforms
  * 
- * @module Features/Courses
+ * @module Features/LearningMaterials
  */
 
 import { useCallback, useState } from "react";
@@ -19,7 +19,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ExternalLink } from "lucide-react";
 import { useStreakActivation } from "@/Features/Gamification/hooks/useStreakActivation";
 
-export default function Courses() {
+export default function LearningMaterials() {
   /**
    * State to track which platform images have finished loading
    * Key: platform name, Value: boolean indicating if image is loaded
@@ -28,7 +28,7 @@ export default function Courses() {
   const { activate: activateStreak } = useStreakActivation();
   const handlePlatformClick = useCallback(
     (platformName: string) => {
-      console.debug('[Courses] Activating streak from platform click', platformName);
+  console.debug('[LearningMaterials] Activating streak from platform click', platformName);
       void activateStreak({ occurredAt: new Date().toISOString(), studyMinutes: 1 });
     },
     [activateStreak],
