@@ -32,6 +32,7 @@ use App\Controllers\TodoController;
 use App\Controllers\AuthController;
 use App\Middleware\AuthMiddleware;
 use App\Controllers\GamificationController;
+use App\Controllers\LearningMaterialsController;
 
 
 // Load env
@@ -45,6 +46,7 @@ $authMiddleware = new AuthMiddleware($supabaseAuth);
 $todoController = new TodoController($config);
 $authController = new AuthController($supabaseAuth);
 $gamificationController = new GamificationController($config);
+$learningMaterialsController = new LearningMaterialsController($config);
 
 // Basic CORS (dev) - adjust origin in production
 // Allow the health endpoint to be checked by probes that do not send an Origin header.
@@ -84,7 +86,7 @@ if ($requestPath === '/health' || $requestPath === '/' || str_starts_with($reque
 }
 
 // Simple routing
-// We'll use the Request helper to parse path/method/headers/body
+// Request helper to parse path/method/headers/body
 $request = new Request();
 $path = $request->getPath();
 $method = $request->getMethod();
@@ -153,6 +155,37 @@ if ($path === '/api/gamification/streak/activate' && $method === 'POST') {
 if ($path === '/api/gamification/streak/use-saver' && $method === 'POST') {
   $authMiddleware->handle($request, function(Request $authedRequest) use ($gamificationController): void {
     $gamificationController->useStreakSaver($authedRequest);
+  });
+  exit;
+}
+
+// Learning materials routes (auth required). Centralize allowed methods for clarity.
+$learningMaterialsRoutes = [
+  '/api/learning-materials' => [
+    'GET' => 'index',
+    'POST' => 'upload',
+  ],
+  // Legacy alias retained temporarily for compatibility with older clients
+  '/api/learning-materials/upload' => [
+    'POST' => 'upload',
+  ],
+];
+
+if (isset($learningMaterialsRoutes[$path])) {
+  $handlersForPath = $learningMaterialsRoutes[$path];
+  if (!isset($handlersForPath[$method])) {
+    $allowedMethods = implode(', ', array_keys($handlersForPath));
+    header('Allow: ' . $allowedMethods);
+    JsonResponder::withStatus(405, [
+      'error' => 'Method not allowed',
+      'allowed_methods' => $handlersForPath,
+    ]);
+    exit;
+  }
+
+  $action = $handlersForPath[$method];
+  $authMiddleware->handle($request, function(Request $authedRequest) use ($learningMaterialsController, $action): void {
+    $learningMaterialsController->{$action}($authedRequest);
   });
   exit;
 }

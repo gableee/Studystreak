@@ -3,8 +3,15 @@ info:
   title: StudyStreak PHP backend API
   version: "1.0.0"
   description: >-
-    Minimal contract for the /api/todos endpoints consumed by the StudyStreak
-    frontend.
+    Contract for StudyStreak backend endpoints including todos, gamification,
+    and learning material uploads consumed by the StudyStreak frontend.
+tags:
+  - name: Todos
+    description: Manage user todo items.
+  - name: Gamification
+    description: Track streaks, XP, and profile-level gamification data.
+  - name: Learning Materials
+    description: Upload, list, and manage shared study resources.
 servers:
   - url: https://studystreak-backend.onrender.com
     description: Production deployment
@@ -13,6 +20,8 @@ servers:
 paths:
   /api/todos:
     get:
+      tags:
+        - Todos
       summary: List todos
       description: >-
         Returns a list of todos. Optional `user_id` query parameter filters the
@@ -35,6 +44,8 @@ paths:
         '401':
           description: Unauthorized – missing or invalid bearer token
     post:
+      tags:
+        - Todos
       summary: Create a todo
       description: >-
         Create a new todo. Requires an `Authorization: Bearer <user_jwt>` header
@@ -58,6 +69,8 @@ paths:
           description: Unauthorized – missing or invalid bearer token
   /api/gamification/profile:
     get:
+      tags:
+        - Gamification
       summary: Current user gamification profile
       description: >-
         Fetches the authenticated user's gamification stats (level, streak,
@@ -77,6 +90,8 @@ paths:
           description: Profile not found
   /api/gamification/streak/activate:
     post:
+      tags:
+        - Gamification
       summary: Record a study activity and update streak
       description: >-
         Marks the authenticated user's streak as active for the supplied
@@ -104,6 +119,149 @@ paths:
           description: Unauthorized – missing or invalid bearer token
         '404':
           description: Profile not found
+  /api/gamification/set-timezone:
+    post:
+      tags:
+        - Gamification
+      summary: Update streak timezone
+      description: >-
+        Updates the authenticated user's preferred timezone, which is used for
+        streak calculations and UI display.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - timezone
+              properties:
+                timezone:
+                  type: string
+                  description: IANA timezone identifier (e.g. Asia/Manila).
+      responses:
+        '200':
+          description: Timezone updated or already set to requested value
+        '400':
+          description: Missing or invalid timezone value
+        '401':
+          description: Unauthorized – missing or invalid bearer token
+        '404':
+          description: Profile not found
+  /api/gamification/streak/use-saver:
+    post:
+      tags:
+        - Gamification
+      summary: Consume a streak saver
+      description: >-
+        Uses an available streak saver for the authenticated user, preventing
+        their current streak from resetting.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Streak saver consumption result with updated profile snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GamificationUseSaverResponse'
+        '401':
+          description: Unauthorized – missing or invalid bearer token
+        '404':
+          description: Profile not found or streak saver unavailable
+  /api/learning-materials:
+    get:
+      tags:
+        - Learning Materials
+      summary: List learning materials
+      description: >-
+        Returns learning materials visible to the authenticated user. Results
+        include the user's private uploads and public community resources.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: filter
+          schema:
+            type: string
+            enum: [all, my, community, official]
+          description: Optional filter preset to control visibility scope.
+        - in: query
+          name: category
+          schema:
+            type: string
+          description: Optional category slug to narrow results.
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Text query applied to title, description, and tags.
+      responses:
+        '200':
+          description: Array of learning materials ordered by newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LearningMaterial'
+        '401':
+          description: Unauthorized – missing or invalid bearer token
+    post:
+      tags:
+        - Learning Materials
+      summary: Upload a learning material
+      description: >-
+        Upload a PDF or PowerPoint file (max 10 MB) and store its metadata in
+        Supabase. Requires bearer authentication. Private uploads return a
+        signed download URL.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - title
+                - file
+              properties:
+                title:
+                  type: string
+                  description: Display name for the material.
+                description:
+                  type: string
+                  nullable: true
+                  description: Optional longer summary shown in listings.
+                category:
+                  type: string
+                  nullable: true
+                  description: Optional category label.
+                tags:
+                  type: string
+                  nullable: true
+                  description: JSON encoded array of tag strings.
+                is_public:
+                  type: boolean
+                  description: Whether the file is visible in the community library.
+                file:
+                  type: string
+                  format: binary
+                  description: PDF or PPT/PPTX document up to 10 MB.
+      responses:
+        '201':
+          description: Created – metadata saved and file stored successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningMaterialUploadResponse'
+        '400':
+          description: Invalid payload or unsupported file
+        '401':
+          description: Unauthorized – missing or invalid bearer token
 components:
   securitySchemes:
     bearerAuth:
@@ -232,3 +390,94 @@ components:
         study_minutes_applied:
           type: integer
           description: Total minutes applied from the request payload (rounded to an integer)
+    GamificationUseSaverResponse:
+      type: object
+      required:
+        - success
+        - profile
+      properties:
+        success:
+          type: boolean
+          description: Indicates whether a streak saver was successfully consumed.
+        payload:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: Raw RPC response returned by the Supabase function.
+        profile:
+          $ref: '#/components/schemas/GamificationProfile'
+    LearningMaterial:
+      type: object
+      required:
+        - material_id
+        - title
+        - content_type
+        - is_public
+      properties:
+        material_id:
+          type: string
+          format: uuid
+          description: Unique identifier of the learning material.
+        title:
+          type: string
+          example: Pharmacology review deck
+        description:
+          type: string
+          nullable: true
+          example: Summarized lecture slides for week 3 pharmacology.
+        content_type:
+          type: string
+          example: application/pdf
+        file_url:
+          type: string
+          nullable: true
+          format: uri
+          description: Public or signed URL to download the file.
+        estimated_duration:
+          type: integer
+          nullable: true
+        created_at:
+          type: string
+          nullable: true
+          format: date-time
+        extracted_content:
+          type: string
+          nullable: true
+        word_count:
+          type: integer
+          nullable: true
+        ai_quiz_generated:
+          type: boolean
+          description: Indicates if an AI-generated quiz is available.
+        user_id:
+          type: string
+          format: uuid
+        user_name:
+          type: string
+          nullable: true
+          description: Username of the uploader when available.
+        is_public:
+          type: boolean
+        category:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          nullable: true
+          items:
+            type: string
+        storage_path:
+          type: string
+          nullable: true
+          description: Object path inside the Supabase storage bucket.
+    LearningMaterialUploadResponse:
+      type: object
+      required:
+        - message
+        - material
+      properties:
+        message:
+          type: string
+          example: File uploaded successfully
+        material:
+          $ref: '#/components/schemas/LearningMaterial'

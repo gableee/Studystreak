@@ -54,3 +54,7 @@ Related database helpers for the streak trigger and saver logic can be found in 
 
 - Interactive Swagger UI is available at `GET /docs` once the server is running (Render URL: `https://studystreak-backend.onrender.com/docs`).
 - The underlying OpenAPI schema is served at `/docs/openapi.yaml` and lives in `public/docs/openapi.yaml` within this repo.
+
+### Architecture & request flow
+
+- A short architecture and request flow guide is available at `/docs/architecture.md` (file: `php-backend/docs/architecture.md`) and describes how requests travel from the browser through `index.php`, `AuthMiddleware`, controllers and finally to Supabase (REST + Storage). It also contains curl examples and troubleshooting tips.

@@ -5,10 +5,31 @@ import App from "./App.tsx";
 import { registerSW } from 'virtual:pwa-register'
 import { AuthProvider } from "@/Auth/context/AuthProvider.tsx";
 
-// Register the service worker. Prompt user when new content is available.
-// registerSW returns a function to trigger update when available; we capture update handler and the prompt event
-const updateSW = registerSW({
-});
+// During development we don't want a lingering PWA service worker auto-refreshing the app.
+if (import.meta.env.DEV && 'serviceWorker' in navigator) {
+  navigator.serviceWorker
+    .getRegistrations()
+    .then((registrations) => registrations.forEach((registration) => registration.unregister()))
+    .catch((err) => console.debug('SW cleanup skipped', err));
+}
+
+// Register the service worker only in production builds.
+let updateSW: (() => void) | undefined;
+if (import.meta.env.PROD) {
+  updateSW = registerSW({
+    immediate: true,
+    onNeedRefresh() {
+      console.info('Service worker update available');
+      window.dispatchEvent(new CustomEvent('pwa-update-available'));
+    },
+    onOfflineReady() {
+      console.info('Offline ready');
+      window.dispatchEvent(new CustomEvent('pwa-offline-ready'));
+    }
+  });
+} else {
+  console.info('Skipping PWA service worker registration in development');
+}
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -17,34 +38,20 @@ type BeforeInstallPromptEvent = Event & {
 
 let deferredInstallPrompt: BeforeInstallPromptEvent | null = null;
 
-// re-register with callbacks handled inline (we captured updateSW above)
-registerSW({
-  immediate: true,
-  onNeedRefresh() {
-    console.info('Service worker update available');
-    window.dispatchEvent(new CustomEvent('pwa-update-available'));
-  },
-  onOfflineReady() {
-    console.info('Offline ready');
-    window.dispatchEvent(new CustomEvent('pwa-offline-ready'));
-  }
-});
-
 // Capture beforeinstallprompt to show a custom Install button in the UI
-window.addEventListener('beforeinstallprompt', (e: Event) => {
-  // Prevent the mini-infobar from appearing on mobile
-  e.preventDefault();
-  // Save the event for later to trigger prompt on user gesture
-  deferredInstallPrompt = e as BeforeInstallPromptEvent;
-  // You can dispatch a custom event or set a global so your UI can show an install button
-  window.dispatchEvent(new CustomEvent('pwa-install-available'));
-});
+if (import.meta.env.PROD) {
+  window.addEventListener('beforeinstallprompt', (e: Event) => {
+    e.preventDefault();
+    deferredInstallPrompt = e as BeforeInstallPromptEvent;
+    window.dispatchEvent(new CustomEvent('pwa-install-available'));
+  });
+}
 
 // Expose simple helpers on window for UI code to use (optional)
 declare global {
   interface Window {
     __pwa?: {
-  promptInstall: () => Promise<{ outcome: 'accepted' | 'dismissed' } | false>
+      promptInstall: () => Promise<{ outcome: 'accepted' | 'dismissed' } | false>
       updateServiceWorker: () => void
     }
   }
@@ -52,7 +59,12 @@ declare global {
 
 window.__pwa = {
   promptInstall: async () => {
-    if (!deferredInstallPrompt) return false;
+    if (!deferredInstallPrompt) {
+      if (import.meta.env.DEV) {
+        console.info('PWA install prompt is disabled in development');
+      }
+      return false;
+    }
     try {
       await deferredInstallPrompt.prompt();
       const choiceResult = await deferredInstallPrompt.userChoice;
@@ -67,13 +79,13 @@ window.__pwa = {
     if (typeof updateSW === 'function') {
       updateSW();
     } else {
-      console.info('No update function available');
+      console.info('No service worker update available');
     }
   }
 };
 
 // When a new service worker takes control, notify the app so it can refresh data
-if ('serviceWorker' in navigator) {
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     window.dispatchEvent(new CustomEvent('sw-activated'));
   });
