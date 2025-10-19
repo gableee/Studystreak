@@ -118,7 +118,7 @@
   }
 
   .pill-tab-active {
-    @apply pill-tab bg-blue-600 text-white shadow-md hover:bg-blue-600 dark:text-white;
+    @apply pill-tab bg-blue-600 text-white shadow-md hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-600 dark:text-white;
   }
 
   /* Badge Components */
