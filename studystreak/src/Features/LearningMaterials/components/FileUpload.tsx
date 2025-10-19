@@ -24,7 +24,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, onClose }) => 
   const [isPublic, setIsPublic] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
-  const { user } = useAuth()
+  const { user, session, loading: authLoading } = useAuth()
 
   const clearSelectedFile = () => {
     setFile(null)
@@ -80,6 +80,11 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, onClose }) => 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    if (authLoading) {
+      setErrorMessage('Checking your session. Please try again in a moment.')
+      return
+    }
+
     if (!user?.id) {
       setErrorMessage('You must be signed in to upload materials.')
       return
@@ -108,7 +113,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, onClose }) => 
     formData.append('user_id', user.id)
 
     try {
-      const token = localStorage.getItem('token') || ''
+      const token = session?.access_token ?? ''
       if (!token) {
         setErrorMessage('Missing session token. Please sign in again.')
         return

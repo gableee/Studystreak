@@ -54,22 +54,25 @@ const CATEGORY_OPTIONS: { label: string; value: string }[] = [
 
 const MaterialsList: React.FC<MaterialsListProps> = ({ filter, searchQuery, onUploadClick, refreshKey = 0 }) => {
   const [allMaterials, setAllMaterials] = useState<LearningMaterial[]>([])
-  const [loading, setLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [error, setError] = useState<string | null>(null)
-  const { user } = useAuth()
+  const { user, session, loading: authLoading } = useAuth()
 
   const fetchMaterials = useCallback(async () => {
-    const token = localStorage.getItem('token')
+    // Wait for auth provider to initialize
+    if (authLoading) return
+
+    const token = session?.access_token ?? null
     if (!token) {
       setAllMaterials([])
-      setLoading(false)
+      setIsLoading(false)
       setError('You need to be signed in to view materials.')
       return
     }
 
     setError(null)
-    setLoading(true)
+    setIsLoading(true)
 
     try {
       const response = await fetch('http://localhost:8000/api/learning-materials?filter=all', {
@@ -89,9 +92,9 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ filter, searchQuery, onUp
       setAllMaterials([])
       setError('We could not load learning materials. Please try again.')
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
-  }, [])
+  }, [session, authLoading])
 
   useEffect(() => {
     fetchMaterials()
@@ -157,7 +160,7 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ filter, searchQuery, onUp
     return gradients[index % gradients.length];
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="surface-section space-y-6">
         <div className="animate-pulse space-y-4">
