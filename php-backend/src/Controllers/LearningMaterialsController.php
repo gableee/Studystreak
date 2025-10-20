@@ -69,9 +69,16 @@ final class LearningMaterialsController
         ]);
 
         if ($status < 200 || $status >= 300 || !is_array($payload)) {
+            error_log(sprintf('[learning_materials.index] fetch failed status=%s body=%s', (string)$status, $rawBody));
+
+            $details = $payload ?? ['response' => $rawBody];
+            if (is_array($details)) {
+                $details['status'] = $status;
+            }
+
             JsonResponder::withStatus($status > 0 ? $status : 500, [
                 'error' => 'Failed to fetch learning materials',
-                'details' => $payload ?? ['response' => $rawBody],
+                'details' => $details,
             ]);
             return;
         }
