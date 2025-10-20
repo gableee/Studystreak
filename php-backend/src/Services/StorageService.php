@@ -86,27 +86,33 @@ final class StorageService
         return ltrim($key, '/');
     }
 
-    public function buildFileUrl(string $objectKey, bool $isPublic): ?string
+    public function buildFileUrl(string $objectKey, bool $isPublic, ?string $token = null): ?string
     {
         if ($objectKey === '') {
             return null;
         }
 
-        if ($isPublic) {
-            return $this->publicBaseUrl . ltrim($objectKey, '/');
-        }
+        // Use longer-lived signed URLs for publicly shared materials while keeping
+        // private items short-lived to limit exposure if a token leaks.
+        $expiry = $isPublic ? 60 * 60 * 24 * 30 : 60 * 60; // 30 days vs 1 hour
 
-        $signedPath = $this->createSignedUrl($objectKey);
+        $signedPath = $this->createSignedUrl($objectKey, $expiry, $token);
         if ($signedPath === null) {
-            return null;
+            // Fall back to direct bucket URL only when the asset is marked public.
+            // This keeps legacy behaviour working for genuinely public buckets
+            // while still returning null for private assets if signing fails.
+            return $isPublic
+                ? $this->publicBaseUrl . ltrim($objectKey, '/')
+                : null;
         }
 
         return rtrim($this->config->getUrl(), '/') . $signedPath;
     }
 
-    public function createSignedUrl(string $objectKey, int $expiresIn = 604800): ?string
+    public function createSignedUrl(string $objectKey, int $expiresIn = 604800, ?string $token = null): ?string
     {
-        if ($this->serviceRoleKey === null || $this->serviceRoleKey === '') {
+        $authToken = $token ?? $this->serviceRoleKey;
+        if ($authToken === null || $authToken === '') {
             return null;
         }
 
@@ -116,7 +122,7 @@ final class StorageService
         try {
             $response = $this->client->request('POST', $uri, [
                 RequestOptions::HEADERS => [
-                    'Authorization' => 'Bearer ' . $this->serviceRoleKey,
+                    'Authorization' => 'Bearer ' . $authToken,
                     'apikey' => $this->config->getAnonKey(),
                     'Content-Type' => 'application/json',
                 ],

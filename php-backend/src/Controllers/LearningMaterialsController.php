@@ -154,7 +154,7 @@ final class LearningMaterialsController
         }, $payload);
 
         foreach ($materials as &$material) {
-            $material = $this->ensureDownloadUrl($material);
+            $material = $this->ensureDownloadUrl($material, $restToken);
         }
         unset($material);
 
@@ -343,13 +343,13 @@ final class LearningMaterialsController
         $extractedContent = $this->extractTextContent($tmpPath, $mime);
         $wordCount = $extractedContent !== null ? str_word_count($extractedContent) : 0;
 
-        $publicFileUrl = $isPublic ? $this->storage->buildFileUrl($objectKey, true) : null;
+        $initialFileUrl = $this->storage->buildFileUrl($objectKey, $isPublic, $storageToken);
 
         $payload = [
             'title' => $title,
             'description' => $description !== '' ? $description : null,
             'content_type' => $this->mapContentType($mime),
-            'file_url' => $publicFileUrl,
+            'file_url' => $isPublic ? $initialFileUrl : null,
             'estimated_duration' => null,
             'extracted_content' => $extractedContent,
             'word_count' => $wordCount,
@@ -404,8 +404,8 @@ final class LearningMaterialsController
         $record['user_name'] = $resolvedName;
         unset($record['profiles']);
 
-        $record['storage_path'] = $objectKey;
-        $record = $this->ensureDownloadUrl($record);
+    $record['storage_path'] = $objectKey;
+    $record = $this->ensureDownloadUrl($record, $storageToken);
 
         $this->dispatchAiProcessing($record, $mime);
 
@@ -539,7 +539,7 @@ final class LearningMaterialsController
      * @param array<string,mixed> $material
      * @return array<string,mixed>
      */
-    private function ensureDownloadUrl(array $material): array
+    private function ensureDownloadUrl(array $material, ?string $token = null): array
     {
         $storagePath = isset($material['storage_path']) && is_string($material['storage_path'])
             ? trim($material['storage_path'])
@@ -565,7 +565,7 @@ final class LearningMaterialsController
         }
 
         $isPublic = $this->toBool($material['is_public'] ?? false);
-        $freshUrl = $this->storage->buildFileUrl($storagePath, $isPublic);
+        $freshUrl = $this->storage->buildFileUrl($storagePath, $isPublic, $token);
 
         if ($freshUrl !== null) {
             $material['file_url'] = $freshUrl;
