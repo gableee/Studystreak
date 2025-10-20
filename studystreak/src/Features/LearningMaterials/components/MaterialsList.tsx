@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/Auth/hooks/useAuth'
-import { apiClient } from '@/lib/apiClient'
+import { apiClient, ApiError } from '@/lib/apiClient'
 import {
   Clock,
   Download,
@@ -53,6 +53,63 @@ const CATEGORY_OPTIONS: { label: string; value: string }[] = [
   { label: 'Architecture', value: 'Architecture' },
 ]
 
+const extractApiErrorDetail = (payload: unknown): string | null => {
+  if (payload === null || payload === undefined) {
+    return null
+  }
+
+  if (typeof payload === 'string') {
+    const trimmed = payload.trim()
+    return trimmed !== '' ? trimmed : null
+  }
+
+  if (typeof payload !== 'object') {
+    return null
+  }
+
+  const record = payload as Record<string, unknown>
+  const directKeys = ['message', 'error', 'detail']
+  for (const key of directKeys) {
+    const value = record[key]
+    if (typeof value === 'string') {
+      const trimmed = value.trim()
+      if (trimmed !== '') {
+        return trimmed
+      }
+    }
+  }
+
+  const detailsValue = record['details']
+  if (typeof detailsValue === 'string') {
+    const trimmed = detailsValue.trim()
+    return trimmed !== '' ? trimmed : null
+  }
+
+  if (detailsValue && typeof detailsValue === 'object') {
+    const detailsRecord = detailsValue as Record<string, unknown>
+    const nestedKeys = ['message', 'error', 'detail', 'hint']
+    for (const key of nestedKeys) {
+      const value = detailsRecord[key]
+      if (typeof value === 'string') {
+        const trimmed = value.trim()
+        if (trimmed !== '') {
+          return trimmed
+        }
+      }
+    }
+
+    const entries = Object.entries(detailsRecord)
+      .filter(([, value]) => value !== null && value !== undefined && value !== '')
+      .map(([key, value]) => `${key}: ${String(value)}`)
+
+    if (entries.length > 0) {
+      return entries.join(', ')
+    }
+  }
+
+  return null
+}
+
 const MaterialsList: React.FC<MaterialsListProps> = ({ filter, searchQuery, onUploadClick, refreshKey = 0 }) => {
   const [allMaterials, setAllMaterials] = useState<LearningMaterial[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -80,7 +137,16 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ filter, searchQuery, onUp
     } catch (err) {
       console.error('Error fetching materials:', err)
       setAllMaterials([])
-      setError('We could not load learning materials. Please try again.')
+
+      if (err instanceof ApiError) {
+        const baseMessage = err.message?.trim() !== '' ? err.message : 'We could not load learning materials. Please try again.'
+        const detail = extractApiErrorDetail(err.payload)
+        setError(detail ? `${baseMessage} (${detail})` : baseMessage)
+      } else if (err instanceof Error && err.message.trim() !== '') {
+        setError(err.message)
+      } else {
+        setError('We could not load learning materials. Please try again.')
+      }
     } finally {
       setIsLoading(false)
     }
