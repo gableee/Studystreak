@@ -256,6 +256,61 @@ final class LearningMaterialsController
         JsonResponder::ok($materials);
     }
 
+    /**
+     * Return a fresh signed URL for a private learning material.
+     * GET /api/learning-materials/:id/signed-url
+     */
+    public function signedUrl(Request $request, string $id): void
+    {
+        $user = $this->getAuthenticatedUser($request);
+        if ($user === null) {
+            return;
+        }
+
+        $accessToken = (string)$request->getAttribute('access_token');
+        $restToken = $this->serviceRoleKey ?? '';
+        if ($restToken === '') {
+            $restToken = $accessToken;
+        }
+
+        if ($restToken === '') {
+            JsonResponder::withStatus(500, ['error' => 'Supabase token not available']);
+            return;
+        }
+
+        // Fetch the material record
+        [$status, $payload, $body] = $this->rest('GET', '/rest/v1/learning_materials', [
+            RequestOptions::HEADERS => $this->restHeaders($restToken),
+            RequestOptions::QUERY => [
+                'select' => 'material_id,storage_path,is_public',
+                'material_id' => 'eq.' . $id,
+                'limit' => '1',
+            ],
+        ]);
+
+        if ($status < 200 || $status >= 300 || !is_array($payload) || count($payload) === 0) {
+            JsonResponder::withStatus($status > 0 ? $status : 404, ['error' => 'Material not found', 'details' => $body]);
+            return;
+        }
+
+        $record = $payload[0];
+        $storagePath = isset($record['storage_path']) ? (string)$record['storage_path'] : '';
+        $isPublic = $this->toBool($record['is_public'] ?? false);
+
+        if ($storagePath === '') {
+            JsonResponder::withStatus(400, ['error' => 'Material has no storage path']);
+            return;
+        }
+
+        $signed = $this->storage->createSignedUrl($storagePath, $isPublic ? 60 * 60 * 24 * 30 : 60 * 60, $restToken);
+        if ($signed === null) {
+            JsonResponder::withStatus(500, ['error' => 'Unable to create signed URL']);
+            return;
+        }
+
+        JsonResponder::ok(['signed_url' => rtrim($this->config->getUrl(), '/') . $signed]);
+    }
+
     public function upload(Request $request): void
     {
         $user = $this->getAuthenticatedUser($request);

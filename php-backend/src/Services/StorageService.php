@@ -39,8 +39,9 @@ final class StorageService
         $encodedPath = $this->encodeStoragePath($objectPath);
         $uri = '/storage/v1/object/' . rawurlencode($this->bucket) . '/' . $encodedPath;
 
-        $stream = fopen($tmpPath, 'rb');
-        if ($stream === false) {
+        // Read the entire file content to avoid resource/stream lifecycle issues
+        $fileContent = @file_get_contents($tmpPath);
+        if ($fileContent === false) {
             throw new StorageException('Unable to read uploaded file');
         }
 
@@ -52,13 +53,10 @@ final class StorageService
                     'Content-Type' => $mime,
                     'x-upsert' => 'false',
                 ],
-                RequestOptions::BODY => $stream,
+                RequestOptions::BODY => $fileContent,
                 RequestOptions::HTTP_ERRORS => false,
             ]);
         } catch (GuzzleException $e) {
-            if (is_resource($stream)) {
-                fclose($stream);
-            }
             throw new StorageException('Storage upload failed: ' . $e->getMessage(), 502);
         }
 

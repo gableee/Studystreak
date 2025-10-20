@@ -220,6 +220,15 @@ if (isset($learningMaterialsRoutes[$path])) {
   exit;
 }
 
+// Route: GET /api/learning-materials/:id/signed-url (auth required)
+if (preg_match('#^/api/learning-materials/([^/]+)/signed-url$#', $path, $m) && $method === 'GET') {
+  $id = $m[1];
+  $authMiddleware->handle($request, function(Request $authedRequest) use ($learningMaterialsController, $id): void {
+    $learningMaterialsController->signedUrl($authedRequest, $id);
+  });
+  exit;
+}
+
 // Route: GET /api/todos and POST /api/todos (auth required)
 if ($path === '/api/todos') {
   $authMiddleware->handle($request, function(Request $authedRequest) use ($todoController, $method): void {
