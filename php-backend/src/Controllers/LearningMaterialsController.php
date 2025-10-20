@@ -426,7 +426,34 @@ final class LearningMaterialsController
     {
         $filter = (string)($params['filter'] ?? 'all');
         $query = [
-            'select' => 'material_id,title,description,content_type,file_url,estimated_duration,created_at,extracted_content,word_count,ai_quiz_generated,user_id,created_by,is_public,category,tags,like_count,download_count,ai_status,storage_path,owner:profiles!fk_learning_materials_owner(username)',
+            // Embed both related profiles but disambiguate using the exact
+            // foreign key constraint names so PostgREST knows which
+            // relationship to follow. We alias each embedding so the
+            // response contains `creator` and `owner` objects.
+            'select' => implode(',', [
+                'material_id',
+                'title',
+                'description',
+                'content_type',
+                'file_url',
+                'estimated_duration',
+                'created_at',
+                'extracted_content',
+                'word_count',
+                'ai_quiz_generated',
+                'user_id',
+                'created_by',
+                'is_public',
+                'category',
+                "tags",
+                'like_count',
+                'download_count',
+                'ai_status',
+                'storage_path',
+                // Disambiguated embeddings (aliases):
+                "creator:profiles!fk_learning_materials_created_by(username)",
+                "owner:profiles!fk_learning_materials_owner(username)",
+            ]),
             'order' => 'created_at.desc',
         ];
 
