@@ -128,6 +128,53 @@ final class LearningMaterialsController
             ];
         }, $payload);
 
+        // If embedded profile username wasn't available (ambiguous relationship),
+        // fetch profiles in a second request and patch the materials with usernames.
+        $needLookup = false;
+        $userIds = [];
+        foreach ($materials as $m) {
+            if (empty($m['user_name']) && !empty($m['user_id'])) {
+                $needLookup = true;
+                $userIds[] = $m['user_id'];
+            }
+        }
+
+        if ($needLookup && count($userIds) > 0) {
+            $userIds = array_values(array_unique($userIds));
+            // Build PostgREST 'in' filter for string ids
+            $quoted = array_map(fn($id) => "'" . str_replace("'", "\\'", (string)$id) . "'", $userIds);
+            $inList = '(' . implode(',', $quoted) . ')';
+
+            [$pStatus, $pPayload, $pRaw] = $this->rest('GET', '/rest/v1/profiles', [
+                RequestOptions::HEADERS => $this->restHeaders($restToken),
+                RequestOptions::QUERY => [
+                    'select' => 'id,username',
+                    'id' => 'in.' . $inList,
+                ],
+            ]);
+
+            if ($pStatus >= 200 && $pStatus < 300 && is_array($pPayload)) {
+                $map = [];
+                foreach ($pPayload as $prof) {
+                    if (isset($prof['id']) && isset($prof['username'])) {
+                        $map[(string)$prof['id']] = $prof['username'];
+                    }
+                }
+
+                foreach ($materials as &$m) {
+                    if (empty($m['user_name']) && !empty($m['user_id'])) {
+                        $uid = (string)$m['user_id'];
+                        if (isset($map[$uid])) {
+                            $m['user_name'] = $map[$uid];
+                        }
+                    }
+                }
+                unset($m);
+            } else {
+                error_log(sprintf('[learning_materials.index] profile lookup failed status=%s body=%s', (string)$pStatus, $pRaw));
+            }
+        }
+
         if ($categoryParam !== '' && strcasecmp($categoryParam, 'all') !== 0) {
             $materials = array_values(array_filter($materials, function (array $item) use ($categoryParam): bool {
                 return isset($item['category']) && strcasecmp((string)$item['category'], $categoryParam) === 0;
