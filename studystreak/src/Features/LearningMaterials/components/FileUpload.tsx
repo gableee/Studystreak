@@ -115,6 +115,30 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, onClose }) => 
     formData.append('user_id', user.id)
 
     try {
+      // Development debug: show the supabase token and form data in the browser console
+      if (import.meta.env.DEV) {
+        try {
+          // Import supabase client lazily to avoid top-level import churn in tests
+          const { supabase } = await import('@/lib/supabaseClient');
+          const { data } = await supabase.auth.getSession();
+          // Mask token in logs
+          const token = data?.session?.access_token ?? null;
+          console.log('[UPLOAD DEBUG] frontend token (masked):', token ? `${String(token).slice(0, 8)}...` : null);
+
+          // Log formdata keys so you can see what's being sent
+          const entries: Record<string, string> = {};
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          for (const pair of (formData as any).entries()) {
+            const key = pair[0];
+            const value = pair[1];
+            entries[key] = value instanceof File ? `${value.name} (${value.type}, ${value.size} bytes)` : String(value);
+          }
+          console.log('[UPLOAD DEBUG] formData', entries);
+        } catch (e) {
+          console.warn('[UPLOAD DEBUG] failed to read supabase session for debug', e);
+        }
+      }
+
       // apiClient will attach the authorization header automatically using the supabase session
       await apiClient.post('/api/learning-materials', formData)
 

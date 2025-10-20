@@ -56,11 +56,11 @@ final class StorageService
                 RequestOptions::HTTP_ERRORS => false,
             ]);
         } catch (GuzzleException $e) {
-            fclose($stream);
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
             throw new StorageException('Storage upload failed: ' . $e->getMessage(), 502);
         }
-
-        fclose($stream);
 
         $status = $response->getStatusCode();
         $body = (string)$response->getBody();

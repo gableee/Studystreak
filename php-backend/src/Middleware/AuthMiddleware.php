@@ -26,6 +26,11 @@ final class AuthMiddleware
     {
         $token = $request->getBearerToken();
         if (!$token) {
+            // Log incoming headers to help debug missing Authorization on uploads
+            if (function_exists('getallheaders')) {
+                $hdrs = getallheaders();
+                error_log('[AUTH DEBUG] missing bearer token. request headers: ' . json_encode($hdrs));
+            }
             JsonResponder::unauthorized('Missing bearer token');
             return;
         }
