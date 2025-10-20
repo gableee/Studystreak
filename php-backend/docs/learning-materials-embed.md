@@ -24,9 +24,17 @@ Multiple foreign keys between the same tables trigger the PostgREST ambiguity wa
   - Result: PostgREST still returned `Could not embed...` on production; rolled back.
 
 2. **Option 2 – Disable embed + fallback (2025-10-20 PM)**
-  - Removed profile embed from the select list and rely on controller’s secondary `/profiles` fetch.
-  - Extended fallback to consider both `user_id` and `created_by` owner ids.
-  - Upload response now guards against missing `profiles` data to avoid warnings.
+    - Removed profile embed from the select list and relied on controller’s secondary `/profiles` fetch.
+    - Extended fallback to consider both `user_id` and `created_by` owner ids.
+    - Upload response now guards against missing `profiles` data to avoid warnings.
+
+3. **Option 1b – Explicit alias embed (2025-10-20 PM)**
+    - Restored embedding with `owner:profiles!learning_materials_user_id_fkey(username)` to disambiguate competing FKs.
+    - Retained manual `/profiles` fallback if Supabase still omits usernames.
+
+4. **Option 1c – Renamed FK + embed (2025-10-20 PM)**
+    - Dropped both legacy constraints and recreated a single FK (`fk_learning_materials_owner`) on `user_id` → `profiles.id`.
+    - Updated controller select to `owner:profiles!fk_learning_materials_owner(username)` so PostgREST has an unambiguous path.
 
 ## Alternatives Considered
 

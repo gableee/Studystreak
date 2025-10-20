@@ -400,7 +400,7 @@ final class LearningMaterialsController
     {
         $filter = (string)($params['filter'] ?? 'all');
         $query = [
-            'select' => 'material_id,title,description,content_type,file_url,estimated_duration,created_at,extracted_content,word_count,ai_quiz_generated,user_id,created_by,is_public,category,tags,like_count,download_count,ai_status',
+            'select' => 'material_id,title,description,content_type,file_url,estimated_duration,created_at,extracted_content,word_count,ai_quiz_generated,user_id,created_by,is_public,category,tags,like_count,download_count,ai_status,owner:profiles!fk_learning_materials_owner(username)',
             'order' => 'created_at.desc',
         ];
 
