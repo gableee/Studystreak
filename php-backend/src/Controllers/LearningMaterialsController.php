@@ -8,6 +8,8 @@ use App\Auth\AuthenticatedUser;
 use App\Config\SupabaseConfig;
 use App\Http\JsonResponder;
 use App\Http\Request;
+use App\Services\StorageException;
+use App\Services\StorageService;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\RequestOptions;
@@ -26,12 +28,12 @@ final class LearningMaterialsController
     private SupabaseConfig $config;
     private Client $client;
     private string $storageBucket;
-    private string $storagePublicBaseUrl;
     private ?string $serviceRoleKey;
     private ?Client $aiClient;
     private ?string $aiServiceApiKey;
     /** @var array<string,bool> */
     private array $storagePathBackfillCache = [];
+    private StorageService $storage;
 
     public function __construct(SupabaseConfig $config)
     {
@@ -41,7 +43,6 @@ final class LearningMaterialsController
             'timeout' => 15,
         ]);
         $this->storageBucket = $config->getStorageBucket();
-        $this->storagePublicBaseUrl = $config->getStoragePublicBaseUrl();
         $this->serviceRoleKey = $config->getServiceRoleKey();
         $aiServiceUrl = $config->getAiServiceUrl();
         $this->aiServiceApiKey = $config->getAiServiceApiKey();
@@ -52,6 +53,14 @@ final class LearningMaterialsController
                 'connect_timeout' => 2,
             ])
             : null;
+
+        $this->storage = new StorageService(
+            $config,
+            $this->client,
+            $this->storageBucket,
+            $config->getStoragePublicBaseUrl(),
+            $this->serviceRoleKey
+        );
     }
 
     public function index(Request $request): void
@@ -310,15 +319,23 @@ final class LearningMaterialsController
         $extension = $this->guessExtension($mime, $originalName);
         $objectPath = $this->buildObjectPath($user->getId(), $title, $extension);
 
-        $objectKey = $this->uploadToStorage($tmpPath, $mime, $objectPath, $storageToken);
-        if ($objectKey === null) {
-            return; // uploadToStorage already emitted a response
+        try {
+            $objectKey = $this->storage->upload($tmpPath, $mime, $objectPath, $storageToken);
+        } catch (StorageException $e) {
+            $details = $e->getDetails();
+            $payload = ['error' => $e->getMessage()];
+            if ($details !== []) {
+                $payload['details'] = $details;
+            }
+
+            JsonResponder::withStatus($e->getStatus(), $payload);
+            return;
         }
 
         $extractedContent = $this->extractTextContent($tmpPath, $mime);
         $wordCount = $extractedContent !== null ? str_word_count($extractedContent) : 0;
 
-        $publicFileUrl = $isPublic ? $this->buildFileUrl($objectKey, true) : null;
+        $publicFileUrl = $isPublic ? $this->storage->buildFileUrl($objectKey, true) : null;
 
         $payload = [
             'title' => $title,
@@ -440,127 +457,6 @@ final class LearningMaterialsController
         return $query;
     }
 
-    private function uploadToStorage(string $tmpPath, string $mime, string $objectPath, string $token): ?string
-    {
-    $encodedPath = $this->encodeStoragePath($objectPath);
-    $uri = '/storage/v1/object/' . rawurlencode($this->storageBucket) . '/' . $encodedPath;
-        $stream = fopen($tmpPath, 'rb');
-        if ($stream === false) {
-            JsonResponder::error(500, 'Unable to read uploaded file');
-            return null;
-        }
-
-        try {
-            $response = $this->client->request('POST', $uri, [
-                RequestOptions::HEADERS => [
-                    'Authorization' => 'Bearer ' . $token,
-                    'apikey' => $this->config->getAnonKey(),
-                    'Content-Type' => $mime,
-                    'x-upsert' => 'false',
-                ],
-                RequestOptions::BODY => $stream,
-                RequestOptions::HTTP_ERRORS => false,
-            ]);
-        } catch (GuzzleException $e) {
-            fclose($stream);
-            JsonResponder::error(502, 'Storage upload failed: ' . $e->getMessage());
-            return null;
-        }
-
-        fclose($stream);
-
-        $status = $response->getStatusCode();
-        $body = (string)$response->getBody();
-        $data = json_decode($body, true);
-
-        if ($status < 200 || $status >= 300) {
-            JsonResponder::withStatus($status, [
-                'error' => 'Supabase storage upload failed',
-                'details' => $data ?? ['response' => $body],
-            ]);
-            return null;
-        }
-
-        $key = is_array($data) && isset($data['Key']) ? (string)$data['Key'] : $objectPath;
-        $prefix = $this->storageBucket . '/';
-        if (strpos($key, $prefix) === 0) {
-            $key = substr($key, strlen($prefix));
-        }
-
-        return ltrim($key, '/');
-    }
-
-    private function buildFileUrl(string $objectKey, bool $isPublic): ?string
-    {
-        if ($objectKey === '') {
-            return null;
-        }
-
-        if ($isPublic) {
-            return $this->storagePublicBaseUrl . ltrim($objectKey, '/');
-        }
-
-        $signedPath = $this->createSignedUrl($objectKey);
-        if ($signedPath === null) {
-            return null;
-        }
-
-        return rtrim($this->config->getUrl(), '/') . $signedPath;
-    }
-
-    private function createSignedUrl(string $objectKey, int $expiresIn = 604800): ?string
-    {
-        if ($this->serviceRoleKey === null || $this->serviceRoleKey === '') {
-            return null;
-        }
-
-        $encodedPath = $this->encodeStoragePath($objectKey);
-        $uri = '/storage/v1/object/sign/' . rawurlencode($this->storageBucket) . '/' . $encodedPath;
-
-        try {
-            $response = $this->client->request('POST', $uri, [
-                RequestOptions::HEADERS => [
-                    'Authorization' => 'Bearer ' . $this->serviceRoleKey,
-                    'apikey' => $this->config->getAnonKey(),
-                    'Content-Type' => 'application/json',
-                ],
-                RequestOptions::JSON => [
-                    'expiresIn' => $expiresIn,
-                ],
-                RequestOptions::HTTP_ERRORS => false,
-            ]);
-        } catch (GuzzleException $e) {
-            return null;
-        }
-
-        $status = $response->getStatusCode();
-        if ($status < 200 || $status >= 300) {
-            return null;
-        }
-
-        $decoded = json_decode((string)$response->getBody(), true);
-        if (!is_array($decoded)) {
-            return null;
-        }
-
-        $signed = null;
-        if (isset($decoded['signedURL']) && is_string($decoded['signedURL'])) {
-            $signed = $decoded['signedURL'];
-        } elseif (isset($decoded['signedUrl']) && is_string($decoded['signedUrl'])) {
-            $signed = $decoded['signedUrl'];
-        }
-
-        if ($signed === null) {
-            return null;
-        }
-
-        if (!str_starts_with($signed, '/')) {
-            $signed = '/' . ltrim($signed, '/');
-        }
-
-        return $signed;
-    }
-
     private function resolveWriteToken(Request $request): ?string
     {
         if ($this->serviceRoleKey !== null && $this->serviceRoleKey !== '') {
@@ -624,7 +520,7 @@ final class LearningMaterialsController
             : '';
 
         if ($storagePath === '' && isset($material['file_url']) && is_string($material['file_url'])) {
-            $derived = $this->extractStoragePathFromUrl($material['file_url']);
+            $derived = $this->storage->extractStoragePathFromUrl($material['file_url']);
             if ($derived !== null) {
                 $storagePath = $derived;
                 $material['storage_path'] = $derived;
@@ -642,8 +538,8 @@ final class LearningMaterialsController
             return $material;
         }
 
-        $isPublic = $this->toBool($material['is_public'] ?? false);
-        $freshUrl = $this->buildFileUrl($storagePath, $isPublic);
+    $isPublic = $this->toBool($material['is_public'] ?? false);
+    $freshUrl = $this->storage->buildFileUrl($storagePath, $isPublic);
 
         if ($freshUrl !== null) {
             $material['file_url'] = $freshUrl;
@@ -658,55 +554,6 @@ final class LearningMaterialsController
         }
 
         return $material;
-    }
-
-    private function extractStoragePathFromUrl(string $url): ?string
-    {
-        $url = trim($url);
-        if ($url === '') {
-            return null;
-        }
-
-        $parts = parse_url($url);
-        if ($parts === false) {
-            return null;
-        }
-
-        $path = $parts['path'] ?? '';
-        if ($path === '') {
-            return null;
-        }
-
-        $marker = '/storage/v1/object/';
-        $pos = strpos($path, $marker);
-        if ($pos === false) {
-            return null;
-        }
-
-        $suffix = substr($path, $pos + strlen($marker));
-        if ($suffix === false || $suffix === '') {
-            return null;
-        }
-
-        $segments = explode('/', ltrim($suffix, '/'));
-        if (count($segments) < 3) {
-            return null;
-        }
-
-        array_shift($segments); // sign, public, authenticated, etc.
-        $bucket = array_shift($segments);
-        if ($bucket !== $this->storageBucket) {
-            return null;
-        }
-
-        $objectPath = implode('/', $segments);
-        if ($objectPath === '') {
-            return null;
-        }
-
-        $decoded = rawurldecode($objectPath);
-
-        return $decoded !== '' ? $decoded : null;
     }
 
     /**
@@ -959,12 +806,6 @@ final class LearningMaterialsController
         }
 
         return trim($userId, '/') . '/' . $datePath . '/' . $filename;
-    }
-
-    private function encodeStoragePath(string $path): string
-    {
-        $segments = array_map('rawurlencode', array_filter(explode('/', $path), fn(string $part): bool => $part !== ''));
-        return implode('/', $segments);
     }
 
     private function slugify(string $value): string

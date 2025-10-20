@@ -1,9 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/Auth/hooks/useAuth'
 import { apiClient, ApiError } from '@/lib/apiClient'
+import { extractApiErrorDetail } from '@/lib/apiError'
 import {
   Clock,
   Download,
+  Eye,
   FileText,
   Heart,
   Users,
@@ -12,8 +14,9 @@ import {
   Filter,
   Plus,
 } from 'lucide-react'
+import MaterialPreviewModal from './MaterialPreviewModal'
 
-interface LearningMaterial {
+export interface LearningMaterial {
   material_id: string;
   title: string;
   description: string;
@@ -55,68 +58,12 @@ const CATEGORY_OPTIONS: { label: string; value: string }[] = [
   { label: 'Architecture', value: 'Architecture' },
 ]
 
-const extractApiErrorDetail = (payload: unknown): string | null => {
-  if (payload === null || payload === undefined) {
-    return null
-  }
-
-  if (typeof payload === 'string') {
-    const trimmed = payload.trim()
-    return trimmed !== '' ? trimmed : null
-  }
-
-  if (typeof payload !== 'object') {
-    return null
-  }
-
-  const record = payload as Record<string, unknown>
-  const directKeys = ['message', 'detail', 'hint']
-  for (const key of directKeys) {
-    const value = record[key]
-    if (typeof value === 'string') {
-      const trimmed = value.trim()
-      if (trimmed !== '') {
-        return trimmed
-      }
-    }
-  }
-
-  const detailsValue = record['details']
-  if (typeof detailsValue === 'string') {
-    const trimmed = detailsValue.trim()
-    return trimmed !== '' ? trimmed : null
-  }
-
-  if (detailsValue && typeof detailsValue === 'object') {
-    const detailsRecord = detailsValue as Record<string, unknown>
-    const nestedKeys = ['message', 'error', 'detail', 'hint']
-    for (const key of nestedKeys) {
-      const value = detailsRecord[key]
-      if (typeof value === 'string') {
-        const trimmed = value.trim()
-        if (trimmed !== '') {
-          return trimmed
-        }
-      }
-    }
-
-    const entries = Object.entries(detailsRecord)
-      .filter(([, value]) => value !== null && value !== undefined && value !== '')
-      .map(([key, value]) => `${key}: ${String(value)}`)
-
-    if (entries.length > 0) {
-      return entries.join(', ')
-    }
-  }
-
-  return null
-}
-
 const MaterialsList: React.FC<MaterialsListProps> = ({ filter, searchQuery, onUploadClick, refreshKey = 0 }) => {
   const [allMaterials, setAllMaterials] = useState<LearningMaterial[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [error, setError] = useState<string | null>(null)
+  const [previewMaterial, setPreviewMaterial] = useState<LearningMaterial | null>(null)
   const { user, session, loading: authLoading } = useAuth()
 
   const fetchMaterials = useCallback(async () => {
@@ -134,7 +81,19 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ filter, searchQuery, onUp
     setIsLoading(true)
 
     try {
-      const data = await apiClient.get<LearningMaterial[]>('/api/learning-materials?filter=all')
+      const params = new URLSearchParams({ filter })
+      if (categoryFilter !== 'all') {
+        params.set('category', categoryFilter)
+      }
+
+      const trimmedSearch = searchQuery.trim()
+      if (trimmedSearch !== '') {
+        params.set('search', trimmedSearch)
+      }
+
+      const queryString = params.toString()
+      const endpoint = `/api/learning-materials${queryString ? `?${queryString}` : ''}`
+      const data = await apiClient.get<LearningMaterial[]>(endpoint)
       setAllMaterials(Array.isArray(data) ? data : [])
     } catch (err) {
       console.error('Error fetching materials:', err)
@@ -155,46 +114,12 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ filter, searchQuery, onUp
     } finally {
       setIsLoading(false)
     }
-  }, [session?.access_token, authLoading])
+  }, [session?.access_token, authLoading, filter, categoryFilter, searchQuery])
 
   useEffect(() => {
     fetchMaterials()
   }, [fetchMaterials, refreshKey, user?.id])
-
-  const filteredMaterials = useMemo(() => {
-    let dataset = [...allMaterials]
-
-    if (filter === 'my') {
-      if (!user?.id) {
-        return []
-      }
-      dataset = dataset.filter((item) => item.user_id === user.id)
-    } else if (filter === 'community') {
-      dataset = dataset.filter((item) => item.is_public)
-    } else if (filter === 'official') {
-      dataset = dataset.filter((item) => item.is_public && item.category)
-    }
-
-    if (categoryFilter !== 'all') {
-      dataset = dataset.filter((item) =>
-        item.category && item.category.toLowerCase() === categoryFilter.toLowerCase()
-      )
-    }
-
-    const term = searchQuery.trim().toLowerCase()
-    if (term !== '') {
-      dataset = dataset.filter((item) => {
-        const title = item.title?.toLowerCase() ?? ''
-        const description = item.description?.toLowerCase() ?? ''
-        const tags = Array.isArray(item.tags) ? item.tags.join(' ').toLowerCase() : ''
-        return title.includes(term) || description.includes(term) || tags.includes(term)
-      })
-    }
-
-    return dataset
-  }, [allMaterials, categoryFilter, filter, searchQuery, user?.id])
-
-
+  const materials = allMaterials
 
   const formatDuration = (minutes: number): string => {
     if (!minutes) return 'Duration not set';
@@ -276,7 +201,7 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ filter, searchQuery, onUp
       {filter === 'community' || filter === 'all' ? (
         /* Community Style Layout */
         <div className="space-y-4">
-          {filteredMaterials.map((material, index) => {
+          {materials.map((material, index) => {
             const FileIcon = getFileIcon(material.content_type)
             const canDownload = Boolean(material.file_url)
             return (
@@ -354,17 +279,27 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ filter, searchQuery, onUp
                     </div>
                   )}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {canDownload ? (
-                    <a
-                      href={material.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="pill-tab-active inline-flex items-center gap-2"
-                    >
-                      <Download className="h-4 w-4" />
-                      Download
-                    </a>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewMaterial(material)}
+                        className="pill-tab-active inline-flex items-center gap-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                        Preview
+                      </button>
+                      <a
+                        href={material.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="pill-tab inline-flex items-center gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        Download
+                      </a>
+                    </>
                   ) : (
                     <span className="pill-tab inline-flex items-center gap-2 text-slate-500 dark:text-slate-400">
                       <Download className="h-4 w-4" />
@@ -385,7 +320,7 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ filter, searchQuery, onUp
       ) : (
         /* Grid Layout for Personal/Official */
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {filteredMaterials.map((material, index) => {
+          {materials.map((material, index) => {
             const FileIcon = getFileIcon(material.content_type)
             const canDownload = Boolean(material.file_url)
             return (
@@ -439,15 +374,25 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ filter, searchQuery, onUp
 
                 <div className="flex gap-2">
                   {canDownload ? (
-                    <a
-                      href={material.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 pill-tab-active inline-flex items-center justify-center gap-2 text-center"
-                    >
-                      <Download className="h-4 w-4" />
-                      Open
-                    </a>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewMaterial(material)}
+                        className="flex-1 pill-tab-active inline-flex items-center justify-center gap-2 text-center"
+                      >
+                        <Eye className="h-4 w-4" />
+                        Preview
+                      </button>
+                      <a
+                        href={material.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="pill-tab inline-flex items-center justify-center gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        Download
+                      </a>
+                    </>
                   ) : (
                     <span className="flex-1 pill-tab inline-flex items-center justify-center gap-2 text-center text-slate-500 dark:text-slate-400">
                       <Download className="h-4 w-4" />
@@ -466,7 +411,7 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ filter, searchQuery, onUp
         </div>
       )}
 
-      {filteredMaterials.length === 0 && (
+      {materials.length === 0 && (
         <div className="text-center py-12">
           <div className="mx-auto h-16 w-16 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-4">
             <FileText className="h-8 w-8 text-slate-400" />
@@ -492,6 +437,12 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ filter, searchQuery, onUp
           )}
         </div>
       )}
+        {previewMaterial && (
+          <MaterialPreviewModal
+            material={previewMaterial}
+            onClose={() => setPreviewMaterial(null)}
+          />
+        )}
     </div>
   )
 }
