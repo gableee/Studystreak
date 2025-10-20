@@ -121,7 +121,7 @@ final class LearningMaterialsController
             $storedType = isset($item['content_type']) ? (string)$item['content_type'] : '';
             $expandedType = $this->expandStoredContentType($storedType);
 
-            return [
+            $result = [
                 'material_id' => $item['material_id'] ?? $item['id'] ?? null,
                 'title' => $item['title'] ?? '',
                 'description' => $item['description'] ?? '',
@@ -138,11 +138,19 @@ final class LearningMaterialsController
                 'is_public' => $this->toBool($item['is_public'] ?? false),
                 'category' => $item['category'] ?? null,
                 'tags' => $tags,
-                'like_count' => (int)($item['like_count'] ?? 0),
-                'download_count' => (int)($item['download_count'] ?? 0),
                 'user_name' => $this->extractOwnerName($item),
                 'storage_path' => $item['storage_path'] ?? null,
             ];
+
+            if (isset($item['like_count'])) {
+                $result['like_count'] = (int)$item['like_count'];
+            }
+
+            if (isset($item['download_count'])) {
+                $result['download_count'] = (int)$item['download_count'];
+            }
+
+            return $result;
         }, $payload);
 
         foreach ($materials as &$material) {
@@ -150,8 +158,8 @@ final class LearningMaterialsController
         }
         unset($material);
 
-        // If embedded profile username wasn't available (ambiguous relationship),
-        // fetch profiles in a second request and patch the materials with usernames.
+    // Fetch profile usernames in a second request when they are missing so the
+    // frontend can display the owner handle without relying on PostgREST embeds.
         $needLookup = false;
         $userIds = [];
         foreach ($materials as $m) {
@@ -426,10 +434,6 @@ final class LearningMaterialsController
     {
         $filter = (string)($params['filter'] ?? 'all');
         $query = [
-            // Embed both related profiles but disambiguate using the exact
-            // foreign key constraint names so PostgREST knows which
-            // relationship to follow. We alias each embedding so the
-            // response contains `creator` and `owner` objects.
             'select' => implode(',', [
                 'material_id',
                 'title',
@@ -445,14 +449,9 @@ final class LearningMaterialsController
                 'created_by',
                 'is_public',
                 'category',
-                "tags",
-                'like_count',
-                'download_count',
+                'tags',
                 'ai_status',
                 'storage_path',
-                // Disambiguated embeddings (aliases):
-                "creator:profiles!fk_learning_materials_created_by(username)",
-                "owner:profiles!fk_learning_materials_owner(username)",
             ]),
             'order' => 'created_at.desc',
         ];
@@ -463,16 +462,16 @@ final class LearningMaterialsController
                 break;
 
             case 'community':
-                $query['is_public'] = 'eq.true';
+                $query['is_public'] = 'is.true';
                 break;
 
             case 'official':
-                $query['is_public'] = 'eq.true';
+                $query['is_public'] = 'is.true';
                 $query['category'] = 'not.is.null';
                 break;
 
             default:
-                $query['or'] = sprintf('(user_id.eq.%s,is_public.eq.true)', $userId);
+                $query['or'] = sprintf('(user_id.eq.%s,is_public.is.true)', $userId);
                 break;
         }
 
@@ -565,8 +564,8 @@ final class LearningMaterialsController
             return $material;
         }
 
-    $isPublic = $this->toBool($material['is_public'] ?? false);
-    $freshUrl = $this->storage->buildFileUrl($storagePath, $isPublic);
+        $isPublic = $this->toBool($material['is_public'] ?? false);
+        $freshUrl = $this->storage->buildFileUrl($storagePath, $isPublic);
 
         if ($freshUrl !== null) {
             $material['file_url'] = $freshUrl;
