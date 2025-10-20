@@ -71,16 +71,40 @@ if ($requestPath === '/health' || $requestPath === '/' || str_starts_with($reque
     exit;
   }
 } else {
+  $allowedOrigin = null;
+
   if ($origin !== null && $config->isOriginAllowed($origin)) {
-    header('Access-Control-Allow-Origin: ' . $origin);
+    $allowedOrigin = $origin;
   } elseif ($allowedOrigins === []) {
-    // No allowlist configured, assume local development
-    header('Access-Control-Allow-Origin: http://localhost:5173');
-  } else {
+    // No allowlist configured, allow common local origins and hosted preview domains
+    $fallbackOrigins = [
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'http://localhost:4173',
+      'http://127.0.0.1:4173',
+      'https://localhost:8173',
+    ];
+
+    $hostedFallbacks = [
+      'https://studystreak-peach.vercel.app',
+      'https://studystreak-backend.onrender.com',
+    ];
+
+    $fallbacks = array_merge($fallbackOrigins, $hostedFallbacks);
+    if ($origin !== null && in_array($origin, $fallbacks, true)) {
+      $allowedOrigin = $origin;
+    }
+  }
+
+  if ($allowedOrigin === null && $origin !== null) {
     header('Content-Type: application/json');
     http_response_code(403);
     echo json_encode(['error' => 'Origin not allowed']);
     exit;
+  }
+
+  if ($allowedOrigin !== null) {
+    header('Access-Control-Allow-Origin: ' . $allowedOrigin);
   }
 
   header('Access-Control-Allow-Headers: Content-Type, Authorization');
