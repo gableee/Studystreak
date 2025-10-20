@@ -30,6 +30,8 @@ final class LearningMaterialsController
     private ?string $serviceRoleKey;
     private ?Client $aiClient;
     private ?string $aiServiceApiKey;
+    /** @var array<string,bool> */
+    private array $storagePathBackfillCache = [];
 
     public function __construct(SupabaseConfig $config)
     {
@@ -133,6 +135,11 @@ final class LearningMaterialsController
                 'storage_path' => $item['storage_path'] ?? null,
             ];
         }, $payload);
+
+        foreach ($materials as &$material) {
+            $material = $this->ensureDownloadUrl($material);
+        }
+        unset($material);
 
         // If embedded profile username wasn't available (ambiguous relationship),
         // fetch profiles in a second request and patch the materials with usernames.
@@ -308,16 +315,16 @@ final class LearningMaterialsController
             return; // uploadToStorage already emitted a response
         }
 
-        $fileUrl = $this->buildFileUrl($objectKey, $isPublic);
-
         $extractedContent = $this->extractTextContent($tmpPath, $mime);
         $wordCount = $extractedContent !== null ? str_word_count($extractedContent) : 0;
+
+        $publicFileUrl = $isPublic ? $this->buildFileUrl($objectKey, true) : null;
 
         $payload = [
             'title' => $title,
             'description' => $description !== '' ? $description : null,
             'content_type' => $this->mapContentType($mime),
-            'file_url' => $fileUrl,
+            'file_url' => $publicFileUrl,
             'estimated_duration' => null,
             'extracted_content' => $extractedContent,
             'word_count' => $wordCount,
@@ -326,6 +333,7 @@ final class LearningMaterialsController
             'is_public' => $isPublic,
             'category' => $category !== '' ? $category : null,
             'tags' => $tags,
+            'storage_path' => $objectKey,
         ];
 
         [$status, $response, $rawBody] = $this->rest('POST', '/rest/v1/learning_materials', [
@@ -372,6 +380,7 @@ final class LearningMaterialsController
         unset($record['profiles']);
 
         $record['storage_path'] = $objectKey;
+        $record = $this->ensureDownloadUrl($record);
 
         $this->dispatchAiProcessing($record, $mime);
 
@@ -400,7 +409,7 @@ final class LearningMaterialsController
     {
         $filter = (string)($params['filter'] ?? 'all');
         $query = [
-            'select' => 'material_id,title,description,content_type,file_url,estimated_duration,created_at,extracted_content,word_count,ai_quiz_generated,user_id,created_by,is_public,category,tags,like_count,download_count,ai_status,owner:profiles!fk_learning_materials_owner(username)',
+            'select' => 'material_id,title,description,content_type,file_url,estimated_duration,created_at,extracted_content,word_count,ai_quiz_generated,user_id,created_by,is_public,category,tags,like_count,download_count,ai_status,storage_path,owner:profiles!fk_learning_materials_owner(username)',
             'order' => 'created_at.desc',
         ];
 
@@ -602,6 +611,150 @@ final class LearningMaterialsController
         }
 
         return [];
+    }
+
+    /**
+     * @param array<string,mixed> $material
+     * @return array<string,mixed>
+     */
+    private function ensureDownloadUrl(array $material): array
+    {
+        $storagePath = isset($material['storage_path']) && is_string($material['storage_path'])
+            ? trim($material['storage_path'])
+            : '';
+
+        if ($storagePath === '' && isset($material['file_url']) && is_string($material['file_url'])) {
+            $derived = $this->extractStoragePathFromUrl($material['file_url']);
+            if ($derived !== null) {
+                $storagePath = $derived;
+                $material['storage_path'] = $derived;
+                $this->backfillStoragePath($material, $derived);
+            }
+        }
+
+        if ($storagePath === '') {
+            if (isset($material['file_url']) && is_string($material['file_url'])) {
+                $trimmed = trim($material['file_url']);
+                $material['file_url'] = $trimmed !== '' ? $trimmed : null;
+            } else {
+                $material['file_url'] = null;
+            }
+            return $material;
+        }
+
+        $isPublic = $this->toBool($material['is_public'] ?? false);
+        $freshUrl = $this->buildFileUrl($storagePath, $isPublic);
+
+        if ($freshUrl !== null) {
+            $material['file_url'] = $freshUrl;
+            return $material;
+        }
+
+        if (isset($material['file_url']) && is_string($material['file_url'])) {
+            $trimmed = trim($material['file_url']);
+            $material['file_url'] = $trimmed !== '' ? $trimmed : null;
+        } else {
+            $material['file_url'] = null;
+        }
+
+        return $material;
+    }
+
+    private function extractStoragePathFromUrl(string $url): ?string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return null;
+        }
+
+        $parts = parse_url($url);
+        if ($parts === false) {
+            return null;
+        }
+
+        $path = $parts['path'] ?? '';
+        if ($path === '') {
+            return null;
+        }
+
+        $marker = '/storage/v1/object/';
+        $pos = strpos($path, $marker);
+        if ($pos === false) {
+            return null;
+        }
+
+        $suffix = substr($path, $pos + strlen($marker));
+        if ($suffix === false || $suffix === '') {
+            return null;
+        }
+
+        $segments = explode('/', ltrim($suffix, '/'));
+        if (count($segments) < 3) {
+            return null;
+        }
+
+        array_shift($segments); // sign, public, authenticated, etc.
+        $bucket = array_shift($segments);
+        if ($bucket !== $this->storageBucket) {
+            return null;
+        }
+
+        $objectPath = implode('/', $segments);
+        if ($objectPath === '') {
+            return null;
+        }
+
+        $decoded = rawurldecode($objectPath);
+
+        return $decoded !== '' ? $decoded : null;
+    }
+
+    /**
+     * @param array<string,mixed> $material
+     */
+    private function backfillStoragePath(array $material, string $storagePath): void
+    {
+        if ($this->serviceRoleKey === null || $this->serviceRoleKey === '') {
+            return;
+        }
+
+        $materialKey = null;
+        $filterColumn = null;
+        if (isset($material['material_id']) && is_scalar($material['material_id'])) {
+            $materialKey = trim((string)$material['material_id']);
+            $filterColumn = 'material_id';
+        } elseif (isset($material['id']) && is_scalar($material['id'])) {
+            $materialKey = trim((string)$material['id']);
+            $filterColumn = 'id';
+        } else {
+            return;
+        }
+
+        if ($materialKey === '' || $filterColumn === null) {
+            return;
+        }
+
+        if (isset($this->storagePathBackfillCache[$materialKey])) {
+            return;
+        }
+        $this->storagePathBackfillCache[$materialKey] = true;
+
+        [$status, , $rawBody] = $this->rest('PATCH', '/rest/v1/learning_materials', [
+            RequestOptions::HEADERS => $this->restHeaders($this->serviceRoleKey) + [
+                'Content-Type' => 'application/json',
+                'Prefer' => 'return=minimal',
+            ],
+            RequestOptions::QUERY => [
+                $filterColumn => 'eq.' . $materialKey,
+            ],
+            RequestOptions::JSON => [
+                'storage_path' => $storagePath,
+            ],
+        ]);
+
+        if ($status < 200 || $status >= 300) {
+            error_log(sprintf('[learning_materials.index] failed to backfill storage_path for %s (%s)', $materialKey, $rawBody));
+        }
     }
 
     private function mapContentType(string $mime): string
