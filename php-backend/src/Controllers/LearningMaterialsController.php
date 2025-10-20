@@ -263,6 +263,8 @@ final class LearningMaterialsController
             return;
         }
 
+        error_log('[UPLOAD DEBUG] start upload for user=' . $user->getId());
+
         $storageToken = $this->serviceRoleKey ?? (string)$request->getAttribute('access_token');
         if ($storageToken === '') {
             JsonResponder::error(500, 'Supabase access token not configured for storage upload');
@@ -276,11 +278,13 @@ final class LearningMaterialsController
         }
 
         if (!isset($_FILES['file']) || !is_array($_FILES['file'])) {
+            error_log('[UPLOAD DEBUG] no file present in $_FILES');
             JsonResponder::badRequest('No file uploaded');
             return;
         }
 
         $file = $_FILES['file'];
+        error_log('[UPLOAD DEBUG] file received name=' . ($file['name'] ?? 'n/a') . ' size=' . ($file['size'] ?? 'n/a') . ' error=' . ($file['error'] ?? 'n/a'));
         $uploadError = (int)($file['error'] ?? UPLOAD_ERR_OK);
         if ($uploadError !== UPLOAD_ERR_OK) {
             $details = ['code' => $uploadError];
@@ -328,9 +332,12 @@ final class LearningMaterialsController
         $objectPath = $this->buildObjectPath($user->getId(), $title, $extension);
 
         try {
+            error_log('[UPLOAD DEBUG] uploading to storage objectPath=' . $objectPath);
             $objectKey = $this->storage->upload($tmpPath, $mime, $objectPath, $storageToken);
+            error_log('[UPLOAD DEBUG] storage.upload returned objectKey=' . $objectKey);
         } catch (StorageException $e) {
             $details = $e->getDetails();
+            error_log('[UPLOAD DEBUG] storage.upload failed message=' . $e->getMessage() . ' details=' . json_encode($details));
             $payload = ['error' => $e->getMessage()];
             if ($details !== []) {
                 $payload['details'] = $details;
@@ -343,7 +350,8 @@ final class LearningMaterialsController
         $extractedContent = $this->extractTextContent($tmpPath, $mime);
         $wordCount = $extractedContent !== null ? str_word_count($extractedContent) : 0;
 
-        $initialFileUrl = $this->storage->buildFileUrl($objectKey, $isPublic, $storageToken);
+    $initialFileUrl = $this->storage->buildFileUrl($objectKey, $isPublic, $storageToken);
+    error_log('[UPLOAD DEBUG] initialFileUrl=' . ($initialFileUrl ?? 'null'));
 
         $payload = [
             'title' => $title,
@@ -361,6 +369,8 @@ final class LearningMaterialsController
             'storage_path' => $objectKey,
         ];
 
+        error_log('[UPLOAD DEBUG] DB insert payload: ' . json_encode($payload));
+
         [$status, $response, $rawBody] = $this->rest('POST', '/rest/v1/learning_materials', [
             RequestOptions::HEADERS => $this->restHeaders($writeToken) + [
                 'Content-Type' => 'application/json',
@@ -368,6 +378,8 @@ final class LearningMaterialsController
             ],
             RequestOptions::JSON => $payload,
         ]);
+
+        error_log('[UPLOAD DEBUG] DB insert status=' . $status . ' raw=' . $rawBody);
 
         if ($status < 200 || $status >= 300 || !is_array($response) || !isset($response[0])) {
             JsonResponder::withStatus($status > 0 ? $status : 500, [
@@ -486,10 +498,12 @@ final class LearningMaterialsController
     private function resolveWriteToken(Request $request): ?string
     {
         if ($this->serviceRoleKey !== null && $this->serviceRoleKey !== '') {
+            error_log('[UPLOAD DEBUG] using service role key for DB write');
             return $this->serviceRoleKey;
         }
 
         $token = (string)$request->getAttribute('access_token');
+        error_log('[UPLOAD DEBUG] using user token for DB write: ' . ($token !== '' ? 'yes' : 'no'));
         return $token !== '' ? $token : null;
     }
 
