@@ -68,7 +68,7 @@ const extractApiErrorDetail = (payload: unknown): string | null => {
   }
 
   const record = payload as Record<string, unknown>
-  const directKeys = ['message', 'error', 'detail']
+  const directKeys = ['message', 'detail', 'hint']
   for (const key of directKeys) {
     const value = record[key]
     if (typeof value === 'string') {
@@ -141,7 +141,10 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ filter, searchQuery, onUp
       if (err instanceof ApiError) {
         const baseMessage = err.message?.trim() !== '' ? err.message : 'We could not load learning materials. Please try again.'
         const detail = extractApiErrorDetail(err.payload)
-        setError(detail ? `${baseMessage} (${detail})` : baseMessage)
+        const finalMessage = detail && detail.toLowerCase() !== baseMessage.toLowerCase()
+          ? `${baseMessage} (${detail})`
+          : baseMessage
+        setError(finalMessage)
       } else if (err instanceof Error && err.message.trim() !== '') {
         setError(err.message)
       } else {

@@ -63,8 +63,22 @@ final class LearningMaterialsController
         $query = $this->buildListQuery($params, $user->getId());
         $accessToken = (string)$request->getAttribute('access_token');
 
+        $restToken = $this->serviceRoleKey ?? '';
+        if ($restToken === '') {
+            $restToken = $accessToken;
+        }
+
+        if ($restToken === '') {
+            error_log('[learning_materials.index] aborting fetch because no Supabase token is available');
+            JsonResponder::withStatus(500, [
+                'error' => 'Failed to fetch learning materials',
+                'details' => ['message' => 'Supabase credentials missing for REST call'],
+            ]);
+            return;
+        }
+
         [$status, $payload, $rawBody] = $this->rest('GET', '/rest/v1/learning_materials', [
-            RequestOptions::HEADERS => $this->restHeaders($accessToken !== '' ? $accessToken : ($this->serviceRoleKey ?? '')),
+            RequestOptions::HEADERS => $this->restHeaders($restToken),
             RequestOptions::QUERY => $query,
         ]);
 

@@ -25,7 +25,7 @@ const extractApiErrorDetail = (payload: unknown): string | null => {
   }
 
   const record = payload as Record<string, unknown>
-  const directKeys = ['message', 'error', 'detail']
+  const directKeys = ['message', 'detail', 'hint']
   for (const key of directKeys) {
     const value = record[key]
     if (typeof value === 'string') {
@@ -190,7 +190,10 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, onClose }) => 
       if (err instanceof ApiError) {
         const baseMessage = err.message?.trim() !== '' ? err.message : 'Upload failed. Please try again.'
         const detail = extractApiErrorDetail(err.payload)
-        setErrorMessage(detail ? `${baseMessage} (${detail})` : baseMessage)
+        const finalMessage = detail && detail.toLowerCase() !== baseMessage.toLowerCase()
+          ? `${baseMessage} (${detail})`
+          : baseMessage
+        setErrorMessage(finalMessage)
         return
       }
 
