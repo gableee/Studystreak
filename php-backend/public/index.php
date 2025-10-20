@@ -1,6 +1,12 @@
 <?php
 declare(strict_types=1);
 
+// Ensure PHP upload limits align with the 50MB application constraint.
+ini_set('upload_max_filesize', '60M');
+ini_set('post_max_size', '65M');
+ini_set('max_execution_time', '120');
+ini_set('max_input_time', '120');
+
 // Quick health probe responder: respond immediately to /health (and /) so platform
 // health checks succeed even if autoload or env is not yet available during deploy.
 $probePath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';

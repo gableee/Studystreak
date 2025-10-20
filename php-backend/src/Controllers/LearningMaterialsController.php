@@ -157,8 +157,20 @@ final class LearningMaterialsController
         }
 
         $file = $_FILES['file'];
-        if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
-            JsonResponder::badRequest('Upload failed', ['code' => $file['error'] ?? null]);
+        $uploadError = (int)($file['error'] ?? UPLOAD_ERR_OK);
+        if ($uploadError !== UPLOAD_ERR_OK) {
+            $details = ['code' => $uploadError];
+            $uploadLimit = ini_get('upload_max_filesize');
+            if (is_string($uploadLimit) && $uploadLimit !== '') {
+                $details['upload_max_filesize'] = $uploadLimit;
+            }
+
+            $postLimit = ini_get('post_max_size');
+            if (is_string($postLimit) && $postLimit !== '') {
+                $details['post_max_size'] = $postLimit;
+            }
+
+            JsonResponder::badRequest($this->uploadErrorMessage($uploadError), $details);
             return;
         }
 
@@ -536,10 +548,34 @@ final class LearningMaterialsController
         }
 
         if ($size > self::MAX_FILE_SIZE) {
-            return 'File size exceeds the 10MB limit';
+            $limitMb = (int)ceil(self::MAX_FILE_SIZE / (1024 * 1024));
+            return sprintf('File size exceeds the %dMB limit', $limitMb);
         }
 
         return null;
+    }
+
+    private function uploadErrorMessage(int $code): string
+    {
+        switch ($code) {
+            case UPLOAD_ERR_INI_SIZE:
+                $limit = ini_get('upload_max_filesize') ?: 'the configured limit';
+                return sprintf('File exceeds the server upload limit (%s).', $limit);
+            case UPLOAD_ERR_FORM_SIZE:
+                return 'File exceeds the allowed size for this form.';
+            case UPLOAD_ERR_PARTIAL:
+                return 'File was only partially uploaded. Please try again.';
+            case UPLOAD_ERR_NO_FILE:
+                return 'No file was uploaded.';
+            case UPLOAD_ERR_NO_TMP_DIR:
+                return 'Server is missing a temporary folder for uploads.';
+            case UPLOAD_ERR_CANT_WRITE:
+                return 'Server failed to write the uploaded file to disk.';
+            case UPLOAD_ERR_EXTENSION:
+                return 'File upload was blocked by a PHP extension on the server.';
+            default:
+                return 'Upload failed. Please try again.';
+        }
     }
 
     private function guessExtension(string $mime, string $originalName): string

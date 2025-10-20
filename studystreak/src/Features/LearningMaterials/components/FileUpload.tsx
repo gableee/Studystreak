@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useAuth } from '@/Auth/hooks/useAuth'
-import { apiClient } from '@/lib/apiClient'
+import { apiClient, ApiError } from '@/lib/apiClient'
 import { X, Upload, FileText } from 'lucide-react'
 
 const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024
@@ -8,6 +8,63 @@ const ALLOWED_FILE_TYPES: Record<string, string> = {
   'application/pdf': 'PDF',
   'application/vnd.ms-powerpoint': 'PowerPoint',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PowerPoint',
+}
+
+const extractApiErrorDetail = (payload: unknown): string | null => {
+  if (payload === null || payload === undefined) {
+    return null
+  }
+
+  if (typeof payload === 'string') {
+    const trimmed = payload.trim()
+    return trimmed !== '' ? trimmed : null
+  }
+
+  if (typeof payload !== 'object') {
+    return null
+  }
+
+  const record = payload as Record<string, unknown>
+  const directKeys = ['message', 'error', 'detail']
+  for (const key of directKeys) {
+    const value = record[key]
+    if (typeof value === 'string') {
+      const trimmed = value.trim()
+      if (trimmed !== '') {
+        return trimmed
+      }
+    }
+  }
+
+  const detailsValue = record['details']
+  if (typeof detailsValue === 'string') {
+    const trimmed = detailsValue.trim()
+    return trimmed !== '' ? trimmed : null
+  }
+
+  if (detailsValue && typeof detailsValue === 'object') {
+    const detailsRecord = detailsValue as Record<string, unknown>
+    const nestedKeys = ['message', 'error', 'detail', 'hint']
+    for (const key of nestedKeys) {
+      const value = detailsRecord[key]
+      if (typeof value === 'string') {
+        const trimmed = value.trim()
+        if (trimmed !== '') {
+          return trimmed
+        }
+      }
+    }
+
+    const entries = Object.entries(detailsRecord)
+      .filter(([, value]) => value !== null && value !== undefined && value !== '')
+      .map(([key, value]) => `${key}: ${String(value)}`)
+
+    if (entries.length > 0) {
+      return entries.join(', ')
+    }
+  }
+
+  return null
 }
 
 interface FileUploadProps {
@@ -129,15 +186,29 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, onClose }) => 
       onClose()
     } catch (err) {
       console.error('Upload error:', err)
-      const message = err instanceof Error ? err.message : 'Upload failed. Please try again.'
-      setErrorMessage(message)
+
+      if (err instanceof ApiError) {
+        const baseMessage = err.message?.trim() !== '' ? err.message : 'Upload failed. Please try again.'
+        const detail = extractApiErrorDetail(err.payload)
+        setErrorMessage(detail ? `${baseMessage} (${detail})` : baseMessage)
+        return
+      }
+
+      if (err instanceof Error) {
+        const userMessage = err.message?.trim()
+        if (userMessage) {
+          setErrorMessage(userMessage)
+          return
+        }
+      }
+
+      setErrorMessage('Upload failed. Please try again.')
     } finally {
       setIsUploading(false)
     }
   }
 
   return (
-    
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white dark:bg-slate-900 max-w-2xl w-full max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700">
         <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
@@ -249,8 +320,8 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, onClose }) => 
             )}
           </button>
         </form>
-        </div>
       </div>
+    </div>
     
   )
 }
