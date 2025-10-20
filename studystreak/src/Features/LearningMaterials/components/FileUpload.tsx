@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useAuth } from '@/Auth/hooks/useAuth'
+import { apiClient } from '@/lib/apiClient'
 import { X, Upload, FileText } from 'lucide-react'
 
 const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024
@@ -24,7 +25,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, onClose }) => 
   const [isPublic, setIsPublic] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
-  const { user, session, loading: authLoading } = useAuth()
+  const { user, loading: authLoading } = useAuth()
 
   const clearSelectedFile = () => {
     setFile(null)
@@ -113,54 +114,30 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, onClose }) => 
     formData.append('user_id', user.id)
 
     try {
-      const token = session?.access_token ?? ''
-      if (!token) {
-        setErrorMessage('Missing session token. Please sign in again.')
-        return
-      }
-      const response = await fetch('http://localhost:8000/api/learning-materials', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      // apiClient will attach the authorization header automatically using the supabase session
+      await apiClient.post('/api/learning-materials', formData)
 
-      if (response.ok) {
-        try {
-          await response.json()
-        } catch (parseError) {
-          console.debug('Upload response parse error:', parseError)
-        }
-        alert('File uploaded successfully!')
-        clearSelectedFile()
-        setTitle('')
-        setDescription('')
-        setCategory('')
-        setTags([])
-        setCurrentTag('')
-        setIsPublic(false)
-        onUploadSuccess()
-        onClose()
-      } else {
-        let message = 'Upload failed. Please try again.'
-        try {
-          const error = await response.json()
-          message = error?.message ?? message
-        } catch (parseError) {
-          console.debug('Upload error response parse error:', parseError)
-        }
-        setErrorMessage(message)
-      }
-    } catch (error) {
-      console.error('Upload error:', error)
-      setErrorMessage('Upload failed. Please try again.')
+      alert('File uploaded successfully!')
+      clearSelectedFile()
+      setTitle('')
+      setDescription('')
+      setCategory('')
+      setTags([])
+      setCurrentTag('')
+      setIsPublic(false)
+      onUploadSuccess()
+      onClose()
+    } catch (err) {
+      console.error('Upload error:', err)
+      const message = err instanceof Error ? err.message : 'Upload failed. Please try again.'
+      setErrorMessage(message)
     } finally {
       setIsUploading(false)
     }
   }
 
   return (
+    
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white dark:bg-slate-900 max-w-2xl w-full max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700">
         <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
@@ -272,8 +249,9 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, onClose }) => 
             )}
           </button>
         </form>
+        </div>
       </div>
-    </div>
+    
   )
 }
 

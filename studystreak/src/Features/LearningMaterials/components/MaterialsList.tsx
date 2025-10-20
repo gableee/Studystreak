@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/Auth/hooks/useAuth'
+import { apiClient } from '@/lib/apiClient'
 import {
   Clock,
   Download,
@@ -63,8 +64,7 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ filter, searchQuery, onUp
     // Wait for auth provider to initialize
     if (authLoading) return
 
-    const token = session?.access_token ?? null
-    if (!token) {
+    if (!session?.access_token) {
       setAllMaterials([])
       setIsLoading(false)
       setError('You need to be signed in to view materials.')
@@ -75,26 +75,16 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ filter, searchQuery, onUp
     setIsLoading(true)
 
     try {
-      const response = await fetch('http://localhost:8000/api/learning-materials?filter=all', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch materials (${response.status})`)
-      }
-
-      const data = await response.json()
+      const data = await apiClient.get<LearningMaterial[]>('/api/learning-materials?filter=all')
       setAllMaterials(Array.isArray(data) ? data : [])
-    } catch (error) {
-      console.error('Error fetching materials:', error)
+    } catch (err) {
+      console.error('Error fetching materials:', err)
       setAllMaterials([])
       setError('We could not load learning materials. Please try again.')
     } finally {
       setIsLoading(false)
     }
-  }, [session, authLoading])
+  }, [session?.access_token, authLoading])
 
   useEffect(() => {
     fetchMaterials()
