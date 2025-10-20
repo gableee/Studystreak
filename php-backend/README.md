@@ -36,7 +36,8 @@ Set-Location php-backend
 composer install
 Copy-Item .env.example .env
 notepad .env  # fill Supabase values
-php -S 127.0.0.1:8080 -t public
+# Match the production upload limits (60M/65M) when using the built-in server
+php -d upload_max_filesize=60M -d post_max_size=65M -d max_execution_time=120 -d max_input_time=120 -S 127.0.0.1:8080 -t public
 ```
 
 ### Endpoints
@@ -47,6 +48,7 @@ php -S 127.0.0.1:8080 -t public
 - `POST /api/gamification/set-timezone`
 - `GET /api/todos?user_id=123`
 - `POST /api/todos` (requires `Authorization: Bearer <user_jwt>`)
+- File uploads accept PDF/PPT up to 50MB (server configured to allow 60MB payloads for overhead).
 
 Related database helpers for the streak trigger and saver logic can be found in `sql/2025-10-13-streak-saver.sql`.
 
