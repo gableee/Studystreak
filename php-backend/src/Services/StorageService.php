@@ -212,7 +212,13 @@ final class StorageService
 
     private function encodeStoragePath(string $path): string
     {
-        $segments = array_map('rawurlencode', array_filter(explode('/', $path), fn(string $part): bool => $part !== ''));
-        return implode('/', $segments);
+        $rawSegments = explode('/', $path);
+        $segments = array_filter($rawSegments, function (string $part): bool {
+            $p = trim($part);
+            return $p !== '' && $p !== '.' && $p !== '..';
+        });
+
+        $encoded = array_map('rawurlencode', $segments);
+        return implode('/', $encoded);
     }
 }
