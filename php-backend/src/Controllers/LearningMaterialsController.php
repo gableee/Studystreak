@@ -123,7 +123,7 @@ final class LearningMaterialsController
                 'tags' => $tags,
                 'like_count' => (int)($item['like_count'] ?? 0),
                 'download_count' => (int)($item['download_count'] ?? 0),
-                'user_name' => $item['profiles']['username'] ?? $item['user_name'] ?? null,
+                'user_name' => $this->extractOwnerName($item),
                 'storage_path' => $item['storage_path'] ?? null,
             ];
         }, $payload);
@@ -297,7 +297,7 @@ final class LearningMaterialsController
     {
         $filter = (string)($params['filter'] ?? 'all');
         $query = [
-            'select' => 'material_id,title,description,content_type,file_url,estimated_duration,created_at,extracted_content,word_count,ai_quiz_generated,user_id,is_public,category,tags,like_count,download_count,profiles(username)',
+            'select' => 'material_id,title,description,content_type,file_url,estimated_duration,created_at,extracted_content,word_count,ai_quiz_generated,user_id,is_public,category,tags,like_count,download_count,owner:profiles!learning_materials_user_id_fkey(username)',
             'order' => 'created_at.desc',
         ];
 
@@ -499,6 +499,33 @@ final class LearningMaterialsController
         }
 
         return [];
+    }
+
+    /**
+     * @param array<string,mixed> $item
+     */
+    private function extractOwnerName(array $item): ?string
+    {
+        $owner = $item['owner'] ?? $item['profiles'] ?? null;
+        if (is_array($owner)) {
+            $username = $owner['username'] ?? null;
+            if (is_string($username)) {
+                $username = trim($username);
+                if ($username !== '') {
+                    return $username;
+                }
+            }
+        }
+
+        $fallback = $item['user_name'] ?? null;
+        if (is_string($fallback)) {
+            $fallback = trim($fallback);
+            if ($fallback !== '') {
+                return $fallback;
+            }
+        }
+
+        return null;
     }
 
     private function detectMimeType(string $filePath, string $fallback): string
