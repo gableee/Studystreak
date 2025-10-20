@@ -123,6 +123,7 @@ final class LearningMaterialsController
                 'word_count' => (int)($item['word_count'] ?? 0),
                 'ai_quiz_generated' => $this->toBool($item['ai_quiz_generated'] ?? false),
                 'user_id' => $item['user_id'] ?? null,
+                'created_by' => $item['created_by'] ?? null,
                 'is_public' => $this->toBool($item['is_public'] ?? false),
                 'category' => $item['category'] ?? null,
                 'tags' => $tags,
@@ -138,9 +139,23 @@ final class LearningMaterialsController
         $needLookup = false;
         $userIds = [];
         foreach ($materials as $m) {
-            if (empty($m['user_name']) && !empty($m['user_id'])) {
+            if (!empty($m['user_name'])) {
+                continue;
+            }
+
+            $candidateIds = [];
+            if (!empty($m['user_id'])) {
+                $candidateIds[] = $m['user_id'];
+            }
+            if (!empty($m['created_by'])) {
+                $candidateIds[] = $m['created_by'];
+            }
+
+            if ($candidateIds !== []) {
                 $needLookup = true;
-                $userIds[] = $m['user_id'];
+                foreach ($candidateIds as $cid) {
+                    $userIds[] = $cid;
+                }
             }
         }
 
@@ -167,10 +182,22 @@ final class LearningMaterialsController
                 }
 
                 foreach ($materials as &$m) {
-                    if (empty($m['user_name']) && !empty($m['user_id'])) {
-                        $uid = (string)$m['user_id'];
-                        if (isset($map[$uid])) {
-                            $m['user_name'] = $map[$uid];
+                    if (!empty($m['user_name'])) {
+                        continue;
+                    }
+
+                    $candidateIds = [];
+                    if (!empty($m['user_id'])) {
+                        $candidateIds[] = (string)$m['user_id'];
+                    }
+                    if (!empty($m['created_by'])) {
+                        $candidateIds[] = (string)$m['created_by'];
+                    }
+
+                    foreach ($candidateIds as $cid) {
+                        if (isset($map[$cid])) {
+                            $m['user_name'] = $map[$cid];
+                            break;
                         }
                     }
                 }
@@ -321,8 +348,29 @@ final class LearningMaterialsController
         $storedContentType = isset($record['content_type']) ? (string)$record['content_type'] : '';
         $record['content_type_label'] = $storedContentType !== '' ? $storedContentType : null;
         $record['content_type'] = $this->expandStoredContentType($storedContentType);
-        $record['user_name'] = $record['profiles']['username'] ?? $record['user_name'] ?? $user->getEmail();
+
+        $resolvedName = null;
+        if (isset($record['profiles']) && is_array($record['profiles'])) {
+            $maybe = $record['profiles']['username'] ?? null;
+            if (is_string($maybe)) {
+                $maybe = trim($maybe);
+                if ($maybe !== '') {
+                    $resolvedName = $maybe;
+                }
+            }
+        }
+        if ($resolvedName === null && isset($record['user_name'])) {
+            $maybe = is_string($record['user_name']) ? trim($record['user_name']) : null;
+            if ($maybe !== null && $maybe !== '') {
+                $resolvedName = $maybe;
+            }
+        }
+        if ($resolvedName === null) {
+            $resolvedName = $user->getEmail();
+        }
+        $record['user_name'] = $resolvedName;
         unset($record['profiles']);
+
         $record['storage_path'] = $objectKey;
 
         $this->dispatchAiProcessing($record, $mime);
@@ -352,7 +400,7 @@ final class LearningMaterialsController
     {
         $filter = (string)($params['filter'] ?? 'all');
         $query = [
-            'select' => 'material_id,title,description,content_type,file_url,estimated_duration,created_at,extracted_content,word_count,ai_quiz_generated,user_id,created_by,is_public,category,tags,like_count,download_count,ai_status,profiles!learning_materials_user_id_fkey(username)',
+            'select' => 'material_id,title,description,content_type,file_url,estimated_duration,created_at,extracted_content,word_count,ai_quiz_generated,user_id,created_by,is_public,category,tags,like_count,download_count,ai_status',
             'order' => 'created_at.desc',
         ];
 

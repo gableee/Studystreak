@@ -26,6 +26,7 @@ interface LearningMaterial {
   word_count: number;
   ai_quiz_generated: boolean;
   user_id: string;
+  created_by?: string;
   is_public: boolean;
   category: string;
   tags: string[];
