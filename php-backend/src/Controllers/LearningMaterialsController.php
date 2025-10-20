@@ -641,11 +641,26 @@ final class LearningMaterialsController
     {
         $owner = $item['owner'] ?? $item['profiles'] ?? null;
         if (is_array($owner)) {
-            $username = $owner['username'] ?? null;
-            if (is_string($username)) {
-                $username = trim($username);
+            // Handle two shapes returned by PostgREST: either an associative
+            // object (['username' => '...']) or an array of objects
+            // ([ ['username'=>'...'] ]). Try both.
+            if (isset($owner['username']) && is_string($owner['username'])) {
+                $username = trim($owner['username']);
                 if ($username !== '') {
                     return $username;
+                }
+            }
+
+            // Numeric-indexed array (take first element)
+            if (array_values($owner) !== $owner) {
+                // associative not numeric, already handled
+            } else {
+                $first = $owner[0] ?? null;
+                if (is_array($first) && isset($first['username']) && is_string($first['username'])) {
+                    $username = trim($first['username']);
+                    if ($username !== '') {
+                        return $username;
+                    }
                 }
             }
         }
