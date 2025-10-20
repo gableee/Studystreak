@@ -19,6 +19,7 @@ interface LearningMaterial {
   description: string;
   file_url: string;
   content_type: string;
+  content_type_label?: string;
   estimated_duration: number;
   created_at: string;
   extracted_content: string;

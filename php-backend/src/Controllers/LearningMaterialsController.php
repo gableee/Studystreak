@@ -106,12 +106,17 @@ final class LearningMaterialsController
             if (!is_string($fileUrl) || $fileUrl === '') {
                 $fileUrl = null;
             }
+
+            $storedType = isset($item['content_type']) ? (string)$item['content_type'] : '';
+            $expandedType = $this->expandStoredContentType($storedType);
+
             return [
                 'material_id' => $item['material_id'] ?? $item['id'] ?? null,
                 'title' => $item['title'] ?? '',
                 'description' => $item['description'] ?? '',
                 'file_url' => $fileUrl,
-                'content_type' => $item['content_type'] ?? '',
+                'content_type' => $expandedType !== '' ? $expandedType : $storedType,
+                'content_type_label' => $storedType !== '' ? $storedType : null,
                 'estimated_duration' => $item['estimated_duration'] ?? null,
                 'created_at' => $item['created_at'] ?? null,
                 'extracted_content' => $item['extracted_content'] ?? null,
@@ -284,7 +289,7 @@ final class LearningMaterialsController
         $payload = [
             'title' => $title,
             'description' => $description !== '' ? $description : null,
-            'content_type' => $mime,
+            'content_type' => $this->mapContentType($mime),
             'file_url' => $fileUrl,
             'estimated_duration' => null,
             'extracted_content' => $extractedContent,
@@ -311,13 +316,16 @@ final class LearningMaterialsController
             ]);
             return;
         }
-
-    $record = $response[0];
-    $record['tags'] = $this->normalizeTags($record['tags'] ?? []);
+        $record = $response[0];
+        $record['tags'] = $this->normalizeTags($record['tags'] ?? []);
+        $storedContentType = isset($record['content_type']) ? (string)$record['content_type'] : '';
+        $record['content_type_label'] = $storedContentType !== '' ? $storedContentType : null;
+        $record['content_type'] = $this->expandStoredContentType($storedContentType);
         $record['user_name'] = $record['profiles']['username'] ?? $record['user_name'] ?? $user->getEmail();
-    $record['storage_path'] = $objectKey;
+        unset($record['profiles']);
+        $record['storage_path'] = $objectKey;
 
-        $this->dispatchAiProcessing($record);
+        $this->dispatchAiProcessing($record, $mime);
 
         JsonResponder::created([
             'message' => 'File uploaded successfully',
@@ -548,6 +556,36 @@ final class LearningMaterialsController
         return [];
     }
 
+    private function mapContentType(string $mime): string
+    {
+        $normalized = strtolower(trim($mime));
+
+        return match ($normalized) {
+            'application/pdf' => 'pdf',
+            'application/vnd.ms-powerpoint',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'ppt',
+            'video/mp4', 'video/webm', 'video/quicktime' => 'video',
+            'text/plain', 'text/markdown', 'text/html' => 'article',
+            default => 'article',
+        };
+    }
+
+    private function expandStoredContentType(string $stored): string
+    {
+        $normalized = strtolower(trim($stored));
+        if ($normalized === '' || str_contains($normalized, '/')) {
+            return $stored;
+        }
+
+        return match ($normalized) {
+            'pdf' => 'application/pdf',
+            'ppt', 'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'video' => 'video/mp4',
+            'article' => 'text/plain',
+            default => $stored,
+        };
+    }
+
     /**
      * @param array<string,mixed> $item
      */
@@ -592,7 +630,7 @@ final class LearningMaterialsController
     /**
      * @param array<string, mixed> $record
      */
-    private function dispatchAiProcessing(array $record): void
+    private function dispatchAiProcessing(array $record, string $mime): void
     {
         if ($this->aiClient === null) {
             return;
@@ -600,8 +638,8 @@ final class LearningMaterialsController
 
         $materialId = (string)($record['material_id'] ?? $record['id'] ?? '');
         $fileUrl = (string)($record['file_url'] ?? '');
-    $contentType = (string)($record['content_type'] ?? 'application/octet-stream');
-    $storagePath = (string)($record['storage_path'] ?? '');
+        $contentType = $mime !== '' ? $mime : $this->expandStoredContentType((string)($record['content_type'] ?? ''));
+        $storagePath = (string)($record['storage_path'] ?? '');
 
         if ($materialId === '' || $fileUrl === '') {
             return;
@@ -611,7 +649,7 @@ final class LearningMaterialsController
             RequestOptions::JSON => [
                 'material_id' => $materialId,
                 'file_url' => $fileUrl,
-                'content_type' => $contentType,
+                'content_type' => $contentType !== '' ? $contentType : 'application/octet-stream',
                 'storage_bucket' => $this->storageBucket,
                 'storage_path' => $storagePath !== '' ? $storagePath : null,
             ],
