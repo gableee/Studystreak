@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { BookOpen, FolderOpen, Users, Layers, Search, Plus } from 'lucide-react'
+import { BookOpen, FolderOpen, Users, Layers, Search, Plus, RefreshCw } from 'lucide-react'
 import FileUpload from './components/FileUpload'
 import MaterialsList from './components/MaterialsList'
 
@@ -71,8 +71,8 @@ const LearningMaterials = () => {
       <header className="surface-section relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/15 via-transparent to-purple-500/15" aria-hidden />
         <div className="relative space-y-6">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div className="space-y-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0 flex-1 space-y-3">
               <span className="badge badge-info uppercase tracking-wide">Curated hub</span>
               <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
                 Discover materials tailored to every way you learn
@@ -81,10 +81,47 @@ const LearningMaterials = () => {
                 Compare hospital rotations with architecture studios and data labs, organized with inclusive language and built-in accessibility.
               </p>
             </div>
-            <button onClick={() => setShowUploadModal(true)} className="pill-tab-active inline-flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Upload material
-            </button>
+            <div className="ml-4 hidden md:flex items-center gap-2 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setRefreshKey((p) => p + 1)}
+                className="pill-tab inline-flex items-center gap-2 bg-gradient-to-r from-teal-700 to-emerald-700 text-white shadow-md shadow-teal-700/25 hover:from-teal-800 hover:to-emerald-800 focus:outline-none focus:ring-2 focus:ring-teal-400"
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span>Refresh</span>
+              </button>
+
+              <button
+                onClick={() => setShowUploadModal(true)}
+                className="pill-tab inline-flex items-center gap-2 bg-gradient-to-r from-blue-800 to-indigo-700 text-white shadow-lg shadow-blue-700/30 hover:from-blue-900 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="whitespace-nowrap">Upload material</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile controls: show under the title on small screens, hidden on md+ */}
+          <div className="md:hidden mt-3">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setRefreshKey((p) => p + 1)}
+                className="pill-tab inline-flex items-center gap-2 bg-gradient-to-r from-teal-700 to-emerald-700 text-white shadow-md shadow-teal-700/25 hover:from-teal-800 hover:to-emerald-800 focus:outline-none focus:ring-2 focus:ring-teal-400"
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span>Refresh</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowUploadModal(true)}
+                className="pill-tab inline-flex items-center gap-2 bg-gradient-to-r from-blue-800 to-indigo-700 text-white shadow-lg shadow-blue-700/30 hover:from-blue-900 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Upload material</span>
+              </button>
+            </div>
           </div>
 
           <div className="relative">

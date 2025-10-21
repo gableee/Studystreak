@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/Auth/hooks/useAuth'
 import { apiClient, ApiError } from '@/lib/apiClient'
 import { extractApiErrorDetail } from '@/lib/apiError'
@@ -81,19 +81,7 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ filter, searchQuery, onUp
     setIsLoading(true)
 
     try {
-      const params = new URLSearchParams({ filter })
-      if (categoryFilter !== 'all') {
-        params.set('category', categoryFilter)
-      }
-
-      const trimmedSearch = searchQuery.trim()
-      if (trimmedSearch !== '') {
-        params.set('search', trimmedSearch)
-      }
-
-      const queryString = params.toString()
-      const endpoint = `/api/learning-materials${queryString ? `?${queryString}` : ''}`
-      const data = await apiClient.get<LearningMaterial[]>(endpoint)
+      const data = await apiClient.get<LearningMaterial[]>('/api/learning-materials')
       setAllMaterials(Array.isArray(data) ? data : [])
     } catch (err) {
       console.error('Error fetching materials:', err)
@@ -114,12 +102,87 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ filter, searchQuery, onUp
     } finally {
       setIsLoading(false)
     }
-  }, [session?.access_token, authLoading, filter, categoryFilter, searchQuery])
+  }, [session?.access_token, authLoading])
 
   useEffect(() => {
     fetchMaterials()
   }, [fetchMaterials, refreshKey, user?.id])
-  const materials = allMaterials
+  const normalizedSearch = searchQuery.trim().toLowerCase()
+  const materials = useMemo(() => {
+    const currentUserId = user?.id ?? null
+
+    return allMaterials.filter((material) => {
+      if (filter === 'my' && currentUserId !== null && material.user_id !== currentUserId) {
+        return false
+      }
+
+      if (filter === 'my' && currentUserId === null) {
+        return false
+      }
+
+      if (filter === 'community' && !material.is_public) {
+        return false
+      }
+
+      if (filter === 'official' && (!material.is_public || (material.category ?? '').trim() === '')) {
+        return false
+      }
+
+      if (categoryFilter !== 'all') {
+        const materialCategory = (material.category ?? '').toLowerCase()
+        if (materialCategory !== categoryFilter.toLowerCase()) {
+          return false
+        }
+      }
+
+      if (normalizedSearch !== '') {
+        const searchNeedle = normalizedSearch
+        const searchFields: Array<string | undefined> = [
+          material.title,
+          material.description,
+          material.category,
+          material.user_name,
+          material.created_by,
+          material.extracted_content,
+        ]
+
+        if (Array.isArray(material.tags)) {
+          searchFields.push(...material.tags)
+        }
+
+        const matchesSearch = searchFields.some((value) => {
+          if (!value) {
+            return false
+          }
+          return value.toLowerCase().includes(searchNeedle)
+        })
+
+        if (!matchesSearch) {
+          return false
+        }
+      }
+
+      if (filter === 'all') {
+        return true
+      }
+
+      if (filter === 'my') {
+        return currentUserId !== null && material.user_id === currentUserId
+      }
+
+      if (filter === 'community') {
+        return material.is_public
+      }
+
+      if (filter === 'official') {
+        return material.is_public && (material.category ?? '').trim() !== ''
+      }
+
+      return true
+    })
+  }, [allMaterials, categoryFilter, filter, normalizedSearch, user?.id])
+
+  // Refresh now handled from parent header; keep local fetchMaterials callable if needed.
 
   const formatDuration = (minutes: number): string => {
     if (!minutes) return 'Duration not set';
@@ -187,14 +250,15 @@ const MaterialsList: React.FC<MaterialsListProps> = ({ filter, searchQuery, onUp
             </button>
           ))}
         </div>
-        
-        <button 
-          onClick={onUploadClick}
-          className="pill-tab-active inline-flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Upload material
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={onUploadClick}
+            className="pill-tab-active inline-flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Upload material
+          </button>
+        </div>
       </div>
 
       {/* Materials Grid */}
