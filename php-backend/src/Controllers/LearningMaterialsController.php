@@ -267,14 +267,8 @@ final class LearningMaterialsController
             return;
         }
 
-        $accessToken = (string)$request->getAttribute('access_token');
-        $restToken = $this->serviceRoleKey ?? '';
-        if ($restToken === '') {
-            $restToken = $accessToken;
-        }
-
-        if ($restToken === '') {
-            JsonResponder::withStatus(500, ['error' => 'Supabase token not available']);
+        $restToken = $this->requireRestToken($request);
+        if ($restToken === null) {
             return;
         }
 
@@ -308,7 +302,158 @@ final class LearningMaterialsController
             return;
         }
 
-        JsonResponder::ok(['signed_url' => rtrim($this->config->getUrl(), '/') . $signed]);
+        $signedUrl = rtrim($this->config->getUrl(), '/') . $signed;
+        JsonResponder::ok(['signed_url' => $signedUrl]);
+    }
+
+    public function like(Request $request, string $id): void
+    {
+        $user = $this->getAuthenticatedUser($request);
+        if ($user === null) {
+            return;
+        }
+
+        $this->incrementMaterialMetric($request, $id, 'like_count', 'Liked successfully');
+    }
+
+    public function download(Request $request, string $id): void
+    {
+        $user = $this->getAuthenticatedUser($request);
+        if ($user === null) {
+            return;
+        }
+
+        $this->incrementMaterialMetric($request, $id, 'download_count', 'Download counted');
+    }
+
+    public function stream(Request $request, string $id): void
+    {
+        $user = $this->getAuthenticatedUser($request);
+        if ($user === null) {
+            return;
+        }
+
+        $restToken = $this->requireRestToken($request);
+        if ($restToken === null) {
+            return;
+        }
+
+        [$status, $payload, $rawBody] = $this->rest('GET', '/rest/v1/learning_materials', [
+            RequestOptions::HEADERS => $this->restHeaders($restToken),
+            RequestOptions::QUERY => [
+                'select' => 'storage_path,is_public',
+                'material_id' => 'eq.' . $id,
+                'limit' => '1',
+            ],
+        ]);
+
+        if ($status < 200 || $status >= 300 || !is_array($payload) || count($payload) === 0) {
+            $responseStatus = $status > 0 ? $status : 404;
+            JsonResponder::withStatus($responseStatus, [
+                'error' => 'Material not found',
+                'details' => $payload ?? ['response' => $rawBody],
+            ]);
+            return;
+        }
+
+        $record = $payload[0];
+        $storagePath = isset($record['storage_path']) ? trim((string)$record['storage_path']) : '';
+        if ($storagePath === '') {
+            JsonResponder::withStatus(400, ['error' => 'Material has no storage path']);
+            return;
+        }
+
+        $isPublic = $this->toBool($record['is_public'] ?? false);
+
+        $objectResponse = $this->storage->fetchObject($storagePath, $restToken);
+        if ($objectResponse === null) {
+            JsonResponder::withStatus(500, ['error' => 'Unable to load material content']);
+            return;
+        }
+
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
+        $contentType = $objectResponse->getHeaderLine('Content-Type');
+        if ($contentType === '') {
+            $contentType = 'application/octet-stream';
+        }
+
+        $contentLength = $objectResponse->getHeaderLine('Content-Length');
+        $etag = $objectResponse->getHeaderLine('ETag');
+        $lastModified = $objectResponse->getHeaderLine('Last-Modified');
+        $acceptRanges = $objectResponse->getHeaderLine('Accept-Ranges');
+        $disposition = $objectResponse->getHeaderLine('Content-Disposition');
+
+        http_response_code(200);
+        header('Content-Type: ' . $contentType);
+        if ($contentLength !== '') {
+            header('Content-Length: ' . $contentLength);
+        }
+        if ($etag !== '') {
+            header('ETag: ' . $etag);
+        }
+        if ($lastModified !== '') {
+            header('Last-Modified: ' . $lastModified);
+        }
+        if ($acceptRanges !== '') {
+            header('Accept-Ranges: ' . $acceptRanges);
+        }
+
+        $filename = basename($storagePath);
+        $safeName = str_replace('"', '\"', $filename);
+        if ($disposition !== '' && str_contains(strtolower($disposition), 'inline')) {
+            header('Content-Disposition: ' . $disposition);
+        } else {
+            header('Content-Disposition: inline; filename="' . $safeName . '"');
+        }
+
+        $cacheControl = $isPublic ? 'public, max-age=300' : 'private, max-age=60';
+        header('Cache-Control: ' . $cacheControl);
+
+        // Security headers to prevent content-type sniffing
+        header('X-Content-Type-Options: nosniff');
+
+        // Restrict CORS to configured allowed origins to avoid exposing internal assets.
+        $allowed = $this->config->getAllowedOrigins();
+        if (is_string($allowed) && $allowed !== '') {
+            // The config contains a comma-separated list of origins; pick the first that matches
+            $origins = array_map('trim', explode(',', $allowed));
+            $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
+            if ($requestOrigin !== '' && in_array($requestOrigin, $origins, true)) {
+                header('Access-Control-Allow-Origin: ' . $requestOrigin);
+                header('Access-Control-Allow-Methods: GET');
+                header('Access-Control-Allow-Headers: Authorization, Content-Type');
+            }
+        } else {
+            // Fallback: do not allow wildcard in production; allow same-origin only
+            header('Access-Control-Allow-Origin: ' . ($_SERVER['HTTP_ORIGIN'] ?? ''));
+            header('Access-Control-Allow-Methods: GET');
+            header('Access-Control-Allow-Headers: Authorization, Content-Type');
+        }
+
+        // Reject streaming HTML or JavaScript to avoid executing untrusted markup inside the
+        // iframe even with sandboxing. Only allow typical binary/document/image content.
+        $lowerType = strtolower($contentType);
+        if (str_starts_with($lowerType, 'text/html') || str_contains($lowerType, 'javascript') || str_contains($lowerType, 'text/javascript')) {
+            JsonResponder::withStatus(403, ['error' => 'Refusing to stream potentially executable content']);
+            return;
+        }
+
+        $body = $objectResponse->getBody();
+        while (!$body->eof()) {
+            echo $body->read(8192);
+            if (function_exists('flush')) {
+                flush();
+            }
+        }
+
+        if (method_exists($body, 'close')) {
+            $body->close();
+        }
+
+        exit;
     }
 
     public function upload(Request $request): void
@@ -493,6 +638,17 @@ final class LearningMaterialsController
         return $user;
     }
 
+    private function requireRestToken(Request $request): ?string
+    {
+        $token = $this->serviceRoleKey ?? (string)$request->getAttribute('access_token');
+        if ($token === '') {
+            JsonResponder::withStatus(500, ['error' => 'Supabase token not available']);
+            return null;
+        }
+
+        return $token;
+    }
+
     /**
      * @param array<string,mixed> $params
      * @return array<string,string>
@@ -560,6 +716,65 @@ final class LearningMaterialsController
         $token = (string)$request->getAttribute('access_token');
         error_log('[UPLOAD DEBUG] using user token for DB write: ' . ($token !== '' ? 'yes' : 'no'));
         return $token !== '' ? $token : null;
+    }
+
+    private function incrementMaterialMetric(Request $request, string $id, string $column, string $successMessage): void
+    {
+        $restToken = $this->requireRestToken($request);
+        if ($restToken === null) {
+            return;
+        }
+
+        [$status, $payload, $rawBody] = $this->rest('GET', '/rest/v1/learning_materials', [
+            RequestOptions::HEADERS => $this->restHeaders($restToken),
+            RequestOptions::QUERY => [
+                'select' => $column,
+                'material_id' => 'eq.' . $id,
+                'limit' => '1',
+            ],
+        ]);
+
+        if ($status < 200 || $status >= 300 || !is_array($payload) || count($payload) === 0) {
+            $responseStatus = $status > 0 ? $status : 404;
+            JsonResponder::withStatus($responseStatus, [
+                'error' => 'Material not found',
+                'details' => $payload ?? ['response' => $rawBody],
+            ]);
+            return;
+        }
+
+        $record = $payload[0];
+        $currentRaw = $record[$column] ?? 0;
+        $current = is_numeric($currentRaw) ? (int)$currentRaw : 0;
+        $nextValue = $current + 1;
+
+        $headers = $this->restHeaders($restToken);
+        $headers['Content-Type'] = 'application/json';
+        $headers['Prefer'] = 'return=minimal';
+
+        [$updateStatus, , $updateRawBody] = $this->rest('PATCH', '/rest/v1/learning_materials', [
+            RequestOptions::HEADERS => $headers,
+            RequestOptions::QUERY => [
+                'material_id' => 'eq.' . $id,
+            ],
+            RequestOptions::JSON => [
+                $column => $nextValue,
+            ],
+        ]);
+
+        if ($updateStatus < 200 || $updateStatus >= 300) {
+            JsonResponder::withStatus($updateStatus > 0 ? $updateStatus : 500, [
+                'error' => 'Failed to update material metric',
+                'details' => ['response' => $updateRawBody, 'status' => $updateStatus],
+            ]);
+            return;
+        }
+
+        JsonResponder::ok([
+            'message' => $successMessage,
+            'material_id' => $id,
+            $column => $nextValue,
+        ]);
     }
 
     /**

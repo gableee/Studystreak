@@ -229,6 +229,33 @@ if (preg_match('#^/api/learning-materials/([^/]+)/signed-url$#', $path, $m) && $
   exit;
 }
 
+// Route: POST /api/learning-materials/:id/like (auth required)
+if (preg_match('#^/api/learning-materials/([^/]+)/like$#', $path, $m) && $method === 'POST') {
+  $id = $m[1];
+  $authMiddleware->handle($request, function(Request $authedRequest) use ($learningMaterialsController, $id): void {
+    $learningMaterialsController->like($authedRequest, $id);
+  });
+  exit;
+}
+
+// Route: POST /api/learning-materials/:id/download (auth required)
+if (preg_match('#^/api/learning-materials/([^/]+)/download$#', $path, $m) && $method === 'POST') {
+  $id = $m[1];
+  $authMiddleware->handle($request, function(Request $authedRequest) use ($learningMaterialsController, $id): void {
+    $learningMaterialsController->download($authedRequest, $id);
+  });
+  exit;
+}
+
+// Route: GET /api/learning-materials/:id/stream (auth required)
+if (preg_match('#^/api/learning-materials/([^/]+)/stream$#', $path, $m) && $method === 'GET') {
+  $id = $m[1];
+  $authMiddleware->handle($request, function(Request $authedRequest) use ($learningMaterialsController, $id): void {
+    $learningMaterialsController->stream($authedRequest, $id);
+  });
+  exit;
+}
+
 // Route: GET /api/todos and POST /api/todos (auth required)
 if ($path === '/api/todos') {
   $authMiddleware->handle($request, function(Request $authedRequest) use ($todoController, $method): void {

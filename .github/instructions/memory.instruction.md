@@ -24,6 +24,8 @@ applyTo: '**'
 - 2025-10-15: Tailwind CSS docs (/tailwindlabs/tailwindcss.com) — component layering patterns for reusable cards, badges, and gradients to maintain consistent glass surfaces.
 - 2025-10-16: Tailwind CSS docs (/tailwindlabs/tailwindcss.com) — confirmed component-layer overrides and dark-mode glass treatments for card layouts; Lucide docs (/lucide-icons/lucide) — React usage patterns, accessibility guidance, and dynamic icon loading cautions.
 - 2025-10-17: Tailwind CSS docs (/tailwindlabs/tailwindcss.com) — backdrop filter utilities (blur, opacity, contrast, hue rotation) for glass panels used in analytics and profile redesigns.
+- 2025-10-23: Supabase docs (/supabase/supabase) — `createSignedUrl` yields `data.signedUrl` which may already be absolute; temporary URLs govern private asset access durations.
+- 2025-10-24: Supabase docs (/supabase/supabase) — reviewed storage signed URL creation patterns and expiry considerations for embedding private PDFs.
 
 ## Conversation History
 - Renamed Pomodoro -> FocusSession and related routes
