@@ -135,6 +135,7 @@
 
 ### **DevOps & Tools**
 - **Docker & Docker Compose** - Container orchestration
+- **Context7 MCP** - Contract-driven development tool (optional)
 - **ESLint** - JavaScript/TypeScript linting
 - **PostCSS & Autoprefixer** - CSS processing
 - **Vite PWA Plugin** - Progressive Web App capabilities
@@ -199,6 +200,7 @@ docker compose up --build
 # Services will be available at:
 # - Frontend: http://localhost:5173 (if running separately)
 # - PHP Backend: http://localhost:8181
+# - Context7 MCP: http://localhost:8090 (optional dev tool for contract-driven development)
 ```
 
 ### 5️⃣ Run Locally (Alternative)
