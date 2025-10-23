@@ -199,7 +199,6 @@ docker compose up --build
 # Services will be available at:
 # - Frontend: http://localhost:5173 (if running separately)
 # - PHP Backend: http://localhost:8181
-# - Context7 MCP: http://localhost:8090
 ```
 
 ### 5️⃣ Run Locally (Alternative)
