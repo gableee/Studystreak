@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useState, type ComponentType } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
 import {
 	Download,
 	Eye,
@@ -12,12 +12,16 @@ import {
 	ShieldCheck,
 	Sparkles,
 	UserCircle,
+	Trash,
 } from 'lucide-react'
 
 import { useAuth } from '@/Auth/hooks/useAuth'
-import { apiClient, ApiError } from '@/lib/apiClient'
+import { apiClient } from '@/lib/apiClient'
 
-import MaterialPreviewModal, { type LearningMaterial, type SectionKey } from './MaterialPreviewModal'
+import MaterialPreviewModal from './MaterialPreviewModal'
+import DeleteConfirmModal from './DeleteConfirmModal'
+import { useMaterials } from '../contexts/MaterialsContext'
+import type { CachedLearningMaterial, SectionKey, SignedUrlResponse } from '../types'
 
 type MaterialsListProps = {
 	filter: SectionKey
@@ -28,7 +32,7 @@ type MaterialsListProps = {
 
 type FetchState = 'idle' | 'loading' | 'error' | 'ready'
 
-type ActionKind = 'like' | 'download'
+type ActionKind = 'like' | 'download' | 'delete'
 
 type IconDescriptor = {
 	Icon: ComponentType<{ className?: string }>
@@ -36,11 +40,7 @@ type IconDescriptor = {
 	badge: string
 }
 
-interface SignedUrlResponse {
-	signed_url?: string
-}
-
-const cardIconMap: Array<{ matcher: (material: LearningMaterial) => boolean; icon: IconDescriptor }> = [
+const cardIconMap: Array<{ matcher: (material: CachedLearningMaterial) => boolean; icon: IconDescriptor }> = [
 	{
 		matcher: (material) => (material.content_type ?? '').includes('pdf') || material.title.toLowerCase().endsWith('.pdf'),
 		icon: { Icon: FileText, accent: 'bg-gradient-to-br from-blue-500 to-indigo-600', badge: 'PDF' },
@@ -79,40 +79,46 @@ const emptyStateMessages: Record<SectionKey, string> = {
 
 const formatCount = (value?: number | null) => new Intl.NumberFormat('en', { notation: 'compact' }).format(value ?? 0)
 
-const resolveIcon = (material: LearningMaterial): IconDescriptor => {
+const truncateText = (value?: string | null, max = 80) => {
+	if (!value) return ''
+	return value.length > max ? `${value.slice(0, max - 1)}…` : value
+}
+
+const computeAuthorLabel = (m: CachedLearningMaterial): string => {
+	const meta = m as unknown as Record<string, unknown>
+	if (typeof m.user_name === 'string' && m.user_name.trim() !== '') {
+		return m.user_name.trim()
+	}
+	if (typeof meta['uploader_name'] === 'string' && (meta['uploader_name'] as string).trim() !== '') {
+		return (meta['uploader_name'] as string).trim()
+	}
+	if (typeof meta['uploader_email'] === 'string' && (meta['uploader_email'] as string).trim() !== '') {
+		const parts = (meta['uploader_email'] as string).split('@')
+		if (parts.length > 0 && parts[0].trim() !== '') return parts[0].trim()
+	}
+	if (typeof meta['provider'] === 'string' && (meta['provider'] as string).trim() !== '') {
+		return (meta['provider'] as string).trim()
+	}
+	if (typeof meta['source'] === 'string' && (meta['source'] as string).trim() !== '') {
+		return (meta['source'] as string).trim()
+	}
+	return 'Unknown uploader'
+}
+
+const resolveIcon = (material: CachedLearningMaterial): IconDescriptor => {
 	const found = cardIconMap.find((entry) => entry.matcher(material))
 	return found?.icon ?? cardIconMap[cardIconMap.length - 1]!.icon
 }
 
-const buildQueryString = (options: { filter: SectionKey; searchQuery: string; userId?: string | null }) => {
-	const params = new URLSearchParams()
-	params.set('filter', options.filter)
-	const trimmedSearch = options.searchQuery.trim()
-	if (trimmedSearch !== '') {
-		params.set('search', trimmedSearch)
-	}
-	if (options.userId) {
-		params.set('user_id', options.userId)
-	}
-	return params.toString()
-}
-
-const normalizeMaterial = (raw: LearningMaterial): LearningMaterial => ({
-	...raw,
-	like_count: typeof raw.like_count === 'number' ? raw.like_count : 0,
-	download_count: typeof raw.download_count === 'number' ? raw.download_count : 0,
-	tags: Array.isArray(raw.tags) ? raw.tags : [],
-})
-
 const MaterialsList = ({ filter, searchQuery, onUploadClick, refreshKey }: MaterialsListProps) => {
 	const { user } = useAuth()
+	const { materials, loading, error, refreshMaterials, applyMaterialUpdate, lastUpdated } = useMaterials()
 
-	const [materials, setMaterials] = useState<LearningMaterial[]>([])
-	const [state, setState] = useState<FetchState>('idle')
-	const [fetchError, setFetchError] = useState<string | null>(null)
-	const [selectedMaterial, setSelectedMaterial] = useState<LearningMaterial | null>(null)
+	const [selectedMaterialId, setSelectedMaterialId] = useState<string | null>(null)
+	const [deleteCandidateId, setDeleteCandidateId] = useState<string | null>(null)
 	const [actionPending, setActionPending] = useState<Record<string, Partial<Record<ActionKind, boolean>>>>({})
 	const [actionMessage, setActionMessage] = useState<string | null>(null)
+	const refreshKeyRef = useRef(refreshKey)
 
 	const recordActionPending = useCallback((id: string, kind: ActionKind, pending: boolean) => {
 		setActionPending((prev) => ({
@@ -125,70 +131,35 @@ const MaterialsList = ({ filter, searchQuery, onUploadClick, refreshKey }: Mater
 	}, [])
 
 	useEffect(() => {
-		const abortController = new AbortController()
-		let cancelled = false
-
-		const fetchMaterials = async () => {
-			setState('loading')
-			setFetchError(null)
-
-			try {
-				const queryString = buildQueryString({ filter, searchQuery, userId: user?.id ?? null })
-				const path = queryString ? `/api/learning-materials?${queryString}` : '/api/learning-materials'
-				const response = await apiClient.get<LearningMaterial[]>(path, { signal: abortController.signal })
-				if (cancelled) {
-					return
-				}
-				setMaterials(Array.isArray(response) ? response.map(normalizeMaterial) : [])
-				setState('ready')
-			} catch (error) {
-				if (cancelled) {
-					return
-				}
-				console.error('Failed to load learning materials', error)
-				let message = 'Unable to load learning materials right now.'
-				if (error instanceof ApiError) {
-					const details = typeof error.payload === 'object' && error.payload !== null ? String((error.payload as { error?: string }).error ?? '') : ''
-					if (details) {
-						message = details
-					} else if (error.message) {
-						message = error.message
-					}
-				} else if (error instanceof Error && error.message) {
-					message = error.message
-				}
-				setFetchError(message)
-				setState('error')
-			}
+		if (refreshKeyRef.current === refreshKey) {
+			return
 		}
+		refreshKeyRef.current = refreshKey
+		void refreshMaterials()
+	}, [refreshKey, refreshMaterials])
 
-		void fetchMaterials()
-
-		return () => {
-			cancelled = true
-			abortController.abort()
+	useEffect(() => {
+		if (selectedMaterialId && !materials.some((material) => material.material_id === selectedMaterialId)) {
+			setSelectedMaterialId(null)
 		}
-	}, [filter, searchQuery, refreshKey, user?.id])
+	}, [materials, selectedMaterialId])
 
-	const handlePreview = useCallback((material: LearningMaterial) => {
-		setSelectedMaterial(material)
+	const handlePreview = useCallback((material: CachedLearningMaterial) => {
+		setSelectedMaterialId(material.material_id)
 	}, [])
 
-	const updateMaterialCount = useCallback((materialId: string, key: 'like_count' | 'download_count', delta: number) => {
-		setMaterials((prev) =>
-			prev.map((item) =>
-				item.material_id === materialId
-					? {
-							...item,
-							[key]: Math.max(0, (item[key] ?? 0) + delta),
-						}
-					: item,
-			),
-		)
-	}, [])
+	const updateMaterialCount = useCallback(
+		(materialId: string, key: 'like_count' | 'download_count', delta: number) => {
+			applyMaterialUpdate(materialId, (material) => ({
+				...material,
+				[key]: Math.max(0, (material[key] ?? 0) + delta),
+			}))
+		},
+		[applyMaterialUpdate],
+	)
 
 	const handleLike = useCallback(
-		async (material: LearningMaterial) => {
+		async (material: CachedLearningMaterial) => {
 			const { material_id: materialId } = material
 			if (actionPending[materialId]?.like) {
 				return
@@ -211,59 +182,123 @@ const MaterialsList = ({ filter, searchQuery, onUploadClick, refreshKey }: Mater
 		[actionPending, recordActionPending, updateMaterialCount],
 	)
 
-	const resolveDownloadUrl = useCallback(async (material: LearningMaterial): Promise<string | null> => {
+	const resolveDownloadUrl = useCallback(async (material: CachedLearningMaterial): Promise<string | null> => {
+		// Prefer a prefetched resolved_url cached on the material
+		if (material.resolved_url) {
+			return material.resolved_url
+		}
+
 		if (material.file_url) {
 			return material.file_url
 		}
 		try {
 			const signed = await apiClient.get<SignedUrlResponse>(`/api/learning-materials/${material.material_id}/signed-url`)
 			if (signed && typeof signed.signed_url === 'string') {
-				return signed.signed_url
+				const resolved = signed.signed_url
+				applyMaterialUpdate(material.material_id, (existing) => ({
+					...existing,
+					resolved_url: resolved,
+				}))
+				return resolved
 			}
 		} catch (error) {
 			console.error('Failed to generate signed URL', error)
 			setActionMessage('Could not generate a download link. Try again shortly.')
 		}
 		return null
-	}, [])
+	}, [applyMaterialUpdate])
 
-const handleDownload = useCallback(
-  async (material: LearningMaterial) => {
-    const materialId = material.material_id
-    if (actionPending[materialId]?.download) {
-      return
-    }
+	const handleDownload = useCallback(
+		async (material: CachedLearningMaterial) => {
+			const materialId = material.material_id
+			if (actionPending[materialId]?.download) {
+				return
+			}
 
-    recordActionPending(materialId, 'download', true)
+			recordActionPending(materialId, 'download', true)
 
-    try {
-      const url = await resolveDownloadUrl(material)
-      if (!url) {
-        throw new Error('No download URL available')
-      }
+			try {
+				const url = await resolveDownloadUrl(material)
+				if (!url) {
+					throw new Error('No download URL available')
+				}
 
-      // Use a hidden anchor tag instead of window.open
-      const a = document.createElement('a')
-      a.href = url
-      a.download = material.title // Suggest filename for download
-      a.target = '_blank'
-      a.rel = 'noopener noreferrer'
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
+				const anchor = document.createElement('a')
+				anchor.href = url
+				anchor.download = material.title
+				anchor.target = '_blank'
+				anchor.rel = 'noopener noreferrer'
+				document.body.appendChild(anchor)
+				anchor.click()
+				document.body.removeChild(anchor)
 
-      await apiClient.post(`/api/learning-materials/${materialId}/download`)
-      updateMaterialCount(materialId, 'download_count', 1)
-      setActionMessage('Download started. Enjoy the material!')
-    } catch (error) {
-      console.error('Failed to process download', error)
-      setActionMessage('Unable to start the download. Please retry.')
-    } finally {
-      recordActionPending(materialId, 'download', false)
-    }
-  },
-  [actionPending, recordActionPending, resolveDownloadUrl, updateMaterialCount],
-)
+				await apiClient.post(`/api/learning-materials/${materialId}/download`)
+				updateMaterialCount(materialId, 'download_count', 1)
+				setActionMessage('Download started. Enjoy the material!')
+			} catch (downloadError) {
+				console.error('Failed to process download', downloadError)
+				setActionMessage('Unable to start the download. Please retry.')
+			} finally {
+				recordActionPending(materialId, 'download', false)
+			}
+		},
+		[actionPending, recordActionPending, resolveDownloadUrl, updateMaterialCount],
+	)
+
+		const handleDelete = useCallback(
+			async (materialId: string) => {
+				// Kick off modal flow by setting a candidate id; actual delete happens in confirm handler
+				setDeleteCandidateId(materialId)
+			},
+			[setDeleteCandidateId],
+		)
+
+		const confirmDelete = useCallback(async () => {
+				const materialId = deleteCandidateId
+				if (!materialId) return
+
+				if (actionPending[materialId]?.delete) return
+
+				recordActionPending(materialId, 'delete', true)
+
+				try {
+					const resp = await apiClient.delete<Record<string, unknown>>(`/api/learning-materials/${materialId}`)
+					// Backend returns storage_deleted boolean flag indicating whether the storage object was removed.
+					const storageDeleted = Boolean(resp?.storage_deleted)
+					if (storageDeleted) {
+						setActionMessage('Material deleted')
+					} else {
+						setActionMessage('Material record deleted but storage object was not removed (check server logs/policy)')
+						console.error('[delete] storage deletion may have failed:', resp)
+					}
+					await refreshMaterials()
+				} catch (err) {
+					console.error('Failed to delete material', err)
+					setActionMessage('Could not delete material. Please try again.')
+				} finally {
+					recordActionPending(materialId, 'delete', false)
+					setDeleteCandidateId(null)
+				}
+			}, [actionPending, recordActionPending, deleteCandidateId, refreshMaterials])
+
+		const cancelDelete = useCallback(() => {
+				setDeleteCandidateId(null)
+			}, [setDeleteCandidateId])
+
+	const handleResolvedUrl = useCallback(
+		(materialId: string, resolvedUrlValue: string) => {
+			applyMaterialUpdate(materialId, (material) => {
+				if (material.resolved_url === resolvedUrlValue) {
+					return material
+				}
+				return {
+					...material,
+					resolved_url: resolvedUrlValue,
+				}
+			})
+		},
+		[applyMaterialUpdate],
+	)
 
 	useEffect(() => {
 		if (!actionMessage) {
@@ -273,30 +308,58 @@ const handleDownload = useCallback(
 		return () => window.clearTimeout(timeout)
 	}, [actionMessage])
 
-	const cards = useMemo(() => materials.map(normalizeMaterial), [materials])
+	const selectedMaterial = useMemo(() => {
+		if (!selectedMaterialId) {
+			return null
+		}
+		return materials.find((item) => item.material_id === selectedMaterialId) ?? null
+	}, [materials, selectedMaterialId])
 
-	const renderCard = (material: LearningMaterial) => {
+	const normalizedSearch = searchQuery.trim().toLowerCase()
+
+	const filteredMaterials = useMemo(() => {
+		return materials.filter((material) => {
+			if (!matchesSectionFilter(material, filter, user?.id ?? null)) {
+				return false
+			}
+			if (normalizedSearch === '') {
+				return true
+			}
+			return matchesSearch(material, normalizedSearch)
+		})
+	}, [materials, filter, normalizedSearch, user?.id])
+
+	const fetchState: FetchState = loading ? 'loading' : error ? 'error' : lastUpdated ? 'ready' : 'idle'
+
+	const renderCard = (material: CachedLearningMaterial) => {
 		const iconConfig = resolveIcon(material)
 		const likeBusy = actionPending[material.material_id]?.like ?? false
 		const downloadBusy = actionPending[material.material_id]?.download ?? false
+		const isOwner = Boolean(user?.id && (material.user_id === user.id || material.created_by === user.id))
+		// Only allow delete UI inside the "my" section — other filters should not show delete
+		const showDelete = isOwner && filter === 'my'
 
 		return (
 			<article
 				key={material.material_id}
-				className="flex h-full flex-col justify-between rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-700/60 dark:bg-slate-900/70"
+				className="min-w-0 flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-700/60 dark:bg-slate-900/70"
 			>
 				<div className="flex flex-col gap-4">
 					<div className="flex items-start justify-between gap-3">
-						<div className="flex items-center gap-3">
+						<div className="flex items-center gap-3 min-w-0">
 							<span className={`flex h-12 w-12 items-center justify-center rounded-xl text-white shadow-lg ${iconConfig.accent}`}>
 								<iconConfig.Icon className="h-6 w-6" aria-hidden />
 							</span>
-							<div className="space-y-1">
-								<h3 className="line-clamp-2 text-base font-semibold text-slate-900 dark:text-white">{material.title}</h3>
+							<div className="space-y-1 min-w-0 overflow-hidden">
+								<h3 title={material.title} className="line-clamp-2 text-base font-semibold text-slate-900 dark:text-white truncate">{truncateText(material.title, 80)}</h3>
 								<div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-300">
-									<span title="Uploader" className="inline-flex items-center gap-1">
+									<span title="Uploader" className="inline-flex items-center gap-1 min-w-0">
 										<UserCircle className="h-3.5 w-3.5" />
-										{material.user_name ? `@${material.user_name}` : 'Unknown uploader'}
+										<span className="truncate">
+											{material.user_name && material.user_name.trim() !== ''
+												? `@${truncateText(material.user_name, 36)}`
+												: truncateText(computeAuthorLabel(material), 36)}
+										</span>
 									</span>
 									<span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800/80 dark:text-slate-300">
 										{iconConfig.badge}
@@ -378,6 +441,17 @@ const handleDownload = useCallback(
 							{likeBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Heart className="h-4 w-4" />}
 							Like
 						</button>
+						{showDelete && (
+							<button
+								type="button"
+								onClick={() => handleDelete(material.material_id)}
+								disabled={actionPending[material.material_id]?.delete ?? false}
+								className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-500 shadow-sm transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-600/60 dark:bg-rose-950/40 dark:text-rose-200 dark:hover:bg-rose-900/40"
+							>
+								{actionPending[material.material_id]?.delete ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash className="h-4 w-4" />}
+								Delete
+							</button>
+						)}
 					</div>
 				</div>
 			</article>
@@ -403,7 +477,7 @@ const handleDownload = useCallback(
 				</button>
 			</div>
 
-			{state === 'loading' && (
+			{(fetchState === 'loading' || fetchState === 'idle') && (
 				<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
 					{Array.from({ length: 6 }).map((_, index) => (
 						<div
@@ -414,13 +488,13 @@ const handleDownload = useCallback(
 				</div>
 			)}
 
-			{state === 'error' && fetchError && (
+			{fetchState === 'error' && error && (
 				<div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600 shadow-sm dark:border-rose-900/60 dark:bg-rose-950/20 dark:text-rose-200">
-					{fetchError}
+					{error}
 				</div>
 			)}
 
-			{state === 'ready' && cards.length === 0 && (
+			{fetchState === 'ready' && filteredMaterials.length === 0 && !loading && (
 				<div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-slate-300 bg-white/80 p-8 text-center text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
 					<FileText className="h-8 w-8 text-slate-400" />
 					<p className="max-w-md text-sm">{emptyStateMessages[filter]}</p>
@@ -434,19 +508,25 @@ const handleDownload = useCallback(
 				</div>
 			)}
 
-			{cards.length > 0 && (
-				<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-					{cards.map((material) => (
-						<Fragment key={material.material_id}>{renderCard(material)}</Fragment>
-					))}
+			{filteredMaterials.length > 0 && (
+				<div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+					{filteredMaterials.map((material) => renderCard(material))}
 				</div>
 			)}
 
 			<MaterialPreviewModal
 				isOpen={Boolean(selectedMaterial)}
 				material={selectedMaterial}
-				onClose={() => setSelectedMaterial(null)}
+				onClose={() => setSelectedMaterialId(null)}
 				onDownload={handleDownload}
+				onResolvedUrl={handleResolvedUrl}
+			/>
+
+			<DeleteConfirmModal
+				open={Boolean(deleteCandidateId)}
+				onConfirm={confirmDelete}
+				onCancel={cancelDelete}
+				message="Are you sure you want to permanently delete this material? This action cannot be undone."
 			/>
 
 			{actionMessage && (
@@ -456,6 +536,35 @@ const handleDownload = useCallback(
 			)}
 		</section>
 	)
+}
+
+const matchesSectionFilter = (material: CachedLearningMaterial, section: SectionKey, userId: string | null): boolean => {
+	switch (section) {
+		case 'my':
+			return Boolean(userId) && (material.user_id === userId || material.created_by === userId)
+		case 'community':
+			return Boolean(material.is_public)
+		case 'official':
+			return Boolean(material.is_public) && Boolean(material.category)
+		default:
+			return true
+	}
+}
+
+const matchesSearch = (material: CachedLearningMaterial, searchTerm: string): boolean => {
+	if (searchTerm === '') {
+		return true
+	}
+
+	const haystacks = [
+		material.title,
+		material.description ?? '',
+		material.category ?? '',
+		material.user_name ? `@${material.user_name}` : '',
+		Array.isArray(material.tags) ? material.tags.join(' ') : '',
+	]
+
+	return haystacks.some((value) => value.toLowerCase().includes(searchTerm))
 }
 
 export default MaterialsList

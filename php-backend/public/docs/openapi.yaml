@@ -456,6 +456,22 @@ components:
           type: string
           nullable: true
           description: Username of the uploader when available.
+        uploader_name:
+          type: string
+          nullable: true
+          description: Display name provided by the uploader at upload time.
+        uploader_email:
+          type: string
+          nullable: true
+          description: Email address provided by the uploader at upload time.
+        uploader_name:
+          type: string
+          nullable: true
+          description: Display name to persist for this upload.
+        uploader_email:
+          type: string
+          nullable: true
+          description: Email address to persist for this upload.
         is_public:
           type: boolean
         category:

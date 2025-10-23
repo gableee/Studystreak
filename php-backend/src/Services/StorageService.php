@@ -207,6 +207,36 @@ final class StorageService
         return $response;
     }
 
+    /**
+     * Delete an object from the storage bucket.
+     * Returns true when deletion succeeded (2xx), false otherwise.
+     */
+    public function deleteObject(string $objectKey, ?string $token = null): bool
+    {
+        $authToken = $token ?? $this->serviceRoleKey;
+        if ($authToken === null || $authToken === '') {
+            return false;
+        }
+
+        $encodedPath = $this->encodeStoragePath($objectKey);
+        $uri = '/storage/v1/object/' . rawurlencode($this->bucket) . '/' . $encodedPath;
+
+        try {
+            $response = $this->client->request('DELETE', $uri, [
+                RequestOptions::HEADERS => [
+                    'Authorization' => 'Bearer ' . $authToken,
+                    'apikey' => $this->config->getAnonKey(),
+                ],
+                RequestOptions::HTTP_ERRORS => false,
+            ]);
+        } catch (GuzzleException $e) {
+            return false;
+        }
+
+        $status = $response->getStatusCode();
+        return $status >= 200 && $status < 300;
+    }
+
     public function extractStoragePathFromUrl(string $url): ?string
     {
         $url = trim($url);

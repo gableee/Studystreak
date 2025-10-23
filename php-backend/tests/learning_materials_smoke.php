@@ -184,6 +184,14 @@ try {
                 'contents' => 'false',
             ],
             [
+                'name' => 'uploader_name',
+                'contents' => 'Smoke Test Bot',
+            ],
+            [
+                'name' => 'uploader_email',
+                'contents' => 'smoke@example.com',
+            ],
+            [
                 'name' => 'file',
                 'contents' => $fileStream,
                 'filename' => $uploadFilename,

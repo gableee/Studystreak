@@ -1,0 +1,15 @@
+HTTP/1.1 400 Bad Request
+Host: localhost:8181
+Date: Thu, 23 Oct 2025 19:33:04 GMT
+Connection: close
+X-Powered-By: PHP/8.2.29
+Vary: Origin
+Access-Control-Allow-Origin: http://localhost:5173
+Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With
+Access-Control-Allow-Methods: GET, POST, DELETE, PUT, PATCH, OPTIONS
+Access-Control-Allow-Credentials: true
+Cache-Control: no-cache, no-store, must-revalidate
+Pragma: no-cache
+Expires: 0
+Content-Type: application/json
+

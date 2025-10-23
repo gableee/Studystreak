@@ -139,6 +139,8 @@ final class LearningMaterialsController
                 'category' => $item['category'] ?? null,
                 'tags' => $tags,
                 'user_name' => $this->extractOwnerName($item),
+                'uploader_name' => isset($item['uploader_name']) ? $item['uploader_name'] : null,
+                'uploader_email' => isset($item['uploader_email']) ? $item['uploader_email'] : null,
                 'storage_path' => $item['storage_path'] ?? null,
             ];
 
@@ -326,6 +328,89 @@ final class LearningMaterialsController
         $this->incrementMaterialMetric($request, $id, 'download_count', 'Download counted');
     }
 
+    /**
+     * Delete a learning material and its stored object. Only the owner (user_id or created_by)
+     * may delete their own materials.
+     * DELETE /api/learning-materials/:id
+     */
+    public function delete(Request $request, string $id): void
+    {
+        $user = $this->getAuthenticatedUser($request);
+        if ($user === null) {
+            return;
+        }
+
+        $restToken = $this->requireRestToken($request);
+        if ($restToken === null) {
+            return;
+        }
+
+        // Fetch the record to check ownership and locate storage_path
+        [$status, $payload, $raw] = $this->rest('GET', '/rest/v1/learning_materials', [
+            RequestOptions::HEADERS => $this->restHeaders($restToken),
+            RequestOptions::QUERY => [
+                'select' => 'material_id,user_id,created_by,storage_path',
+                'material_id' => 'eq.' . $id,
+                'limit' => '1',
+            ],
+        ]);
+
+        if ($status < 200 || $status >= 300 || !is_array($payload) || count($payload) === 0) {
+            JsonResponder::withStatus($status > 0 ? $status : 404, ['error' => 'Material not found', 'details' => $raw]);
+            return;
+        }
+
+        $record = $payload[0];
+        $ownerIds = [];
+        if (!empty($record['user_id'])) $ownerIds[] = (string)$record['user_id'];
+        if (!empty($record['created_by'])) $ownerIds[] = (string)$record['created_by'];
+
+        if (!in_array($user->getId(), $ownerIds, true)) {
+            JsonResponder::unauthorized();
+            return;
+        }
+
+        $storagePath = isset($record['storage_path']) && is_string($record['storage_path']) ? trim($record['storage_path']) : '';
+
+        // Attempt to delete storage object first (best-effort). Use service role if available.
+        $storageDeleted = true;
+        if ($storagePath !== '') {
+            $storageDeleted = $this->storage->deleteObject($storagePath, $this->serviceRoleKey ?? $restToken);
+            if (!$storageDeleted) {
+                // Log but continue to attempt DB delete depending on policy
+                error_log('[learning_materials.delete] storage.delete failed for ' . $storagePath);
+                // Attempt to provide more diagnostic info by trying a HEAD on the object with same token
+                try {
+                    [$hStatus, $hPayload, $hRaw] = $this->rest('GET', '/storage/v1/object/' . rawurlencode($this->storageBucket) . '/' . rawurlencode($storagePath), [
+                        RequestOptions::HEADERS => $this->restHeaders($this->serviceRoleKey ?? $restToken),
+                        RequestOptions::HTTP_ERRORS => false,
+                    ]);
+                    error_log(sprintf('[learning_materials.delete] storage head status=%s body=%s', (string)$hStatus, is_scalar($hRaw) ? (string)$hRaw : json_encode($hRaw)));
+                } catch (\Throwable $e) {
+                    error_log('[learning_materials.delete] storage head attempt failed: ' . $e->getMessage());
+                }
+            }
+        }
+
+        // Delete DB record
+        $headers = $this->restHeaders($restToken);
+        $headers['Prefer'] = 'return=minimal';
+
+        [$dStatus, $dPayload, $dRaw] = $this->rest('DELETE', '/rest/v1/learning_materials', [
+            RequestOptions::HEADERS => $headers,
+            RequestOptions::QUERY => [
+                'material_id' => 'eq.' . $id,
+            ],
+        ]);
+
+        if ($dStatus < 200 || $dStatus >= 300) {
+            JsonResponder::withStatus($dStatus > 0 ? $dStatus : 500, ['error' => 'Failed to delete material record', 'details' => $dRaw]);
+            return;
+        }
+
+        JsonResponder::ok(['message' => 'Material deleted', 'material_id' => $id, 'storage_deleted' => $storageDeleted]);
+    }
+
     public function stream(Request $request, string $id): void
     {
         $user = $this->getAuthenticatedUser($request);
@@ -505,6 +590,8 @@ final class LearningMaterialsController
         $title = trim((string)($_POST['title'] ?? ''));
         $description = trim((string)($_POST['description'] ?? ''));
         $category = trim((string)($_POST['category'] ?? ''));
+        $uploaderName = trim((string)($_POST['uploader_name'] ?? ''));
+        $uploaderEmail = trim((string)($_POST['uploader_email'] ?? ''));
         $tags = $this->parseTags($_POST['tags'] ?? '[]');
         $isPublic = filter_var($_POST['is_public'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
@@ -563,6 +650,8 @@ final class LearningMaterialsController
             'word_count' => $wordCount,
             'user_id' => $user->getId(),
             'created_by' => $user->getId(),
+            'uploader_name' => $uploaderName !== '' ? $uploaderName : null,
+            'uploader_email' => $uploaderEmail !== '' ? $uploaderEmail : null,
             'is_public' => $isPublic,
             'category' => $category !== '' ? $category : null,
             'tags' => $tags,
@@ -595,6 +684,7 @@ final class LearningMaterialsController
         $record['content_type'] = $this->expandStoredContentType($storedContentType);
 
         $resolvedName = null;
+        // Prefer an embedded profile username from PostgREST when available
         if (isset($record['profiles']) && is_array($record['profiles'])) {
             $maybe = $record['profiles']['username'] ?? null;
             if (is_string($maybe)) {
@@ -604,19 +694,64 @@ final class LearningMaterialsController
                 }
             }
         }
+
+        // If the record already contains a saved user_name, use it
         if ($resolvedName === null && isset($record['user_name'])) {
             $maybe = is_string($record['user_name']) ? trim($record['user_name']) : null;
             if ($maybe !== null && $maybe !== '') {
                 $resolvedName = $maybe;
             }
         }
+
+        // Prefer explicit uploader_name provided in the upload payload
+        if ($resolvedName === null && $uploaderName !== '') {
+            $resolvedName = $uploaderName;
+        }
+
+        // Fall back to authenticated user's metadata (common with OAuth providers)
         if ($resolvedName === null) {
-            $resolvedName = $user->getEmail();
+            $raw = $user->getRaw();
+            $metaName = null;
+            if (isset($raw['user_metadata']) && is_array($raw['user_metadata'])) {
+                $um = $raw['user_metadata'];
+                $candidates = ['full_name', 'fullName', 'name', 'displayName', 'display_name'];
+                foreach ($candidates as $key) {
+                    if (isset($um[$key]) && is_string($um[$key])) {
+                        $val = trim($um[$key]);
+                        if ($val !== '') {
+                            $metaName = $val;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if ($metaName !== null) {
+                $resolvedName = $metaName;
+            }
+        }
+
+        // Final fallback: email local-part
+        if ($resolvedName === null) {
+            $email = $user->getEmail();
+            if (is_string($email) && $email !== '') {
+                $parts = explode('@', $email);
+                $resolvedName = trim($parts[0] ?? $email);
+            } else {
+                $resolvedName = null;
+            }
         }
         $record['user_name'] = $resolvedName;
         unset($record['profiles']);
+        // Preserve uploader fields if present in the record or from the upload
+        if (!isset($record['uploader_name']) || $record['uploader_name'] === null) {
+            $record['uploader_name'] = $uploaderName !== '' ? $uploaderName : null;
+        }
+        if (!isset($record['uploader_email']) || $record['uploader_email'] === null) {
+            $record['uploader_email'] = $uploaderEmail !== '' ? $uploaderEmail : null;
+        }
 
-    $record['storage_path'] = $objectKey;
+        $record['storage_path'] = $objectKey;
     $record = $this->ensureDownloadUrl($record, $storageToken);
 
         $this->dispatchAiProcessing($record, $mime);
@@ -656,29 +791,21 @@ final class LearningMaterialsController
     private function buildListQuery(array $params, string $userId): array
     {
         $filter = (string)($params['filter'] ?? 'all');
+        
+        // Use a wildcard select here so the controller is resilient to
+        // schema changes (columns may be missing across environments).
+        // Mapping logic below will safely handle absent fields.
         $query = [
-            'select' => implode(',', [
-                'material_id',
-                'title',
-                'description',
-                'content_type',
-                'file_url',
-                'estimated_duration',
-                'created_at',
-                'extracted_content',
-                'word_count',
-                'ai_quiz_generated',
-                'user_id',
-                'created_by',
-                'is_public',
-                'category',
-                'tags',
-                'ai_status',
-                'storage_path',
-            ]),
+            'select' => '*',
             'order' => 'created_at.desc',
         ];
 
+        // Handle limit parameter
+        if (isset($params['limit']) && is_numeric($params['limit'])) {
+            $query['limit'] = (string)$params['limit'];
+        }
+
+        // ... rest of your existing filter logic
         switch ($filter) {
             case 'my':
                 $query['user_id'] = 'eq.' . $userId;
