@@ -99,11 +99,6 @@
     @apply rounded-2xl border border-white/10 bg-white/80 p-5 shadow-sm dark:bg-white/5;
   }
 
-  /* Full-size helper used by embedded iframes and media */
-  .size-full {
-    @apply w-full h-full block border-0;
-  }
-
   /* Metric + Badge Patterns */
   .stat-tile {
     /* Metric summary with flexible layout */

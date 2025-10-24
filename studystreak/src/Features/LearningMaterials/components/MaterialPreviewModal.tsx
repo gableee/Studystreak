@@ -4,16 +4,40 @@ import { Download, ExternalLink, Loader2, X } from 'lucide-react'
 
 import { apiClient } from '@/lib/apiClient'
 
-import type { CachedLearningMaterial, LearningMaterial, SignedUrlResponse } from '../types'
+export type SectionKey = 'all' | 'my' | 'community' | 'official'
+
+export interface LearningMaterial {
+	material_id: string
+	title: string
+	description?: string | null
+	file_url?: string | null
+	content_type?: string | null
+	content_type_label?: string | null
+	created_at?: string | null
+	user_name?: string | null
+	user_id?: string | null
+	created_by?: string | null
+	is_public?: boolean
+	category?: string | null
+	tags?: string[] | null
+	like_count?: number | null
+	download_count?: number | null
+	storage_path?: string | null
+	estimated_duration?: string | null
+	ai_quiz_generated?: boolean | null
+}
 
 type PreviewKind = 'pdf' | 'office' | 'image' | 'other'
 
 interface MaterialPreviewModalProps {
 	isOpen: boolean
-	material: CachedLearningMaterial | null
+	material: LearningMaterial | null
 	onClose: () => void
-	onDownload: (material: CachedLearningMaterial) => Promise<void> | void
-	onResolvedUrl?: (materialId: string, resolvedUrl: string) => void
+	onDownload: (material: LearningMaterial) => Promise<void> | void
+}
+
+interface SignedUrlResponse {
+	signed_url?: string
 }
 
 const officeViewerBase = 'https://view.officeapps.live.com/op/embed.aspx'
@@ -98,27 +122,8 @@ const unsupportedMarkup = (
 	</div>
 )
 
-const MaterialPreviewModal = ({ isOpen, material, onClose, onDownload, onResolvedUrl }: MaterialPreviewModalProps) => {
+const MaterialPreviewModal = ({ isOpen, material, onClose, onDownload }: MaterialPreviewModalProps) => {
 	const previewKind = useMemo(() => detectPreviewKind(material), [material])
-
-	const authorLabel = useMemo(() => {
-		if (!material) return null
-		const meta = material as unknown as Record<string, unknown>
-		if (typeof material.user_name === 'string' && material.user_name.trim() !== '') return material.user_name.trim()
-		if (typeof meta['uploader_name'] === 'string' && (meta['uploader_name'] as string).trim() !== '') return (meta['uploader_name'] as string).trim()
-		if (typeof meta['uploader_email'] === 'string' && (meta['uploader_email'] as string).trim() !== '') return ((meta['uploader_email'] as string).split('@')[0]).trim()
-		if (typeof meta['provider'] === 'string' && (meta['provider'] as string).trim() !== '') return (meta['provider'] as string).trim()
-		if (typeof meta['source'] === 'string' && (meta['source'] as string).trim() !== '') return (meta['source'] as string).trim()
-		return null
-	}, [material])
-
-	const displayAuthor = useMemo(() => {
-		if (!authorLabel) return null
-		if (material && material.user_name && authorLabel === material.user_name) {
-			return `@${authorLabel}`
-		}
-		return authorLabel
-	}, [authorLabel, material])
 
 	const [resolvedUrl, setResolvedUrl] = useState<string | null>(null)
 	const [isResolvingUrl, setIsResolvingUrl] = useState(false)
@@ -145,13 +150,6 @@ const MaterialPreviewModal = ({ isOpen, material, onClose, onDownload, onResolve
 			const resolvePdf = async () => {
 				setIsResolvingUrl(true)
 				try {
-					// Prefer any resolved_url attached to the material (prefetched by the list view)
-					const preResolved = material.resolved_url
-					if (preResolved) {
-						setResolvedUrl(preResolved)
-						setIsContentLoading(true)
-						return
-					}
 					const signed = await fetchSignedUrl(material.material_id)
 					if (cancelled) {
 						return
@@ -181,14 +179,6 @@ const MaterialPreviewModal = ({ isOpen, material, onClose, onDownload, onResolve
 			return () => {
 				cancelled = true
 			}
-		}
-
-		// Prefer a prefetched resolved_url attached to the material
-		const preResolved = material.resolved_url?.trim() ?? null
-		if (preResolved) {
-			setResolvedUrl(preResolved)
-			setIsContentLoading(true)
-			return
 		}
 
 		const immediateUrl = material.file_url?.trim() ?? null
@@ -242,16 +232,6 @@ const MaterialPreviewModal = ({ isOpen, material, onClose, onDownload, onResolve
 		}
 	}, [previewKind, isOpen, resolvedUrl])
 
-	useEffect(() => {
-		if (!material || !resolvedUrl || !onResolvedUrl) {
-			return
-		}
-		if (material.resolved_url === resolvedUrl) {
-			return
-		}
-		onResolvedUrl(material.material_id, resolvedUrl)
-	}, [material, resolvedUrl, onResolvedUrl])
-
 	const handleClose = () => {
 		onClose()
 	}
@@ -274,14 +254,6 @@ const MaterialPreviewModal = ({ isOpen, material, onClose, onDownload, onResolve
 		return `${officeViewerBase}?src=${srcParam}&wdEmbedCode=0`
 	}, [previewKind, resolvedUrl])
 
-	// Helper values for rendering
-	const uploaderEmail = useMemo(() => {
-		if (!material) return null
-		const meta = material as unknown as Record<string, unknown>
-		if (typeof meta['uploader_email'] === 'string') return (meta['uploader_email'] as string).trim()
-		return null
-	}, [material])
-
 	return (
 		<AnimatePresence>
 			{isOpen && material && (
@@ -292,8 +264,8 @@ const MaterialPreviewModal = ({ isOpen, material, onClose, onDownload, onResolve
 					exit="exit"
 					variants={motionBackDrop}
 				>
-			<motion.div
-				className="relative flex max-h-[90vh] w-full max-w-3xl sm:max-w-4xl md:max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900 text-white shadow-2xl"
+					<motion.div
+						className="relative flex h-[80vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900 text-white shadow-2xl"
 						initial="hidden"
 						animate="visible"
 						exit="exit"
@@ -308,37 +280,25 @@ const MaterialPreviewModal = ({ isOpen, material, onClose, onDownload, onResolve
 								<h2 id="material-preview-title" className="text-lg font-semibold text-white">
 									{material.title}
 								</h2>
-								<p className="text-xs text-slate-400">{fallbackDescriptions[previewKind]}</p>
-								<div className="flex items-center gap-3">
-									<div className="flex flex-col">
-										{displayAuthor ? (
-											<p className="text-xs text-slate-400">By {displayAuthor}</p>
-										) : (
-											<p className="text-xs text-slate-400">Uploader: Unknown</p>
-										)}
-										{/* show uploader email when available so viewers know who to contact */}
-										{uploaderEmail && (
-											<a href={`mailto:${uploaderEmail}`} className="text-xs text-slate-300 hover:underline">
-												{uploaderEmail}
-											</a>
-										)}
-									</div>
-									<div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
-										{material.category && (
-											<span className="rounded-full bg-slate-800/80 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">
-												{material.category}
+								<p className="text-xs text-slate-400">
+									{fallbackDescriptions[previewKind]}
+								</p>
+								<div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+									{material.user_name && <span>@{material.user_name}</span>}
+									{material.category && (
+										<span className="rounded-full bg-slate-800/80 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">
+											{material.category}
+										</span>
+									)}
+									{Array.isArray(material.tags) && material.tags.length > 0 && (
+										<span className="hidden items-center gap-1 sm:flex">
+											Tags:
+											<span className="truncate">
+												{material.tags.slice(0, 3).join(', ')}
+												{material.tags.length > 3 ? '…' : ''}
 											</span>
-										)}
-										{Array.isArray(material.tags) && material.tags.length > 0 && (
-											<span className="hidden items-center gap-1 sm:flex">
-												Tags:
-												<span className="truncate">
-													{material.tags.slice(0, 3).join(', ')}
-													{material.tags.length > 3 ? '…' : ''}
-												</span>
-											</span>
-										)}
-									</div>
+										</span>
+									)}
 								</div>
 							</div>
 
@@ -376,7 +336,7 @@ const MaterialPreviewModal = ({ isOpen, material, onClose, onDownload, onResolve
 							</div>
 						</header>
 
-						<div className="relative flex-1 overflow-auto bg-slate-950">
+						<div className="relative flex-1 overflow-hidden bg-slate-950">
 							{errorMessage && (
 								<div className="flex h-full flex-col items-center justify-center gap-3 text-center text-slate-300">
 									<p className="text-sm font-medium">{errorMessage}</p>

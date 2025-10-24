@@ -3,7 +3,8 @@ import type { LucideIcon } from 'lucide-react'
 import { BookOpen, FolderOpen, Users, Layers, Search, Plus, RefreshCw } from 'lucide-react'
 import FileUpload from './components/FileUpload'
 import MaterialsList from './components/MaterialsList'
-import type { SectionKey } from './types'
+
+type SectionKey = 'all' | 'my' | 'community' | 'official'
 
 const materialSections: Array<{
   key: SectionKey
