@@ -8,6 +8,7 @@ use App\Config\SupabaseConfig;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\RequestOptions;
+use Psr\Http\Message\ResponseInterface;
 
 final class StorageService
 {
@@ -154,11 +155,86 @@ final class StorageService
             return null;
         }
 
+        // Check if Supabase returned a full URL (starts with http:// or https://)
+        // If so, extract just the path portion
+        if (str_starts_with($signed, 'http://') || str_starts_with($signed, 'https://')) {
+            // Extract path from full URL
+            $parsed = parse_url($signed);
+            if ($parsed !== false && isset($parsed['path'])) {
+                $signed = $parsed['path'];
+                if (isset($parsed['query'])) {
+                    $signed .= '?' . $parsed['query'];
+                }
+            }
+        }
+
+        // Ensure path starts with /
         if (!str_starts_with($signed, '/')) {
             $signed = '/' . ltrim($signed, '/');
         }
 
         return $signed;
+    }
+
+    public function fetchObject(string $objectKey, ?string $token = null): ?ResponseInterface
+    {
+        $authToken = $token ?? $this->serviceRoleKey;
+        if ($authToken === null || $authToken === '') {
+            return null;
+        }
+
+        $encodedPath = $this->encodeStoragePath($objectKey);
+        $uri = '/storage/v1/object/' . rawurlencode($this->bucket) . '/' . $encodedPath;
+
+        try {
+            $response = $this->client->request('GET', $uri, [
+                RequestOptions::HEADERS => [
+                    'Authorization' => 'Bearer ' . $authToken,
+                    'apikey' => $this->config->getAnonKey(),
+                ],
+                RequestOptions::STREAM => true,
+                RequestOptions::HTTP_ERRORS => false,
+            ]);
+        } catch (GuzzleException $e) {
+            return null;
+        }
+
+        $status = $response->getStatusCode();
+        if ($status < 200 || $status >= 300) {
+            return null;
+        }
+
+        return $response;
+    }
+
+    /**
+     * Delete an object from the storage bucket.
+     * Returns true when deletion succeeded (2xx), false otherwise.
+     */
+    public function deleteObject(string $objectKey, ?string $token = null): bool
+    {
+        $authToken = $token ?? $this->serviceRoleKey;
+        if ($authToken === null || $authToken === '') {
+            return false;
+        }
+
+        $encodedPath = $this->encodeStoragePath($objectKey);
+        $uri = '/storage/v1/object/' . rawurlencode($this->bucket) . '/' . $encodedPath;
+
+        try {
+            $response = $this->client->request('DELETE', $uri, [
+                RequestOptions::HEADERS => [
+                    'Authorization' => 'Bearer ' . $authToken,
+                    'apikey' => $this->config->getAnonKey(),
+                ],
+                RequestOptions::HTTP_ERRORS => false,
+            ]);
+        } catch (GuzzleException $e) {
+            return false;
+        }
+
+        $status = $response->getStatusCode();
+        return $status >= 200 && $status < 300;
     }
 
     public function extractStoragePathFromUrl(string $url): ?string
@@ -177,37 +253,55 @@ final class StorageService
         if ($path === '') {
             return null;
         }
+        // Support multiple URL shapes that may appear in `file_url`:
+        // - /storage/v1/object/{bucket}/{object}
+        // - /storage/v1/object/public/{publicBucket}/{object}
+        // - /object/sign/{bucket}/{object}  (signed URLs returned by the storage API)
+        $candidates = [
+            '/storage/v1/object/',
+            '/object/sign/',
+            '/storage/v1/object/sign/',
+        ];
 
-        $marker = '/storage/v1/object/';
-        $pos = strpos($path, $marker);
-        if ($pos === false) {
-            return null;
+        foreach ($candidates as $marker) {
+            $pos = strpos($path, $marker);
+            if ($pos === false) {
+                continue;
+            }
+
+            $suffix = substr($path, $pos + strlen($marker));
+            if ($suffix === false || $suffix === '') {
+                continue;
+            }
+
+            $segments = explode('/', ltrim($suffix, '/'));
+            if (count($segments) < 2) {
+                continue;
+            }
+
+            // Handle the common public URL shape: public/{bucket}/{object}
+            if ($segments[0] === 'public' && isset($segments[1])) {
+                // shift off 'public'
+                array_shift($segments);
+            }
+
+            // Now the first segment should be the bucket name
+            $bucket = array_shift($segments);
+            if ($bucket !== $this->bucket) {
+                // Not the expected bucket; skip this candidate
+                continue;
+            }
+
+            $objectPath = implode('/', $segments);
+            if ($objectPath === '') {
+                continue;
+            }
+
+            $decoded = rawurldecode($objectPath);
+            return $decoded !== '' ? $decoded : null;
         }
 
-        $suffix = substr($path, $pos + strlen($marker));
-        if ($suffix === false || $suffix === '') {
-            return null;
-        }
-
-        $segments = explode('/', ltrim($suffix, '/'));
-        if (count($segments) < 3) {
-            return null;
-        }
-
-        array_shift($segments);
-        $bucket = array_shift($segments);
-        if ($bucket !== $this->bucket) {
-            return null;
-        }
-
-        $objectPath = implode('/', $segments);
-        if ($objectPath === '') {
-            return null;
-        }
-
-        $decoded = rawurldecode($objectPath);
-
-        return $decoded !== '' ? $decoded : null;
+        return null;
     }
 
     private function encodeStoragePath(string $path): string

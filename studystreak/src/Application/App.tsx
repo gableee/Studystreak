@@ -30,6 +30,7 @@ import SignupPage from '@/Auth/pages/SignupPage'
 import ForgotPasswordPage from '@/Auth/pages/ForgotPasswordPage'
 import ResetPasswordPage from '@/Auth/pages/ResetPasswordPage'
 import NotFoundPage from './components/NotFoundPage'
+import { MaterialsProvider } from '@/contexts/MaterialsContext'
 
 /**
  * Router configuration using React Router v6's createBrowserRouter
@@ -114,7 +115,9 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <PageTransition>
-              <LearningMaterials />
+              <MaterialsProvider>
+                <LearningMaterials />
+              </MaterialsProvider>
             </PageTransition>
           </ProtectedRoute>
         )

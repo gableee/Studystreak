@@ -113,6 +113,24 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, onClose }) => 
     formData.append('tags', JSON.stringify(tags))
     formData.append('is_public', isPublic.toString())
     formData.append('user_id', user.id)
+  // Attach uploader metadata so the backend can record uploader name/email
+  if (user.email) formData.append('uploader_email', user.email)
+    type UserMetadata = { [key: string]: unknown }
+    const meta = (user.user_metadata as unknown) as UserMetadata
+    // Prefer common metadata keys when present
+    const nameCandidates = ['full_name', 'fullName', 'name', 'displayName', 'display_name']
+    let uploaderName: string | null = null
+    for (const key of nameCandidates) {
+      const val = meta?.[key]
+      if (typeof val === 'string' && val.trim() !== '') {
+        uploaderName = val.trim()
+        break
+      }
+    }
+    if (!uploaderName && user.email) {
+      uploaderName = user.email.split('@')[0]
+    }
+    if (uploaderName) formData.append('uploader_name', uploaderName)
 
     try {
       // Development debug: show the supabase token and form data in the browser console
@@ -140,7 +158,14 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, onClose }) => 
       }
 
       // apiClient will attach the authorization header automatically using the supabase session
-      await apiClient.post('/api/learning-materials', formData)
+      const resp = await apiClient.post('/api/learning-materials', formData)
+      if (import.meta.env.DEV) {
+        try {
+          console.debug('[UPLOAD DEBUG] upload response', resp)
+        } catch (e) {
+          console.warn('[UPLOAD DEBUG] failed to log upload response', e)
+        }
+      }
 
       alert('File uploaded successfully!')
       clearSelectedFile()

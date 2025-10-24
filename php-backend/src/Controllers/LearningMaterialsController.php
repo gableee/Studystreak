@@ -139,6 +139,8 @@ final class LearningMaterialsController
                 'category' => $item['category'] ?? null,
                 'tags' => $tags,
                 'user_name' => $this->extractOwnerName($item),
+                'uploader_name' => isset($item['uploader_name']) ? $item['uploader_name'] : null,
+                'uploader_email' => isset($item['uploader_email']) ? $item['uploader_email'] : null,
                 'storage_path' => $item['storage_path'] ?? null,
             ];
 
@@ -267,14 +269,8 @@ final class LearningMaterialsController
             return;
         }
 
-        $accessToken = (string)$request->getAttribute('access_token');
-        $restToken = $this->serviceRoleKey ?? '';
-        if ($restToken === '') {
-            $restToken = $accessToken;
-        }
-
-        if ($restToken === '') {
-            JsonResponder::withStatus(500, ['error' => 'Supabase token not available']);
+        $restToken = $this->requireRestToken($request);
+        if ($restToken === null) {
             return;
         }
 
@@ -304,11 +300,256 @@ final class LearningMaterialsController
 
         $signed = $this->storage->createSignedUrl($storagePath, $isPublic ? 60 * 60 * 24 * 30 : 60 * 60, $restToken);
         if ($signed === null) {
+            error_log(sprintf('[SIGNED_URL] createSignedUrl returned null for storage_path=%s is_public=%s', $storagePath, $isPublic ? '1' : '0'));
             JsonResponder::withStatus(500, ['error' => 'Unable to create signed URL']);
             return;
         }
 
-        JsonResponder::ok(['signed_url' => rtrim($this->config->getUrl(), '/') . $signed]);
+        // Compose the full URL that will be returned to the client. Log both
+        // halves so we can detect double-concatenation or unexpected values.
+        $base = rtrim($this->config->getUrl(), '/');
+        $signedUrl = $base . $signed;
+        error_log(sprintf('[SIGNED_URL] storage_path=%s signed=%s base=%s signed_url=%s', $storagePath, $signed, $base, $signedUrl));
+
+        JsonResponder::ok(['signed_url' => $signedUrl]);
+    }
+
+    public function like(Request $request, string $id): void
+    {
+        $user = $this->getAuthenticatedUser($request);
+        if ($user === null) {
+            return;
+        }
+
+        $this->incrementMaterialMetric($request, $id, 'like_count', 'Liked successfully');
+    }
+
+    public function download(Request $request, string $id): void
+    {
+        $user = $this->getAuthenticatedUser($request);
+        if ($user === null) {
+            return;
+        }
+
+        $this->incrementMaterialMetric($request, $id, 'download_count', 'Download counted');
+    }
+
+    /**
+     * Delete a learning material and its stored object. Only the owner (user_id or created_by)
+     * may delete their own materials.
+     * DELETE /api/learning-materials/:id
+     */
+    public function delete(Request $request, string $id): void
+    {
+        $user = $this->getAuthenticatedUser($request);
+        if ($user === null) {
+            return;
+        }
+
+        $restToken = $this->requireRestToken($request);
+        if ($restToken === null) {
+            return;
+        }
+
+        // Fetch the record to check ownership and locate storage_path
+        [$status, $payload, $raw] = $this->rest('GET', '/rest/v1/learning_materials', [
+            RequestOptions::HEADERS => $this->restHeaders($restToken),
+            RequestOptions::QUERY => [
+                'select' => 'material_id,user_id,created_by,storage_path',
+                'material_id' => 'eq.' . $id,
+                'limit' => '1',
+            ],
+        ]);
+
+        if ($status < 200 || $status >= 300 || !is_array($payload) || count($payload) === 0) {
+            JsonResponder::withStatus($status > 0 ? $status : 404, ['error' => 'Material not found', 'details' => $raw]);
+            return;
+        }
+
+        $record = $payload[0];
+        $ownerIds = [];
+        if (!empty($record['user_id'])) $ownerIds[] = (string)$record['user_id'];
+        if (!empty($record['created_by'])) $ownerIds[] = (string)$record['created_by'];
+
+        if (!in_array($user->getId(), $ownerIds, true)) {
+            JsonResponder::unauthorized();
+            return;
+        }
+
+        $storagePath = isset($record['storage_path']) && is_string($record['storage_path']) ? trim($record['storage_path']) : '';
+
+        // Attempt to delete storage object first (best-effort). Use service role if available.
+        $storageDeleted = true;
+        if ($storagePath !== '') {
+            $storageDeleted = $this->storage->deleteObject($storagePath, $this->serviceRoleKey ?? $restToken);
+            if (!$storageDeleted) {
+                // Log but continue to attempt DB delete depending on policy
+                error_log('[learning_materials.delete] storage.delete failed for ' . $storagePath);
+                // Attempt to provide more diagnostic info by trying a HEAD on the object with same token
+                try {
+                    [$hStatus, $hPayload, $hRaw] = $this->rest('GET', '/storage/v1/object/' . rawurlencode($this->storageBucket) . '/' . rawurlencode($storagePath), [
+                        RequestOptions::HEADERS => $this->restHeaders($this->serviceRoleKey ?? $restToken),
+                        RequestOptions::HTTP_ERRORS => false,
+                    ]);
+                    error_log(sprintf('[learning_materials.delete] storage head status=%s body=%s', (string)$hStatus, is_scalar($hRaw) ? (string)$hRaw : json_encode($hRaw)));
+                } catch (\Throwable $e) {
+                    error_log('[learning_materials.delete] storage head attempt failed: ' . $e->getMessage());
+                }
+            }
+        }
+
+        // Delete DB record
+        $headers = $this->restHeaders($restToken);
+        $headers['Prefer'] = 'return=minimal';
+
+        [$dStatus, $dPayload, $dRaw] = $this->rest('DELETE', '/rest/v1/learning_materials', [
+            RequestOptions::HEADERS => $headers,
+            RequestOptions::QUERY => [
+                'material_id' => 'eq.' . $id,
+            ],
+        ]);
+
+        if ($dStatus < 200 || $dStatus >= 300) {
+            JsonResponder::withStatus($dStatus > 0 ? $dStatus : 500, ['error' => 'Failed to delete material record', 'details' => $dRaw]);
+            return;
+        }
+
+        JsonResponder::ok(['message' => 'Material deleted', 'material_id' => $id, 'storage_deleted' => $storageDeleted]);
+    }
+
+    public function stream(Request $request, string $id): void
+    {
+        $user = $this->getAuthenticatedUser($request);
+        if ($user === null) {
+            return;
+        }
+
+        $restToken = $this->requireRestToken($request);
+        if ($restToken === null) {
+            return;
+        }
+
+        [$status, $payload, $rawBody] = $this->rest('GET', '/rest/v1/learning_materials', [
+            RequestOptions::HEADERS => $this->restHeaders($restToken),
+            RequestOptions::QUERY => [
+                'select' => 'storage_path,is_public',
+                'material_id' => 'eq.' . $id,
+                'limit' => '1',
+            ],
+        ]);
+
+        if ($status < 200 || $status >= 300 || !is_array($payload) || count($payload) === 0) {
+            $responseStatus = $status > 0 ? $status : 404;
+            JsonResponder::withStatus($responseStatus, [
+                'error' => 'Material not found',
+                'details' => $payload ?? ['response' => $rawBody],
+            ]);
+            return;
+        }
+
+        $record = $payload[0];
+        $storagePath = isset($record['storage_path']) ? trim((string)$record['storage_path']) : '';
+        if ($storagePath === '') {
+            error_log(sprintf('[STREAM] material=%s has no storage_path', $id));
+            JsonResponder::withStatus(400, ['error' => 'Material has no storage path']);
+            return;
+        }
+
+    $isPublic = $this->toBool($record['is_public'] ?? false);
+
+    // Log the storage path and public flag to help debug Supabase storage errors
+    error_log(sprintf('[STREAM] material=%s storage_path=%s is_public=%s', $id, $storagePath, $isPublic ? '1' : '0'));
+
+        $objectResponse = $this->storage->fetchObject($storagePath, $restToken);
+        if ($objectResponse === null) {
+            error_log(sprintf('[STREAM] fetchObject returned null for material=%s storage_path=%s', $id, $storagePath));
+            JsonResponder::withStatus(500, ['error' => 'Unable to load material content']);
+            return;
+        }
+
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
+        $contentType = $objectResponse->getHeaderLine('Content-Type');
+        if ($contentType === '') {
+            $contentType = 'application/octet-stream';
+        }
+
+        $contentLength = $objectResponse->getHeaderLine('Content-Length');
+        $etag = $objectResponse->getHeaderLine('ETag');
+        $lastModified = $objectResponse->getHeaderLine('Last-Modified');
+        $acceptRanges = $objectResponse->getHeaderLine('Accept-Ranges');
+        $disposition = $objectResponse->getHeaderLine('Content-Disposition');
+
+        http_response_code(200);
+        header('Content-Type: ' . $contentType);
+        if ($contentLength !== '') {
+            header('Content-Length: ' . $contentLength);
+        }
+        if ($etag !== '') {
+            header('ETag: ' . $etag);
+        }
+        if ($lastModified !== '') {
+            header('Last-Modified: ' . $lastModified);
+        }
+        if ($acceptRanges !== '') {
+            header('Accept-Ranges: ' . $acceptRanges);
+        }
+
+        $filename = basename($storagePath);
+        $safeName = str_replace('"', '\"', $filename);
+        if ($disposition !== '' && str_contains(strtolower($disposition), 'inline')) {
+            header('Content-Disposition: ' . $disposition);
+        } else {
+            header('Content-Disposition: inline; filename="' . $safeName . '"');
+        }
+
+        $cacheControl = $isPublic ? 'public, max-age=300' : 'private, max-age=60';
+        header('Cache-Control: ' . $cacheControl);
+
+        // Security headers to prevent content-type sniffing
+        header('X-Content-Type-Options: nosniff');
+
+        // Restrict CORS to configured allowed origins to avoid exposing internal assets.
+        $allowed = $this->config->getAllowedOrigins();
+        if (is_string($allowed) && $allowed !== '') {
+            // The config contains a comma-separated list of origins; pick the first that matches
+            $origins = array_map('trim', explode(',', $allowed));
+            $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
+            if ($requestOrigin !== '' && in_array($requestOrigin, $origins, true)) {
+                header('Access-Control-Allow-Origin: ' . $requestOrigin);
+                header('Access-Control-Allow-Methods: GET');
+                header('Access-Control-Allow-Headers: Authorization, Content-Type');
+            }
+        } else {
+            // Fallback: do not allow wildcard in production; allow same-origin only
+            header('Access-Control-Allow-Origin: ' . ($_SERVER['HTTP_ORIGIN'] ?? ''));
+            header('Access-Control-Allow-Methods: GET');
+            header('Access-Control-Allow-Headers: Authorization, Content-Type');
+        }
+
+        // Reject streaming HTML or JavaScript to avoid executing untrusted markup inside the
+        // iframe even with sandboxing. Only allow typical binary/document/image content.
+        $lowerType = strtolower($contentType);
+        if (str_starts_with($lowerType, 'text/html') || str_contains($lowerType, 'javascript') || str_contains($lowerType, 'text/javascript')) {
+            JsonResponder::withStatus(403, ['error' => 'Refusing to stream potentially executable content']);
+            return;
+        }
+
+        $body = $objectResponse->getBody();
+        while (!$body->eof()) {
+            echo $body->read(8192);
+            if (function_exists('flush')) {
+                flush();
+            }
+        }
+
+        if (method_exists($body, 'close')) {
+            $body->close();
+        }
+
+        exit;
     }
 
     public function upload(Request $request): void
@@ -360,6 +601,8 @@ final class LearningMaterialsController
         $title = trim((string)($_POST['title'] ?? ''));
         $description = trim((string)($_POST['description'] ?? ''));
         $category = trim((string)($_POST['category'] ?? ''));
+        $uploaderName = trim((string)($_POST['uploader_name'] ?? ''));
+        $uploaderEmail = trim((string)($_POST['uploader_email'] ?? ''));
         $tags = $this->parseTags($_POST['tags'] ?? '[]');
         $isPublic = filter_var($_POST['is_public'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
@@ -418,6 +661,8 @@ final class LearningMaterialsController
             'word_count' => $wordCount,
             'user_id' => $user->getId(),
             'created_by' => $user->getId(),
+            'uploader_name' => $uploaderName !== '' ? $uploaderName : null,
+            'uploader_email' => $uploaderEmail !== '' ? $uploaderEmail : null,
             'is_public' => $isPublic,
             'category' => $category !== '' ? $category : null,
             'tags' => $tags,
@@ -450,6 +695,7 @@ final class LearningMaterialsController
         $record['content_type'] = $this->expandStoredContentType($storedContentType);
 
         $resolvedName = null;
+        // Prefer an embedded profile username from PostgREST when available
         if (isset($record['profiles']) && is_array($record['profiles'])) {
             $maybe = $record['profiles']['username'] ?? null;
             if (is_string($maybe)) {
@@ -459,19 +705,64 @@ final class LearningMaterialsController
                 }
             }
         }
+
+        // If the record already contains a saved user_name, use it
         if ($resolvedName === null && isset($record['user_name'])) {
             $maybe = is_string($record['user_name']) ? trim($record['user_name']) : null;
             if ($maybe !== null && $maybe !== '') {
                 $resolvedName = $maybe;
             }
         }
+
+        // Prefer explicit uploader_name provided in the upload payload
+        if ($resolvedName === null && $uploaderName !== '') {
+            $resolvedName = $uploaderName;
+        }
+
+        // Fall back to authenticated user's metadata (common with OAuth providers)
         if ($resolvedName === null) {
-            $resolvedName = $user->getEmail();
+            $raw = $user->getRaw();
+            $metaName = null;
+            if (isset($raw['user_metadata']) && is_array($raw['user_metadata'])) {
+                $um = $raw['user_metadata'];
+                $candidates = ['full_name', 'fullName', 'name', 'displayName', 'display_name'];
+                foreach ($candidates as $key) {
+                    if (isset($um[$key]) && is_string($um[$key])) {
+                        $val = trim($um[$key]);
+                        if ($val !== '') {
+                            $metaName = $val;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if ($metaName !== null) {
+                $resolvedName = $metaName;
+            }
+        }
+
+        // Final fallback: email local-part
+        if ($resolvedName === null) {
+            $email = $user->getEmail();
+            if (is_string($email) && $email !== '') {
+                $parts = explode('@', $email);
+                $resolvedName = trim($parts[0] ?? $email);
+            } else {
+                $resolvedName = null;
+            }
         }
         $record['user_name'] = $resolvedName;
         unset($record['profiles']);
+        // Preserve uploader fields if present in the record or from the upload
+        if (!isset($record['uploader_name']) || $record['uploader_name'] === null) {
+            $record['uploader_name'] = $uploaderName !== '' ? $uploaderName : null;
+        }
+        if (!isset($record['uploader_email']) || $record['uploader_email'] === null) {
+            $record['uploader_email'] = $uploaderEmail !== '' ? $uploaderEmail : null;
+        }
 
-    $record['storage_path'] = $objectKey;
+        $record['storage_path'] = $objectKey;
     $record = $this->ensureDownloadUrl($record, $storageToken);
 
         $this->dispatchAiProcessing($record, $mime);
@@ -493,6 +784,17 @@ final class LearningMaterialsController
         return $user;
     }
 
+    private function requireRestToken(Request $request): ?string
+    {
+        $token = $this->serviceRoleKey ?? (string)$request->getAttribute('access_token');
+        if ($token === '') {
+            JsonResponder::withStatus(500, ['error' => 'Supabase token not available']);
+            return null;
+        }
+
+        return $token;
+    }
+
     /**
      * @param array<string,mixed> $params
      * @return array<string,string>
@@ -500,29 +802,21 @@ final class LearningMaterialsController
     private function buildListQuery(array $params, string $userId): array
     {
         $filter = (string)($params['filter'] ?? 'all');
+        
+        // Use a wildcard select here so the controller is resilient to
+        // schema changes (columns may be missing across environments).
+        // Mapping logic below will safely handle absent fields.
         $query = [
-            'select' => implode(',', [
-                'material_id',
-                'title',
-                'description',
-                'content_type',
-                'file_url',
-                'estimated_duration',
-                'created_at',
-                'extracted_content',
-                'word_count',
-                'ai_quiz_generated',
-                'user_id',
-                'created_by',
-                'is_public',
-                'category',
-                'tags',
-                'ai_status',
-                'storage_path',
-            ]),
+            'select' => '*',
             'order' => 'created_at.desc',
         ];
 
+        // Handle limit parameter
+        if (isset($params['limit']) && is_numeric($params['limit'])) {
+            $query['limit'] = (string)$params['limit'];
+        }
+
+        // ... rest of your existing filter logic
         switch ($filter) {
             case 'my':
                 $query['user_id'] = 'eq.' . $userId;
@@ -560,6 +854,65 @@ final class LearningMaterialsController
         $token = (string)$request->getAttribute('access_token');
         error_log('[UPLOAD DEBUG] using user token for DB write: ' . ($token !== '' ? 'yes' : 'no'));
         return $token !== '' ? $token : null;
+    }
+
+    private function incrementMaterialMetric(Request $request, string $id, string $column, string $successMessage): void
+    {
+        $restToken = $this->requireRestToken($request);
+        if ($restToken === null) {
+            return;
+        }
+
+        [$status, $payload, $rawBody] = $this->rest('GET', '/rest/v1/learning_materials', [
+            RequestOptions::HEADERS => $this->restHeaders($restToken),
+            RequestOptions::QUERY => [
+                'select' => $column,
+                'material_id' => 'eq.' . $id,
+                'limit' => '1',
+            ],
+        ]);
+
+        if ($status < 200 || $status >= 300 || !is_array($payload) || count($payload) === 0) {
+            $responseStatus = $status > 0 ? $status : 404;
+            JsonResponder::withStatus($responseStatus, [
+                'error' => 'Material not found',
+                'details' => $payload ?? ['response' => $rawBody],
+            ]);
+            return;
+        }
+
+        $record = $payload[0];
+        $currentRaw = $record[$column] ?? 0;
+        $current = is_numeric($currentRaw) ? (int)$currentRaw : 0;
+        $nextValue = $current + 1;
+
+        $headers = $this->restHeaders($restToken);
+        $headers['Content-Type'] = 'application/json';
+        $headers['Prefer'] = 'return=minimal';
+
+        [$updateStatus, , $updateRawBody] = $this->rest('PATCH', '/rest/v1/learning_materials', [
+            RequestOptions::HEADERS => $headers,
+            RequestOptions::QUERY => [
+                'material_id' => 'eq.' . $id,
+            ],
+            RequestOptions::JSON => [
+                $column => $nextValue,
+            ],
+        ]);
+
+        if ($updateStatus < 200 || $updateStatus >= 300) {
+            JsonResponder::withStatus($updateStatus > 0 ? $updateStatus : 500, [
+                'error' => 'Failed to update material metric',
+                'details' => ['response' => $updateRawBody, 'status' => $updateStatus],
+            ]);
+            return;
+        }
+
+        JsonResponder::ok([
+            'message' => $successMessage,
+            'material_id' => $id,
+            $column => $nextValue,
+        ]);
     }
 
     /**

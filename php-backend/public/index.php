@@ -64,8 +64,13 @@ header('Vary: Origin');
 $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
 if ($requestPath === '/health' || $requestPath === '/' || str_starts_with($requestPath, '/docs')) {
   header('Access-Control-Allow-Origin: *');
-  header('Access-Control-Allow-Headers: Content-Type, Authorization');
-  header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+  header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+  header('Access-Control-Allow-Methods: GET, POST, DELETE, PUT, PATCH, OPTIONS');
+  header('Access-Control-Allow-Credentials: true');
+  // Prevent intermediate caches from serving stale/multiple-choice responses
+  header('Cache-Control: no-cache, no-store, must-revalidate');
+  header('Pragma: no-cache');
+  header('Expires: 0');
   if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
     exit;
@@ -107,8 +112,13 @@ if ($requestPath === '/health' || $requestPath === '/' || str_starts_with($reque
     header('Access-Control-Allow-Origin: ' . $allowedOrigin);
   }
 
-  header('Access-Control-Allow-Headers: Content-Type, Authorization');
-  header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+  header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+  header('Access-Control-Allow-Methods: GET, POST, DELETE, PUT, PATCH, OPTIONS');
+  header('Access-Control-Allow-Credentials: true');
+  // Prevent intermediate caches from serving stale/multiple-choice responses
+  header('Cache-Control: no-cache, no-store, must-revalidate');
+  header('Pragma: no-cache');
+  header('Expires: 0');
   if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
     exit;
@@ -225,6 +235,33 @@ if (preg_match('#^/api/learning-materials/([^/]+)/signed-url$#', $path, $m) && $
   $id = $m[1];
   $authMiddleware->handle($request, function(Request $authedRequest) use ($learningMaterialsController, $id): void {
     $learningMaterialsController->signedUrl($authedRequest, $id);
+  });
+  exit;
+}
+
+// Route: POST /api/learning-materials/:id/like (auth required)
+if (preg_match('#^/api/learning-materials/([^/]+)/like$#', $path, $m) && $method === 'POST') {
+  $id = $m[1];
+  $authMiddleware->handle($request, function(Request $authedRequest) use ($learningMaterialsController, $id): void {
+    $learningMaterialsController->like($authedRequest, $id);
+  });
+  exit;
+}
+
+// Route: POST /api/learning-materials/:id/download (auth required)
+if (preg_match('#^/api/learning-materials/([^/]+)/download$#', $path, $m) && $method === 'POST') {
+  $id = $m[1];
+  $authMiddleware->handle($request, function(Request $authedRequest) use ($learningMaterialsController, $id): void {
+    $learningMaterialsController->download($authedRequest, $id);
+  });
+  exit;
+}
+
+// Route: GET /api/learning-materials/:id/stream (auth required)
+if (preg_match('#^/api/learning-materials/([^/]+)/stream$#', $path, $m) && $method === 'GET') {
+  $id = $m[1];
+  $authMiddleware->handle($request, function(Request $authedRequest) use ($learningMaterialsController, $id): void {
+    $learningMaterialsController->stream($authedRequest, $id);
   });
   exit;
 }
