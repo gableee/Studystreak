@@ -26,6 +26,10 @@ applyTo: '**'
 - 2025-10-17: Tailwind CSS docs (/tailwindlabs/tailwindcss.com) — backdrop filter utilities (blur, opacity, contrast, hue rotation) for glass panels used in analytics and profile redesigns.
 - 2025-10-23: Supabase docs (/supabase/supabase) — `createSignedUrl` yields `data.signedUrl` which may already be absolute; temporary URLs govern private asset access durations.
 - 2025-10-24: Supabase docs (/supabase/supabase) — reviewed storage signed URL creation patterns and expiry considerations for embedding private PDFs.
+- 2025-10-24: Debug changes made locally to learning materials handling:
+	- Added debug logging to `LearningMaterialsController::signedUrl` and `::stream` to capture `storage_path`, `signed` value, and composed signed URL for diagnosis of "requested path is invalid" errors.
+	- Improved `StorageService::extractStoragePathFromUrl` to handle multiple kinds of returned storage URLs (including `/object/sign/` signed URLs and public bucket shapes) and to robustly extract the object key for backfilling `storage_path`.
+	- Next steps: run local smoke tests (tests/learning_materials_smoke.php) with a valid user JWT to reproduce and inspect PHP logs for the new debug lines.
 
 ## Conversation History
 - Renamed Pomodoro -> FocusSession and related routes

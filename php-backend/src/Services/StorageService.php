@@ -253,37 +253,55 @@ final class StorageService
         if ($path === '') {
             return null;
         }
+        // Support multiple URL shapes that may appear in `file_url`:
+        // - /storage/v1/object/{bucket}/{object}
+        // - /storage/v1/object/public/{publicBucket}/{object}
+        // - /object/sign/{bucket}/{object}  (signed URLs returned by the storage API)
+        $candidates = [
+            '/storage/v1/object/',
+            '/object/sign/',
+            '/storage/v1/object/sign/',
+        ];
 
-        $marker = '/storage/v1/object/';
-        $pos = strpos($path, $marker);
-        if ($pos === false) {
-            return null;
+        foreach ($candidates as $marker) {
+            $pos = strpos($path, $marker);
+            if ($pos === false) {
+                continue;
+            }
+
+            $suffix = substr($path, $pos + strlen($marker));
+            if ($suffix === false || $suffix === '') {
+                continue;
+            }
+
+            $segments = explode('/', ltrim($suffix, '/'));
+            if (count($segments) < 2) {
+                continue;
+            }
+
+            // Handle the common public URL shape: public/{bucket}/{object}
+            if ($segments[0] === 'public' && isset($segments[1])) {
+                // shift off 'public'
+                array_shift($segments);
+            }
+
+            // Now the first segment should be the bucket name
+            $bucket = array_shift($segments);
+            if ($bucket !== $this->bucket) {
+                // Not the expected bucket; skip this candidate
+                continue;
+            }
+
+            $objectPath = implode('/', $segments);
+            if ($objectPath === '') {
+                continue;
+            }
+
+            $decoded = rawurldecode($objectPath);
+            return $decoded !== '' ? $decoded : null;
         }
 
-        $suffix = substr($path, $pos + strlen($marker));
-        if ($suffix === false || $suffix === '') {
-            return null;
-        }
-
-        $segments = explode('/', ltrim($suffix, '/'));
-        if (count($segments) < 3) {
-            return null;
-        }
-
-        array_shift($segments);
-        $bucket = array_shift($segments);
-        if ($bucket !== $this->bucket) {
-            return null;
-        }
-
-        $objectPath = implode('/', $segments);
-        if ($objectPath === '') {
-            return null;
-        }
-
-        $decoded = rawurldecode($objectPath);
-
-        return $decoded !== '' ? $decoded : null;
+        return null;
     }
 
     private function encodeStoragePath(string $path): string

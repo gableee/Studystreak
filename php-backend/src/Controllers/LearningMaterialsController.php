@@ -300,11 +300,17 @@ final class LearningMaterialsController
 
         $signed = $this->storage->createSignedUrl($storagePath, $isPublic ? 60 * 60 * 24 * 30 : 60 * 60, $restToken);
         if ($signed === null) {
+            error_log(sprintf('[SIGNED_URL] createSignedUrl returned null for storage_path=%s is_public=%s', $storagePath, $isPublic ? '1' : '0'));
             JsonResponder::withStatus(500, ['error' => 'Unable to create signed URL']);
             return;
         }
 
-        $signedUrl = rtrim($this->config->getUrl(), '/') . $signed;
+        // Compose the full URL that will be returned to the client. Log both
+        // halves so we can detect double-concatenation or unexpected values.
+        $base = rtrim($this->config->getUrl(), '/');
+        $signedUrl = $base . $signed;
+        error_log(sprintf('[SIGNED_URL] storage_path=%s signed=%s base=%s signed_url=%s', $storagePath, $signed, $base, $signedUrl));
+
         JsonResponder::ok(['signed_url' => $signedUrl]);
     }
 
@@ -444,14 +450,19 @@ final class LearningMaterialsController
         $record = $payload[0];
         $storagePath = isset($record['storage_path']) ? trim((string)$record['storage_path']) : '';
         if ($storagePath === '') {
+            error_log(sprintf('[STREAM] material=%s has no storage_path', $id));
             JsonResponder::withStatus(400, ['error' => 'Material has no storage path']);
             return;
         }
 
-        $isPublic = $this->toBool($record['is_public'] ?? false);
+    $isPublic = $this->toBool($record['is_public'] ?? false);
+
+    // Log the storage path and public flag to help debug Supabase storage errors
+    error_log(sprintf('[STREAM] material=%s storage_path=%s is_public=%s', $id, $storagePath, $isPublic ? '1' : '0'));
 
         $objectResponse = $this->storage->fetchObject($storagePath, $restToken);
         if ($objectResponse === null) {
+            error_log(sprintf('[STREAM] fetchObject returned null for material=%s storage_path=%s', $id, $storagePath));
             JsonResponder::withStatus(500, ['error' => 'Unable to load material content']);
             return;
         }
