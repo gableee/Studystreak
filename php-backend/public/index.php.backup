@@ -60,6 +60,8 @@ $origin = $_SERVER['HTTP_ORIGIN'] ?? null;
 $allowedOrigins = $config->getAllowedOrigins();
 header('Vary: Origin');
 
+error_log("CORS Debug - Origin: " . ($origin ?? 'null') . ", Allowed: " . json_encode($allowedOrigins));
+
 $fallbackOrigins = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
@@ -71,52 +73,6 @@ $fallbackOrigins = [
   'http://127.0.0.1:5175',
   'https://localhost:8173',
 ];
-
-$normalizeOrigin = static function (?string $value): ?string {
-  if ($value === null) {
-    return null;
-  }
-  $trimmed = trim($value);
-  if ($trimmed === '') {
-    return null;
-  }
-
-  $trimmed = rtrim($trimmed, '/');
-  $parts = parse_url($trimmed);
-  if ($parts === false || !isset($parts['scheme'], $parts['host'])) {
-    return strtolower($trimmed);
-  }
-
-  $scheme = strtolower($parts['scheme']);
-  $host = strtolower($parts['host']);
-  $port = isset($parts['port']) ? ':' . $parts['port'] : '';
-
-  return $scheme . '://' . $host . $port;
-};
-
-$allowAnyConfiguredOrigin = false;
-$normalizedAllowedMap = [];
-foreach ($allowedOrigins as $candidateOrigin) {
-  if ($candidateOrigin === '*') {
-    $allowAnyConfiguredOrigin = true;
-    continue;
-  }
-
-  $normalized = $normalizeOrigin($candidateOrigin);
-  if ($normalized !== null) {
-    $normalizedAllowedMap[$normalized] = $candidateOrigin;
-  }
-}
-
-$normalizedFallbackMap = [];
-foreach ($fallbackOrigins as $candidateOrigin) {
-  $normalized = $normalizeOrigin($candidateOrigin);
-  if ($normalized !== null) {
-    $normalizedFallbackMap[$normalized] = $candidateOrigin;
-  }
-}
-
-$normalizedOrigin = $normalizeOrigin($origin);
 
 // Quick path: if this is the health endpoint, allow any origin so platform probes succeed.
 $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
@@ -136,34 +92,32 @@ if ($requestPath === '/health' || $requestPath === '/' || str_starts_with($reque
 } else {
   $allowedOrigin = null;
 
-  if ($allowAnyConfiguredOrigin && $origin !== null) {
+  // TEMP DEBUG: Always allow for testing
+  if ($origin === 'http://localhost:5174') {
     $allowedOrigin = $origin;
-  } elseif ($normalizedOrigin !== null) {
-    if (isset($normalizedAllowedMap[$normalizedOrigin])) {
-      $allowedOrigin = $origin ?? $normalizedAllowedMap[$normalizedOrigin];
-    } elseif (isset($normalizedFallbackMap[$normalizedOrigin])) {
-      $allowedOrigin = $origin ?? $normalizedFallbackMap[$normalizedOrigin];
-    } elseif ($normalizedAllowedMap === []) {
-      $hostedFallbacks = [
-        'https://studystreak-peach.vercel.app',
-        'https://studystreak-backend.onrender.com',
-      ];
+    error_log("CORS - DEBUG: Allowed localhost:5174");
+  } elseif ($origin !== null && $config->isOriginAllowed($origin)) {
+    $allowedOrigin = $origin;
+    error_log("CORS - Allowed via config");
+  } elseif (in_array($origin, $fallbackOrigins, true)) {
+    $allowedOrigin = $origin;
+    error_log("CORS - Allowed via fallback");
+  } elseif ($allowedOrigins === []) {
+    $hostedFallbacks = [
+      'https://studystreak-peach.vercel.app',
+      'https://studystreak-backend.onrender.com',
+    ];
 
-      $normalizedHostedFallbackMap = [];
-      foreach ($hostedFallbacks as $candidateOrigin) {
-        $normalized = $normalizeOrigin($candidateOrigin);
-        if ($normalized !== null) {
-          $normalizedHostedFallbackMap[$normalized] = $candidateOrigin;
-        }
-      }
-
-      if (isset($normalizedHostedFallbackMap[$normalizedOrigin])) {
-        $allowedOrigin = $origin ?? $normalizedHostedFallbackMap[$normalizedOrigin];
-      }
+    $fallbacks = array_merge($fallbackOrigins, $hostedFallbacks);
+    if ($origin !== null && in_array($origin, $fallbacks, true)) {
+      $allowedOrigin = $origin;
+      error_log("CORS - Allowed via hosted fallback");
     }
   }
 
-  if ($allowedOrigin === null && $origin !== null && !$allowAnyConfiguredOrigin) {
+  error_log("CORS - Final allowedOrigin: " . ($allowedOrigin ?? 'null'));
+
+  if ($allowedOrigin === null && $origin !== null) {
     header('Content-Type: application/json');
     http_response_code(403);
     echo json_encode(['error' => 'Origin not allowed']);
@@ -210,14 +164,13 @@ if ($path === '/' || $path === '/health') {
 if ($path === '/debug-cors') {
   header('Content-Type: application/json');
   $origin = $_SERVER['HTTP_ORIGIN'] ?? null;
+  $allowedOrigins = $config->getAllowedOrigins();
   echo json_encode([
     'origin' => $origin,
-    'normalizedOrigin' => $normalizedOrigin,
-    'allowAnyConfiguredOrigin' => $allowAnyConfiguredOrigin,
     'allowedOrigins' => $allowedOrigins,
-    'normalizedAllowedOrigins' => array_values(array_unique(array_keys($normalizedAllowedMap))),
-    'fallbackOrigins' => $fallbackOrigins,
-    'normalizedFallbackOrigins' => array_values(array_unique(array_keys($normalizedFallbackMap)))
+    'isOriginAllowed' => $config->isOriginAllowed($origin),
+    'inFallback' => in_array($origin, $fallbackOrigins, true),
+    'allowedOriginsEmpty' => empty($allowedOrigins)
   ]);
   exit;
 }

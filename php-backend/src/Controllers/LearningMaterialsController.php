@@ -1,1290 +1,583 @@
 <?php
-
 declare(strict_types=1);
 
 namespace App\Controllers;
 
 use App\Auth\AuthenticatedUser;
+use App\Auth\SupabaseAuth;
 use App\Config\SupabaseConfig;
 use App\Http\JsonResponder;
 use App\Http\Request;
-use App\Services\StorageException;
-use App\Services\StorageService;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use GuzzleHttp\RequestOptions;
 
 final class LearningMaterialsController
 {
-    private const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
-
-    /** @var string[] */
-    private const ALLOWED_MIME_TYPES = [
-        'application/pdf',
-        'application/vnd.ms-powerpoint',
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    ];
-
-    private SupabaseConfig $config;
+    private SupabaseAuth $supabaseAuth;
     private Client $client;
-    private string $storageBucket;
+    private string $supabaseUrl;
+    private string $anonKey;
     private ?string $serviceRoleKey;
-    private ?Client $aiClient;
-    private ?string $aiServiceApiKey;
-    /** @var array<string,bool> */
-    private array $storagePathBackfillCache = [];
-    private StorageService $storage;
+    private string $bucket;
+    private string $publicBaseUrl;
+    private const ALLOWED_CONTENT_TYPES = ['pdf', 'video', 'ppt', 'article'];
 
-    public function __construct(SupabaseConfig $config)
+    public function __construct(SupabaseConfig $config, SupabaseAuth $supabaseAuth)
     {
-        $this->config = $config;
-        $this->client = new Client([
-            'base_uri' => $config->getUrl(),
-            'timeout' => 15,
-        ]);
-        $this->storageBucket = $config->getStorageBucket();
+        $this->supabaseAuth = $supabaseAuth;
+        $this->supabaseUrl = rtrim($config->getUrl(), '/');
+        $this->anonKey = $config->getAnonKey();
         $this->serviceRoleKey = $config->getServiceRoleKey();
-        $aiServiceUrl = $config->getAiServiceUrl();
-        $this->aiServiceApiKey = $config->getAiServiceApiKey();
-        $this->aiClient = $aiServiceUrl !== null
-            ? new Client([
-                'base_uri' => rtrim($aiServiceUrl, '/') . '/',
-                'timeout' => 5,
-                'connect_timeout' => 2,
-            ])
-            : null;
-
-        $this->storage = new StorageService(
-            $config,
-            $this->client,
-            $this->storageBucket,
-            $config->getStoragePublicBaseUrl(),
-            $this->serviceRoleKey
-        );
+        $this->bucket = $config->getStorageBucket();
+        $this->publicBaseUrl = $config->getStoragePublicBaseUrl();
+        $this->client = new Client(['base_uri' => $this->supabaseUrl]);
     }
 
     public function index(Request $request): void
     {
-        $user = $this->getAuthenticatedUser($request);
-        if ($user === null) {
-            return;
-        }
+        [$user, $token] = $this->resolveOptionalUser($request);
+        $query = $this->buildListQuery($request->getQueryParams(), $user);
+        $headers = [
+            'apikey' => $this->anonKey,
+            'Authorization' => 'Bearer ' . ($token ?? $this->anonKey),
+            'Accept' => 'application/json',
+            'Prefer' => 'count=exact',
+        ];
 
-        $params = $request->getQueryParams();
-        $query = $this->buildListQuery($params, $user->getId());
-        $accessToken = (string)$request->getAttribute('access_token');
+        $result = $this->send('GET', '/rest/v1/learning_materials', [
+            'headers' => $headers,
+            'query' => $query,
+        ]);
 
-        $restToken = $this->serviceRoleKey ?? '';
-        if ($restToken === '') {
-            $restToken = $accessToken;
-        }
-
-        if ($restToken === '') {
-            error_log('[learning_materials.index] aborting fetch because no Supabase token is available');
-            JsonResponder::withStatus(500, [
-                'error' => 'Failed to fetch learning materials',
-                'details' => ['message' => 'Supabase credentials missing for REST call'],
+        if ($result['status'] !== 200) {
+            JsonResponder::withStatus($result['status'], [
+                'error' => 'Unable to fetch learning materials',
+                'details' => $result['payload'],
             ]);
             return;
         }
 
-        [$status, $payload, $rawBody] = $this->rest('GET', '/rest/v1/learning_materials', [
-            RequestOptions::HEADERS => $this->restHeaders($restToken),
-            RequestOptions::QUERY => $query,
-        ]);
+        $materials = is_array($result['payload']) ? $result['payload'] : [];
+        $transformed = array_map(function (array $item): array {
+            return $this->transformMaterial($item);
+        }, $materials);
 
-        if ($status < 200 || $status >= 300 || !is_array($payload)) {
-            error_log(sprintf('[learning_materials.index] fetch failed status=%s body=%s', (string)$status, $rawBody));
+        $total = $this->parseTotalFromHeaders($result['headers']);
+        $page = max(1, (int)($request->getQueryParams()['page'] ?? 1));
+        $perPage = max(1, min(50, (int)($request->getQueryParams()['per_page'] ?? 20)));
 
-            $details = $payload ?? ['response' => $rawBody];
-            if (is_array($details)) {
-                $details['status'] = $status;
-            }
-
-            JsonResponder::withStatus($status > 0 ? $status : 500, [
-                'error' => 'Failed to fetch learning materials',
-                'details' => $details,
-            ]);
-            return;
-        }
-
-        $categoryParam = trim((string)($params['category'] ?? ''));
-        $searchTerm = trim((string)($params['search'] ?? ''));
-
-        $materials = array_map(function (array $item): array {
-            $tags = $this->normalizeTags($item['tags'] ?? []);
-            $fileUrl = $item['file_url'] ?? null;
-            if (!is_string($fileUrl) || $fileUrl === '') {
-                $fileUrl = null;
-            }
-
-            $storedType = isset($item['content_type']) ? (string)$item['content_type'] : '';
-            $expandedType = $this->expandStoredContentType($storedType);
-
-            $result = [
-                'material_id' => $item['material_id'] ?? $item['id'] ?? null,
-                'title' => $item['title'] ?? '',
-                'description' => $item['description'] ?? '',
-                'file_url' => $fileUrl,
-                'content_type' => $expandedType !== '' ? $expandedType : $storedType,
-                'content_type_label' => $storedType !== '' ? $storedType : null,
-                'estimated_duration' => $item['estimated_duration'] ?? null,
-                'created_at' => $item['created_at'] ?? null,
-                'extracted_content' => $item['extracted_content'] ?? null,
-                'word_count' => (int)($item['word_count'] ?? 0),
-                'ai_quiz_generated' => $this->toBool($item['ai_quiz_generated'] ?? false),
-                'user_id' => $item['user_id'] ?? null,
-                'created_by' => $item['created_by'] ?? null,
-                'is_public' => $this->toBool($item['is_public'] ?? false),
-                'category' => $item['category'] ?? null,
-                'tags' => $tags,
-                'user_name' => $this->extractOwnerName($item),
-                'uploader_name' => isset($item['uploader_name']) ? $item['uploader_name'] : null,
-                'uploader_email' => isset($item['uploader_email']) ? $item['uploader_email'] : null,
-                'storage_path' => $item['storage_path'] ?? null,
-            ];
-
-            if (isset($item['like_count'])) {
-                $result['like_count'] = (int)$item['like_count'];
-            }
-
-            if (isset($item['download_count'])) {
-                $result['download_count'] = (int)$item['download_count'];
-            }
-
-            return $result;
-        }, $payload);
-
-        foreach ($materials as &$material) {
-            $material = $this->ensureDownloadUrl($material, $restToken);
-        }
-        unset($material);
-
-    // Fetch profile usernames in a second request when they are missing so the
-    // frontend can display the owner handle without relying on PostgREST embeds.
-        $needLookup = false;
-        $userIds = [];
-        foreach ($materials as $m) {
-            if (!empty($m['user_name'])) {
-                continue;
-            }
-
-            $candidateIds = [];
-            if (!empty($m['user_id'])) {
-                $candidateIds[] = $m['user_id'];
-            }
-            if (!empty($m['created_by'])) {
-                $candidateIds[] = $m['created_by'];
-            }
-
-            if ($candidateIds !== []) {
-                $needLookup = true;
-                foreach ($candidateIds as $cid) {
-                    $userIds[] = $cid;
-                }
-            }
-        }
-
-        if ($needLookup && count($userIds) > 0) {
-            $userIds = array_values(array_unique($userIds));
-            // Build PostgREST 'in' filter for string ids
-            $quoted = array_map(fn($id) => "'" . str_replace("'", "\\'", (string)$id) . "'", $userIds);
-            $inList = '(' . implode(',', $quoted) . ')';
-
-            [$pStatus, $pPayload, $pRaw] = $this->rest('GET', '/rest/v1/profiles', [
-                RequestOptions::HEADERS => $this->restHeaders($restToken),
-                RequestOptions::QUERY => [
-                    'select' => 'id,username',
-                    'id' => 'in.' . $inList,
-                ],
-            ]);
-
-            if ($pStatus >= 200 && $pStatus < 300 && is_array($pPayload)) {
-                $map = [];
-                foreach ($pPayload as $prof) {
-                    if (isset($prof['id']) && isset($prof['username'])) {
-                        $map[(string)$prof['id']] = $prof['username'];
-                    }
-                }
-
-                foreach ($materials as &$m) {
-                    if (!empty($m['user_name'])) {
-                        continue;
-                    }
-
-                    $candidateIds = [];
-                    if (!empty($m['user_id'])) {
-                        $candidateIds[] = (string)$m['user_id'];
-                    }
-                    if (!empty($m['created_by'])) {
-                        $candidateIds[] = (string)$m['created_by'];
-                    }
-
-                    foreach ($candidateIds as $cid) {
-                        if (isset($map[$cid])) {
-                            $m['user_name'] = $map[$cid];
-                            break;
-                        }
-                    }
-                }
-                unset($m);
-            } else {
-                error_log(sprintf('[learning_materials.index] profile lookup failed status=%s body=%s', (string)$pStatus, $pRaw));
-            }
-        }
-
-        if ($categoryParam !== '' && strcasecmp($categoryParam, 'all') !== 0) {
-            $materials = array_values(array_filter($materials, function (array $item) use ($categoryParam): bool {
-                return isset($item['category']) && strcasecmp((string)$item['category'], $categoryParam) === 0;
-            }));
-        }
-
-        if ($searchTerm !== '') {
-            $materials = array_values(array_filter($materials, function (array $item) use ($searchTerm): bool {
-                $haystacks = [
-                    $item['title'] ?? '',
-                    $item['description'] ?? '',
-                    implode(' ', $item['tags'] ?? []),
-                ];
-                foreach ($haystacks as $text) {
-                    if ($text !== null && stripos((string)$text, $searchTerm) !== false) {
-                        return true;
-                    }
-                }
-                return false;
-            }));
-        }
-
-        JsonResponder::ok($materials);
-    }
-
-    /**
-     * Return a fresh signed URL for a private learning material.
-     * GET /api/learning-materials/:id/signed-url
-     */
-    public function signedUrl(Request $request, string $id): void
-    {
-        $user = $this->getAuthenticatedUser($request);
-        if ($user === null) {
-            return;
-        }
-
-        $restToken = $this->requireRestToken($request);
-        if ($restToken === null) {
-            return;
-        }
-
-        // Fetch the material record
-        [$status, $payload, $body] = $this->rest('GET', '/rest/v1/learning_materials', [
-            RequestOptions::HEADERS => $this->restHeaders($restToken),
-            RequestOptions::QUERY => [
-                'select' => 'material_id,storage_path,is_public',
-                'material_id' => 'eq.' . $id,
-                'limit' => '1',
+        JsonResponder::ok([
+            'data' => $transformed,
+            'meta' => [
+                'total' => $total,
+                'page' => $page,
+                'per_page' => $perPage,
             ],
         ]);
-
-        if ($status < 200 || $status >= 300 || !is_array($payload) || count($payload) === 0) {
-            JsonResponder::withStatus($status > 0 ? $status : 404, ['error' => 'Material not found', 'details' => $body]);
-            return;
-        }
-
-        $record = $payload[0];
-        $storagePath = isset($record['storage_path']) ? (string)$record['storage_path'] : '';
-        $isPublic = $this->toBool($record['is_public'] ?? false);
-
-        if ($storagePath === '') {
-            JsonResponder::withStatus(400, ['error' => 'Material has no storage path']);
-            return;
-        }
-
-        $signed = $this->storage->createSignedUrl($storagePath, $isPublic ? 60 * 60 * 24 * 30 : 60 * 60, $restToken);
-        if ($signed === null) {
-            error_log(sprintf('[SIGNED_URL] createSignedUrl returned null for storage_path=%s is_public=%s', $storagePath, $isPublic ? '1' : '0'));
-            JsonResponder::withStatus(500, ['error' => 'Unable to create signed URL']);
-            return;
-        }
-
-        // Compose the full URL that will be returned to the client. Log both
-        // halves so we can detect double-concatenation or unexpected values.
-        $base = rtrim($this->config->getUrl(), '/');
-        $signedUrl = $base . $signed;
-        error_log(sprintf('[SIGNED_URL] storage_path=%s signed=%s base=%s signed_url=%s', $storagePath, $signed, $base, $signedUrl));
-
-        JsonResponder::ok(['signed_url' => $signedUrl]);
     }
 
-    public function like(Request $request, string $id): void
+    public function show(Request $request, string $id): void
     {
-        $user = $this->getAuthenticatedUser($request);
-        if ($user === null) {
+        [$user, $token] = $this->resolveOptionalUser($request);
+        $material = $this->fetchMaterial($id, $token ?? $this->anonKey);
+
+        if ($material === null) {
+            JsonResponder::withStatus(404, ['error' => 'Learning material not found']);
             return;
         }
 
-        $this->incrementMaterialMetric($request, $id, 'like_count', 'Liked successfully');
+        if (!$material['is_public'] && ($user === null || $material['uploader_id'] !== $user->getId())) {
+            JsonResponder::unauthorized('You do not have access to this material');
+            return;
+        }
+
+        JsonResponder::ok($this->transformMaterial($material));
     }
 
-    public function download(Request $request, string $id): void
+    public function create(Request $request): void
     {
-        $user = $this->getAuthenticatedUser($request);
-        if ($user === null) {
+        [$user, $token] = $this->requireAuth($request);
+        if ($user === null || $token === null) {
             return;
         }
 
-        $this->incrementMaterialMetric($request, $id, 'download_count', 'Download counted');
-    }
-
-    /**
-     * Delete a learning material and its stored object. Only the owner (user_id or created_by)
-     * may delete their own materials.
-     * DELETE /api/learning-materials/:id
-     */
-    public function delete(Request $request, string $id): void
-    {
-        $user = $this->getAuthenticatedUser($request);
-        if ($user === null) {
-            return;
-        }
-
-        $restToken = $this->requireRestToken($request);
-        if ($restToken === null) {
-            return;
-        }
-
-        // Fetch the record to check ownership and locate storage_path
-        [$status, $payload, $raw] = $this->rest('GET', '/rest/v1/learning_materials', [
-            RequestOptions::HEADERS => $this->restHeaders($restToken),
-            RequestOptions::QUERY => [
-                'select' => 'material_id,user_id,created_by,storage_path',
-                'material_id' => 'eq.' . $id,
-                'limit' => '1',
-            ],
-        ]);
-
-        if ($status < 200 || $status >= 300 || !is_array($payload) || count($payload) === 0) {
-            JsonResponder::withStatus($status > 0 ? $status : 404, ['error' => 'Material not found', 'details' => $raw]);
-            return;
-        }
-
-        $record = $payload[0];
-        $ownerIds = [];
-        if (!empty($record['user_id'])) $ownerIds[] = (string)$record['user_id'];
-        if (!empty($record['created_by'])) $ownerIds[] = (string)$record['created_by'];
-
-        if (!in_array($user->getId(), $ownerIds, true)) {
-            JsonResponder::unauthorized();
-            return;
-        }
-
-        $storagePath = isset($record['storage_path']) && is_string($record['storage_path']) ? trim($record['storage_path']) : '';
-
-        // Attempt to delete storage object first (best-effort). Use service role if available.
-        $storageDeleted = true;
-        if ($storagePath !== '') {
-            $storageDeleted = $this->storage->deleteObject($storagePath, $this->serviceRoleKey ?? $restToken);
-            if (!$storageDeleted) {
-                // Log but continue to attempt DB delete depending on policy
-                error_log('[learning_materials.delete] storage.delete failed for ' . $storagePath);
-                // Attempt to provide more diagnostic info by trying a HEAD on the object with same token
-                try {
-                    [$hStatus, $hPayload, $hRaw] = $this->rest('GET', '/storage/v1/object/' . rawurlencode($this->storageBucket) . '/' . rawurlencode($storagePath), [
-                        RequestOptions::HEADERS => $this->restHeaders($this->serviceRoleKey ?? $restToken),
-                        RequestOptions::HTTP_ERRORS => false,
-                    ]);
-                    error_log(sprintf('[learning_materials.delete] storage head status=%s body=%s', (string)$hStatus, is_scalar($hRaw) ? (string)$hRaw : json_encode($hRaw)));
-                } catch (\Throwable $e) {
-                    error_log('[learning_materials.delete] storage head attempt failed: ' . $e->getMessage());
-                }
-            }
-        }
-
-        // Delete DB record
-        $headers = $this->restHeaders($restToken);
-        $headers['Prefer'] = 'return=minimal';
-
-        [$dStatus, $dPayload, $dRaw] = $this->rest('DELETE', '/rest/v1/learning_materials', [
-            RequestOptions::HEADERS => $headers,
-            RequestOptions::QUERY => [
-                'material_id' => 'eq.' . $id,
-            ],
-        ]);
-
-        if ($dStatus < 200 || $dStatus >= 300) {
-            JsonResponder::withStatus($dStatus > 0 ? $dStatus : 500, ['error' => 'Failed to delete material record', 'details' => $dRaw]);
-            return;
-        }
-
-        JsonResponder::ok(['message' => 'Material deleted', 'material_id' => $id, 'storage_deleted' => $storageDeleted]);
-    }
-
-    public function stream(Request $request, string $id): void
-    {
-        $user = $this->getAuthenticatedUser($request);
-        if ($user === null) {
-            return;
-        }
-
-        $restToken = $this->requireRestToken($request);
-        if ($restToken === null) {
-            return;
-        }
-
-        [$status, $payload, $rawBody] = $this->rest('GET', '/rest/v1/learning_materials', [
-            RequestOptions::HEADERS => $this->restHeaders($restToken),
-            RequestOptions::QUERY => [
-                'select' => 'storage_path,is_public',
-                'material_id' => 'eq.' . $id,
-                'limit' => '1',
-            ],
-        ]);
-
-        if ($status < 200 || $status >= 300 || !is_array($payload) || count($payload) === 0) {
-            $responseStatus = $status > 0 ? $status : 404;
-            JsonResponder::withStatus($responseStatus, [
-                'error' => 'Material not found',
-                'details' => $payload ?? ['response' => $rawBody],
-            ]);
-            return;
-        }
-
-        $record = $payload[0];
-        $storagePath = isset($record['storage_path']) ? trim((string)$record['storage_path']) : '';
-        if ($storagePath === '') {
-            error_log(sprintf('[STREAM] material=%s has no storage_path', $id));
-            JsonResponder::withStatus(400, ['error' => 'Material has no storage path']);
-            return;
-        }
-
-    $isPublic = $this->toBool($record['is_public'] ?? false);
-
-    // Log the storage path and public flag to help debug Supabase storage errors
-    error_log(sprintf('[STREAM] material=%s storage_path=%s is_public=%s', $id, $storagePath, $isPublic ? '1' : '0'));
-
-        $objectResponse = $this->storage->fetchObject($storagePath, $restToken);
-        if ($objectResponse === null) {
-            error_log(sprintf('[STREAM] fetchObject returned null for material=%s storage_path=%s', $id, $storagePath));
-            JsonResponder::withStatus(500, ['error' => 'Unable to load material content']);
-            return;
-        }
-
-        while (ob_get_level() > 0) {
-            ob_end_clean();
-        }
-
-        $contentType = $objectResponse->getHeaderLine('Content-Type');
-        if ($contentType === '') {
-            $contentType = 'application/octet-stream';
-        }
-
-        $contentLength = $objectResponse->getHeaderLine('Content-Length');
-        $etag = $objectResponse->getHeaderLine('ETag');
-        $lastModified = $objectResponse->getHeaderLine('Last-Modified');
-        $acceptRanges = $objectResponse->getHeaderLine('Accept-Ranges');
-        $disposition = $objectResponse->getHeaderLine('Content-Disposition');
-
-        http_response_code(200);
-        header('Content-Type: ' . $contentType);
-        if ($contentLength !== '') {
-            header('Content-Length: ' . $contentLength);
-        }
-        if ($etag !== '') {
-            header('ETag: ' . $etag);
-        }
-        if ($lastModified !== '') {
-            header('Last-Modified: ' . $lastModified);
-        }
-        if ($acceptRanges !== '') {
-            header('Accept-Ranges: ' . $acceptRanges);
-        }
-
-        $filename = basename($storagePath);
-        $safeName = str_replace('"', '\"', $filename);
-        if ($disposition !== '' && str_contains(strtolower($disposition), 'inline')) {
-            header('Content-Disposition: ' . $disposition);
-        } else {
-            header('Content-Disposition: inline; filename="' . $safeName . '"');
-        }
-
-        $cacheControl = $isPublic ? 'public, max-age=300' : 'private, max-age=60';
-        header('Cache-Control: ' . $cacheControl);
-
-        // Security headers to prevent content-type sniffing
-        header('X-Content-Type-Options: nosniff');
-
-        // Restrict CORS to configured allowed origins to avoid exposing internal assets.
-        $allowed = $this->config->getAllowedOrigins();
-        if (is_string($allowed) && $allowed !== '') {
-            // The config contains a comma-separated list of origins; pick the first that matches
-            $origins = array_map('trim', explode(',', $allowed));
-            $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
-            if ($requestOrigin !== '' && in_array($requestOrigin, $origins, true)) {
-                header('Access-Control-Allow-Origin: ' . $requestOrigin);
-                header('Access-Control-Allow-Methods: GET');
-                header('Access-Control-Allow-Headers: Authorization, Content-Type');
-            }
-        } else {
-            // Fallback: do not allow wildcard in production; allow same-origin only
-            header('Access-Control-Allow-Origin: ' . ($_SERVER['HTTP_ORIGIN'] ?? ''));
-            header('Access-Control-Allow-Methods: GET');
-            header('Access-Control-Allow-Headers: Authorization, Content-Type');
-        }
-
-        // Reject streaming HTML or JavaScript to avoid executing untrusted markup inside the
-        // iframe even with sandboxing. Only allow typical binary/document/image content.
-        $lowerType = strtolower($contentType);
-        if (str_starts_with($lowerType, 'text/html') || str_contains($lowerType, 'javascript') || str_contains($lowerType, 'text/javascript')) {
-            JsonResponder::withStatus(403, ['error' => 'Refusing to stream potentially executable content']);
-            return;
-        }
-
-        $body = $objectResponse->getBody();
-        while (!$body->eof()) {
-            echo $body->read(8192);
-            if (function_exists('flush')) {
-                flush();
-            }
-        }
-
-        if (method_exists($body, 'close')) {
-            $body->close();
-        }
-
-        exit;
-    }
-
-    public function upload(Request $request): void
-    {
-        $user = $this->getAuthenticatedUser($request);
-        if ($user === null) {
-            return;
-        }
-
-        error_log('[UPLOAD DEBUG] start upload for user=' . $user->getId());
-
-        $storageToken = $this->serviceRoleKey ?? (string)$request->getAttribute('access_token');
-        if ($storageToken === '') {
-            JsonResponder::error(500, 'Supabase access token not configured for storage upload');
-            return;
-        }
-
-        $writeToken = $this->resolveWriteToken($request);
-        if ($writeToken === null) {
-            JsonResponder::error(500, 'Unable to determine token for database write');
-            return;
-        }
-
-        if (!isset($_FILES['file']) || !is_array($_FILES['file'])) {
-            error_log('[UPLOAD DEBUG] no file present in $_FILES');
-            JsonResponder::badRequest('No file uploaded');
-            return;
-        }
-
-        $file = $_FILES['file'];
-        error_log('[UPLOAD DEBUG] file received name=' . ($file['name'] ?? 'n/a') . ' size=' . ($file['size'] ?? 'n/a') . ' error=' . ($file['error'] ?? 'n/a'));
-        $uploadError = (int)($file['error'] ?? UPLOAD_ERR_OK);
-        if ($uploadError !== UPLOAD_ERR_OK) {
-            $details = ['code' => $uploadError];
-            $uploadLimit = ini_get('upload_max_filesize');
-            if (is_string($uploadLimit) && $uploadLimit !== '') {
-                $details['upload_max_filesize'] = $uploadLimit;
-            }
-
-            $postLimit = ini_get('post_max_size');
-            if (is_string($postLimit) && $postLimit !== '') {
-                $details['post_max_size'] = $postLimit;
-            }
-
-            JsonResponder::badRequest($this->uploadErrorMessage($uploadError), $details);
-            return;
-        }
-
-        $title = trim((string)($_POST['title'] ?? ''));
-        $description = trim((string)($_POST['description'] ?? ''));
-        $category = trim((string)($_POST['category'] ?? ''));
-        $uploaderName = trim((string)($_POST['uploader_name'] ?? ''));
-        $uploaderEmail = trim((string)($_POST['uploader_email'] ?? ''));
-        $tags = $this->parseTags($_POST['tags'] ?? '[]');
-        $isPublic = filter_var($_POST['is_public'] ?? false, FILTER_VALIDATE_BOOLEAN);
-
+        $input = $this->collectInput($request);
+        $title = trim((string)($input['title'] ?? ''));
         if ($title === '') {
             JsonResponder::badRequest('Title is required');
             return;
         }
 
-        $tmpPath = (string)($file['tmp_name'] ?? '');
-        if ($tmpPath === '' || !is_uploaded_file($tmpPath)) {
-            JsonResponder::badRequest('Uploaded file is invalid');
+        $isPublic = $this->toBool($input['is_public'] ?? false);
+        $description = $this->optionalString($input['description'] ?? null);
+        $tags = $this->normalizeTags($input['tags'] ?? null);
+
+        $uploadError = null;
+        $fileInfo = $this->resolveUploadedFile($uploadError);
+        if ($uploadError !== null) {
+            JsonResponder::badRequest($uploadError);
             return;
         }
 
-        $clientMime = (string)($file['type'] ?? '');
-        $mime = $this->detectMimeType($tmpPath, $clientMime);
-        $error = $this->validateFile($file, $mime);
-        if ($error !== null) {
-            JsonResponder::badRequest($error);
-            return;
-        }
+        $storagePath = null;
+        $fileName = null;
+        $mime = null;
+        $size = null;
 
-        $originalName = (string)($file['name'] ?? 'upload');
-        $extension = $this->guessExtension($mime, $originalName);
-        $objectPath = $this->buildObjectPath($user->getId(), $title, $extension);
-
-        try {
-            error_log('[UPLOAD DEBUG] uploading to storage objectPath=' . $objectPath);
-            $objectKey = $this->storage->upload($tmpPath, $mime, $objectPath, $storageToken);
-            error_log('[UPLOAD DEBUG] storage.upload returned objectKey=' . $objectKey);
-        } catch (StorageException $e) {
-            $details = $e->getDetails();
-            error_log('[UPLOAD DEBUG] storage.upload failed message=' . $e->getMessage() . ' details=' . json_encode($details));
-            $payload = ['error' => $e->getMessage()];
-            if ($details !== []) {
-                $payload['details'] = $details;
+        if ($fileInfo !== null) {
+            $storagePath = $this->canonicalizePath($user->getId(), $fileInfo['name']);
+            $uploadResult = $this->uploadFile($storagePath, $fileInfo, $token);
+            if ($uploadResult === false) {
+                return;
             }
-
-            JsonResponder::withStatus($e->getStatus(), $payload);
-            return;
+            $fileName = $fileInfo['name'];
+            $mime = $fileInfo['type'] !== '' ? $fileInfo['type'] : null;
+            $size = $fileInfo['size'];
         }
 
-        $extractedContent = $this->extractTextContent($tmpPath, $mime);
-        $wordCount = $extractedContent !== null ? str_word_count($extractedContent) : 0;
-
-    $initialFileUrl = $this->storage->buildFileUrl($objectKey, $isPublic, $storageToken);
-    error_log('[UPLOAD DEBUG] initialFileUrl=' . ($initialFileUrl ?? 'null'));
+        $contentType = $this->determineContentType($input, $fileInfo);
 
         $payload = [
             'title' => $title,
-            'description' => $description !== '' ? $description : null,
-            'content_type' => $this->mapContentType($mime),
-            'file_url' => $isPublic ? $initialFileUrl : null,
-            'estimated_duration' => null,
-            'extracted_content' => $extractedContent,
-            'word_count' => $wordCount,
+            'description' => $description,
+            'content_type' => $contentType,
+            'file_url' => $storagePath === null ? $this->optionalString($input['file_url'] ?? null) : null,
+            'storage_path' => $storagePath,
+            'file_name' => $fileName,
+            'mime' => $mime,
+            'size' => $size,
+            'is_public' => $isPublic,
             'user_id' => $user->getId(),
             'created_by' => $user->getId(),
-            'uploader_name' => $uploaderName !== '' ? $uploaderName : null,
-            'uploader_email' => $uploaderEmail !== '' ? $uploaderEmail : null,
-            'is_public' => $isPublic,
-            'category' => $category !== '' ? $category : null,
-            'tags' => $tags,
-            'storage_path' => $objectKey,
+            'tags_jsonb' => $tags,
         ];
 
-        error_log('[UPLOAD DEBUG] DB insert payload: ' . json_encode($payload));
+        if ($payload['file_url'] === null) {
+            unset($payload['file_url']);
+        }
 
-        [$status, $response, $rawBody] = $this->rest('POST', '/rest/v1/learning_materials', [
-            RequestOptions::HEADERS => $this->restHeaders($writeToken) + [
-                'Content-Type' => 'application/json',
+        // Dump payload for debugging in case the DB rejects the insert (temporary)
+        @mkdir(__DIR__ . '/../../../tmp', 0755, true);
+        @file_put_contents(__DIR__ . '/../../../tmp/create_payload.log', json_encode($payload, JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
+
+        $result = $this->send('POST', '/rest/v1/learning_materials', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $token,
+                'apikey' => $this->anonKey,
                 'Prefer' => 'return=representation',
+                'Content-Type' => 'application/json',
             ],
-            RequestOptions::JSON => $payload,
+            'json' => $payload,
         ]);
 
-        error_log('[UPLOAD DEBUG] DB insert status=' . $status . ' raw=' . $rawBody);
-
-        if ($status < 200 || $status >= 300 || !is_array($response) || !isset($response[0])) {
-            JsonResponder::withStatus($status > 0 ? $status : 500, [
-                'error' => 'Failed to save learning material metadata',
-                'details' => $response ?? ['response' => $rawBody],
+        if ($result['status'] >= 400 || !is_array($result['payload'])) {
+            JsonResponder::withStatus($result['status'], [
+                'error' => 'Unable to create learning material',
+                'details' => $result['payload'],
             ]);
             return;
         }
-        $record = $response[0];
-        $record['tags'] = $this->normalizeTags($record['tags'] ?? []);
-        $storedContentType = isset($record['content_type']) ? (string)$record['content_type'] : '';
-        $record['content_type_label'] = $storedContentType !== '' ? $storedContentType : null;
-        $record['content_type'] = $this->expandStoredContentType($storedContentType);
 
-        $resolvedName = null;
-        // Prefer an embedded profile username from PostgREST when available
-        if (isset($record['profiles']) && is_array($record['profiles'])) {
-            $maybe = $record['profiles']['username'] ?? null;
-            if (is_string($maybe)) {
-                $maybe = trim($maybe);
-                if ($maybe !== '') {
-                    $resolvedName = $maybe;
-                }
-            }
+        $material = $result['payload'][0] ?? null;
+        if (!is_array($material)) {
+            JsonResponder::withStatus(500, ['error' => 'Unexpected response from backend']);
+            return;
         }
 
-        // If the record already contains a saved user_name, use it
-        if ($resolvedName === null && isset($record['user_name'])) {
-            $maybe = is_string($record['user_name']) ? trim($record['user_name']) : null;
-            if ($maybe !== null && $maybe !== '') {
-                $resolvedName = $maybe;
-            }
+        JsonResponder::created($this->transformMaterial($material));
+    }
+
+    public function delete(Request $request, string $id): void
+    {
+        [$user, $token] = $this->requireAuth($request);
+        if ($user === null || $token === null) {
+            return;
         }
 
-        // Prefer explicit uploader_name provided in the upload payload
-        if ($resolvedName === null && $uploaderName !== '') {
-            $resolvedName = $uploaderName;
+        $material = $this->fetchMaterial($id, $token);
+        if ($material === null) {
+            JsonResponder::withStatus(404, ['error' => 'Learning material not found']);
+            return;
         }
 
-        // Fall back to authenticated user's metadata (common with OAuth providers)
-        if ($resolvedName === null) {
-            $raw = $user->getRaw();
-            $metaName = null;
-            if (isset($raw['user_metadata']) && is_array($raw['user_metadata'])) {
-                $um = $raw['user_metadata'];
-                $candidates = ['full_name', 'fullName', 'name', 'displayName', 'display_name'];
-                foreach ($candidates as $key) {
-                    if (isset($um[$key]) && is_string($um[$key])) {
-                        $val = trim($um[$key]);
-                        if ($val !== '') {
-                            $metaName = $val;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if ($metaName !== null) {
-                $resolvedName = $metaName;
-            }
+        if (!$this->canModify($user, $material)) {
+            JsonResponder::unauthorized('You are not allowed to delete this material');
+            return;
         }
 
-        // Final fallback: email local-part
-        if ($resolvedName === null) {
-            $email = $user->getEmail();
-            if (is_string($email) && $email !== '') {
-                $parts = explode('@', $email);
-                $resolvedName = trim($parts[0] ?? $email);
-            } else {
-                $resolvedName = null;
-            }
-        }
-        $record['user_name'] = $resolvedName;
-        unset($record['profiles']);
-        // Preserve uploader fields if present in the record or from the upload
-        if (!isset($record['uploader_name']) || $record['uploader_name'] === null) {
-            $record['uploader_name'] = $uploaderName !== '' ? $uploaderName : null;
-        }
-        if (!isset($record['uploader_email']) || $record['uploader_email'] === null) {
-            $record['uploader_email'] = $uploaderEmail !== '' ? $uploaderEmail : null;
+        if (isset($material['storage_path']) && is_string($material['storage_path']) && $material['storage_path'] !== '') {
+            $this->deleteObject($material['storage_path'], $token);
         }
 
-        $record['storage_path'] = $objectKey;
-    $record = $this->ensureDownloadUrl($record, $storageToken);
-
-        $this->dispatchAiProcessing($record, $mime);
-
-        JsonResponder::created([
-            'message' => 'File uploaded successfully',
-            'material' => $record,
+        $result = $this->send('PATCH', '/rest/v1/learning_materials', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $token,
+                'apikey' => $this->anonKey,
+                'Prefer' => 'return=minimal',
+                'Content-Type' => 'application/json',
+            ],
+            'query' => ['material_id' => 'eq.' . $id],
+            'json' => [
+                'deleted_at' => gmdate('c'),
+                'storage_path' => null,
+            ],
         ]);
-    }
 
-    private function getAuthenticatedUser(Request $request): ?AuthenticatedUser
-    {
-        $user = $request->getAttribute('user');
-        if (!$user instanceof AuthenticatedUser) {
-            JsonResponder::unauthorized();
-            return null;
+        if ($result['status'] >= 400) {
+            JsonResponder::withStatus($result['status'], [
+                'error' => 'Unable to delete learning material',
+                'details' => $result['payload'],
+            ]);
+            return;
         }
 
-        return $user;
+        JsonResponder::withStatus(204, []);
     }
 
-    private function requireRestToken(Request $request): ?string
+    public function signedUrl(Request $request, string $id): void
     {
-        $token = $this->serviceRoleKey ?? (string)$request->getAttribute('access_token');
-        if ($token === '') {
-            JsonResponder::withStatus(500, ['error' => 'Supabase token not available']);
-            return null;
+        [$user, $token] = $this->requireAuth($request);
+        if ($user === null || $token === null) {
+            return;
         }
 
-        return $token;
+        $material = $this->fetchMaterial($id, $token);
+        if ($material === null) {
+            JsonResponder::withStatus(404, ['error' => 'Learning material not found']);
+            return;
+        }
+
+        if (!$material['is_public'] && !$this->canViewPrivate($user, $material)) {
+            JsonResponder::unauthorized('You are not allowed to access this material');
+            return;
+        }
+
+        $directUrl = $this->optionalString($material['file_url'] ?? null);
+        $expiresIn = $this->normalizeExpires((string)($request->getQueryParams()['expiresIn'] ?? '3600'));
+        if ($directUrl !== null && $directUrl !== '') {
+            JsonResponder::ok([
+                'signed_url' => $directUrl,
+                'expires_at' => time() + $expiresIn,
+            ]);
+            return;
+        }
+
+        $storagePath = (string)($material['storage_path'] ?? '');
+        if ($storagePath === '') {
+            JsonResponder::withStatus(404, ['error' => 'Material has no storage object attached']);
+            return;
+        }
+
+        if ((bool)$material['is_public']) {
+            JsonResponder::ok([
+                'signed_url' => $this->publicBaseUrl . ltrim($storagePath, '/'),
+                'expires_at' => time() + $expiresIn,
+            ]);
+            return;
+        }
+
+        $signed = $this->signObject($id, $storagePath, $expiresIn, $token);
+        if ($signed === null) {
+            JsonResponder::withStatus(404, ['error' => 'Material file is missing']);
+            return;
+        }
+
+        JsonResponder::ok($signed);
+    }
+
+    public function like(Request $request, string $id): void
+    {
+        [$user, $token] = $this->requireAuth($request);
+        if ($user === null || $token === null) {
+            return;
+        }
+
+        $material = $this->fetchMaterial($id, $token);
+        if ($material === null) {
+            JsonResponder::withStatus(404, ['error' => 'Learning material not found']);
+            return;
+        }
+
+        $currentLikes = (int)($material['likes_count'] ?? $material['like_count'] ?? 0);
+        $nextLikes = $currentLikes + 1;
+        $payload = [
+            'likes_count' => $nextLikes,
+            'like_count' => $nextLikes,
+        ];
+
+        $result = $this->send('PATCH', '/rest/v1/learning_materials', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $token,
+                'apikey' => $this->anonKey,
+                'Prefer' => 'return=representation',
+                'Content-Type' => 'application/json',
+            ],
+            'query' => ['material_id' => 'eq.' . $id],
+            'json' => $payload,
+        ]);
+
+        if ($result['status'] >= 400 || !is_array($result['payload'])) {
+            JsonResponder::withStatus($result['status'], [
+                'error' => 'Unable to update like count',
+                'details' => $result['payload'],
+            ]);
+            return;
+        }
+
+        $updated = $result['payload'][0] ?? null;
+        if (!is_array($updated)) {
+            JsonResponder::withStatus(500, ['error' => 'Unexpected response from backend']);
+            return;
+        }
+
+        JsonResponder::ok($this->transformMaterial($updated));
     }
 
     /**
      * @param array<string,mixed> $params
-     * @return array<string,string>
+     * @return array<string,mixed>
      */
-    private function buildListQuery(array $params, string $userId): array
+    private function buildListQuery(array $params, ?AuthenticatedUser $user): array
     {
-        $filter = (string)($params['filter'] ?? 'all');
-        
-        // Use a wildcard select here so the controller is resilient to
-        // schema changes (columns may be missing across environments).
-        // Mapping logic below will safely handle absent fields.
+        $page = max(1, (int)($params['page'] ?? 1));
+        $perPage = max(1, min(50, (int)($params['per_page'] ?? 20)));
+        $filter = strtolower((string)($params['filter'] ?? 'all'));
+        $sort = $this->normalizeSort((string)($params['sort'] ?? 'created_at.desc'));
+        $search = trim((string)($params['q'] ?? ''));
+
         $query = [
-            'select' => '*',
-            'order' => 'created_at.desc',
+            'select' => 'material_id,title,description,content_type,file_url,file_name,mime,size,is_public,user_id,created_by,uploader_name,uploader_email,storage_path,tags,tags_jsonb,like_count,likes_count,download_count,downloads_count,created_at,updated_at,deleted_at',
+            'order' => $sort,
+            'limit' => $perPage,
+            'offset' => ($page - 1) * $perPage,
+            'deleted_at' => 'is.null',
         ];
 
-        // Handle limit parameter
-        if (isset($params['limit']) && is_numeric($params['limit'])) {
-            $query['limit'] = (string)$params['limit'];
+        $filters = [];
+        if ($filter === 'my') {
+            if ($user !== null) {
+                $filters[] = 'user_id.eq.' . $user->getId();
+            } else {
+                // Without auth default to only public rows, results will be empty for my filter
+                $filters[] = 'user_id.eq.__none__';
+            }
+        } elseif ($filter === 'community') {
+            $filters[] = 'is_public.eq.true';
+        } elseif ($filter === 'official') {
+            // For official materials, we need materials uploaded by admin users
+            // This is complex to filter in a single query, so for now we'll show all public materials
+            // TODO: Implement proper admin filtering
+            $filters[] = 'is_public.eq.true';
+        } else {
+            // 'all' filter - show all materials the user can access
+            if ($user !== null) {
+                $filters[] = sprintf('or(is_public.eq.true,user_id.eq.%s)', $user->getId());
+            } else {
+                $filters[] = 'is_public.eq.true';
+            }
         }
 
-        // ... rest of your existing filter logic
-        switch ($filter) {
-            case 'my':
-                $query['user_id'] = 'eq.' . $userId;
-                break;
-
-            case 'community':
-                $query['is_public'] = 'is.true';
-                break;
-
-            case 'official':
-                $query['is_public'] = 'is.true';
-                $query['category'] = 'not.is.null';
-                break;
-
-            default:
-                $query['or'] = sprintf('(user_id.eq.%s,is_public.is.true)', $userId);
-                break;
+        if ($search !== '') {
+            $pattern = $this->toIlikePattern($search);
+            $filters[] = sprintf('or(title.ilike.%1$s,description.ilike.%1$s,file_name.ilike.%1$s)', $pattern);
         }
 
-        $category = trim((string)($params['category'] ?? ''));
-        if ($category !== '' && strcasecmp($category, 'all') !== 0) {
-            $query['category'] = 'eq.' . $category;
+        if ($filters !== []) {
+            if (count($filters) === 1) {
+                // For single filter, parse it into key=value
+                $parts = explode('.', $filters[0], 2);
+                if (count($parts) === 2) {
+                    $query[$parts[0]] = $parts[1];
+                }
+            } else {
+                $query['and'] = '(' . implode(',', $filters) . ')';
+            }
         }
 
         return $query;
     }
 
-    private function resolveWriteToken(Request $request): ?string
+    private function normalizeSort(string $raw): string
     {
-        if ($this->serviceRoleKey !== null && $this->serviceRoleKey !== '') {
-            error_log('[UPLOAD DEBUG] using service role key for DB write');
-            return $this->serviceRoleKey;
+        $allowed = ['created_at', 'title', 'likes_count', 'downloads_count'];
+        $parts = explode('.', strtolower($raw));
+        $field = in_array($parts[0] ?? 'created_at', $allowed, true) ? $parts[0] : 'created_at';
+        $direction = $parts[1] ?? 'desc';
+        if ($direction !== 'asc' && $direction !== 'desc') {
+            $direction = 'desc';
         }
-
-        $token = (string)$request->getAttribute('access_token');
-        error_log('[UPLOAD DEBUG] using user token for DB write: ' . ($token !== '' ? 'yes' : 'no'));
-        return $token !== '' ? $token : null;
+        return $field . '.' . $direction;
     }
 
-    private function incrementMaterialMetric(Request $request, string $id, string $column, string $successMessage): void
+    private function toIlikePattern(string $search): string
     {
-        $restToken = $this->requireRestToken($request);
-        if ($restToken === null) {
-            return;
-        }
-
-        [$status, $payload, $rawBody] = $this->rest('GET', '/rest/v1/learning_materials', [
-            RequestOptions::HEADERS => $this->restHeaders($restToken),
-            RequestOptions::QUERY => [
-                'select' => $column,
-                'material_id' => 'eq.' . $id,
-                'limit' => '1',
-            ],
-        ]);
-
-        if ($status < 200 || $status >= 300 || !is_array($payload) || count($payload) === 0) {
-            $responseStatus = $status > 0 ? $status : 404;
-            JsonResponder::withStatus($responseStatus, [
-                'error' => 'Material not found',
-                'details' => $payload ?? ['response' => $rawBody],
-            ]);
-            return;
-        }
-
-        $record = $payload[0];
-        $currentRaw = $record[$column] ?? 0;
-        $current = is_numeric($currentRaw) ? (int)$currentRaw : 0;
-        $nextValue = $current + 1;
-
-        $headers = $this->restHeaders($restToken);
-        $headers['Content-Type'] = 'application/json';
-        $headers['Prefer'] = 'return=minimal';
-
-        [$updateStatus, , $updateRawBody] = $this->rest('PATCH', '/rest/v1/learning_materials', [
-            RequestOptions::HEADERS => $headers,
-            RequestOptions::QUERY => [
-                'material_id' => 'eq.' . $id,
-            ],
-            RequestOptions::JSON => [
-                $column => $nextValue,
-            ],
-        ]);
-
-        if ($updateStatus < 200 || $updateStatus >= 300) {
-            JsonResponder::withStatus($updateStatus > 0 ? $updateStatus : 500, [
-                'error' => 'Failed to update material metric',
-                'details' => ['response' => $updateRawBody, 'status' => $updateStatus],
-            ]);
-            return;
-        }
-
-        JsonResponder::ok([
-            'message' => $successMessage,
-            'material_id' => $id,
-            $column => $nextValue,
-        ]);
+        $escaped = str_replace(['*', ' ', ','], ['%', ' ', ' '], $search);
+        return '*' . rawurlencode($escaped) . '*';
     }
 
-    /**
-     * @return array<int,string>
-     */
-    private function parseTags($raw): array
+    private function transformMaterial(array $item): array
     {
-        if (is_array($raw)) {
-            return array_values(array_filter(array_map('strval', $raw), fn(string $tag): bool => $tag !== ''));
+        $item['id'] = isset($item['material_id']) ? (string)$item['material_id'] : (string)($item['id'] ?? '');
+        unset($item['material_id']);
+
+        $ownerId = (string)($item['user_id'] ?? $item['created_by'] ?? $item['uploader_id'] ?? '');
+        $item['uploader_id'] = $ownerId !== '' ? $ownerId : null;
+        unset($item['user_id'], $item['created_by']);
+
+        $tags = [];
+        if (isset($item['tags_jsonb']) && is_array($item['tags_jsonb'])) {
+            $tags = array_values(array_filter(array_map('strval', $item['tags_jsonb']), fn($tag) => $tag !== ''));
+        } elseif (isset($item['tags']) && is_array($item['tags'])) {
+            $tags = array_values(array_filter(array_map('strval', $item['tags']), fn($tag) => $tag !== ''));
+        } elseif (isset($item['tags']) && is_string($item['tags'])) {
+            $trimmed = trim($item['tags']);
+            if ($trimmed !== '') {
+                $trimmed = trim($trimmed, '{}');
+                if ($trimmed !== '') {
+                    $parts = array_map('trim', explode(',', $trimmed));
+                    $tags = array_values(array_filter(array_map('strval', $parts), fn($tag) => $tag !== ''));
+                }
+            }
+        }
+        $item['tags'] = $tags;
+        unset($item['tags_jsonb']);
+
+        $likes = $item['likes_count'] ?? $item['like_count'] ?? 0;
+        $item['likes_count'] = (int)$likes;
+        unset($item['like_count']);
+
+        $downloads = $item['downloads_count'] ?? $item['download_count'] ?? 0;
+        $item['downloads_count'] = (int)$downloads;
+        unset($item['download_count']);
+
+        $item['size'] = isset($item['size']) ? (int)$item['size'] : null;
+
+        $path = (string)($item['storage_path'] ?? '');
+        $fileUrl = (string)($item['file_url'] ?? '');
+        $isPublic = (bool)($item['is_public'] ?? false);
+        if ($fileUrl !== '') {
+            $item['resolved_url'] = $fileUrl;
+        } elseif ($isPublic && $path !== '') {
+            $item['resolved_url'] = $this->publicBaseUrl . ltrim($path, '/');
+        } else {
+            $item['resolved_url'] = null;
         }
 
-        if (!is_string($raw) || $raw === '') {
-            return [];
-        }
+        unset($item['deleted_at']);
 
-        $decoded = json_decode($raw, true);
-        if (!is_array($decoded)) {
-            return [];
-        }
-
-        return array_values(array_filter(array_map('strval', $decoded), fn(string $tag): bool => $tag !== ''));
+        return $item;
     }
 
-    /**
-     * @param mixed $value
-     * @return array<int,string>
-     */
-    private function normalizeTags($value): array
+    private function parseTotalFromHeaders(array $headers): int
     {
+        $contentRange = $headers['Content-Range'][0] ?? $headers['content-range'][0] ?? null;
+        if (!$contentRange || !is_string($contentRange)) {
+            return 0;
+        }
+
+        if (preg_match('/\/(\d+|\*)$/', $contentRange, $matches)) {
+            $raw = $matches[1];
+            return $raw === '*' ? 0 : (int)$raw;
+        }
+
+        return 0;
+    }
+
+    private function optionalString($value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $string = trim((string)$value);
+        return $string === '' ? null : $string;
+    }
+
+    private function normalizeTags($value): ?array
+    {
+        if ($value === null) {
+            return null;
+        }
+
         if (is_array($value)) {
-            return array_values(array_filter(array_map('strval', $value), fn(string $tag): bool => $tag !== ''));
+            return array_values(array_filter(array_map('strval', $value), fn($tag) => $tag !== ''));
         }
 
-        if (is_string($value) && $value !== '') {
-            $value = trim($value, '{}');
-            if ($value === '') {
-                return [];
-            }
-            return array_map('strval', array_map('trim', explode(',', $value)));
-        }
-
-        return [];
-    }
-
-    /**
-     * @param array<string,mixed> $material
-     * @return array<string,mixed>
-     */
-    private function ensureDownloadUrl(array $material, ?string $token = null): array
-    {
-        $storagePath = isset($material['storage_path']) && is_string($material['storage_path'])
-            ? trim($material['storage_path'])
-            : '';
-
-        if ($storagePath === '' && isset($material['file_url']) && is_string($material['file_url'])) {
-            $derived = $this->storage->extractStoragePathFromUrl($material['file_url']);
-            if ($derived !== null) {
-                $storagePath = $derived;
-                $material['storage_path'] = $derived;
-                $this->backfillStoragePath($material, $derived);
-            }
-        }
-
-        if ($storagePath === '') {
-            if (isset($material['file_url']) && is_string($material['file_url'])) {
-                $trimmed = trim($material['file_url']);
-                $material['file_url'] = $trimmed !== '' ? $trimmed : null;
-            } else {
-                $material['file_url'] = null;
-            }
-            return $material;
-        }
-
-        $isPublic = $this->toBool($material['is_public'] ?? false);
-        $freshUrl = $this->storage->buildFileUrl($storagePath, $isPublic, $token);
-
-        if ($freshUrl !== null) {
-            $material['file_url'] = $freshUrl;
-            return $material;
-        }
-
-        if (isset($material['file_url']) && is_string($material['file_url'])) {
-            $trimmed = trim($material['file_url']);
-            $material['file_url'] = $trimmed !== '' ? $trimmed : null;
-        } else {
-            $material['file_url'] = null;
-        }
-
-        return $material;
-    }
-
-    /**
-     * @param array<string,mixed> $material
-     */
-    private function backfillStoragePath(array $material, string $storagePath): void
-    {
-        if ($this->serviceRoleKey === null || $this->serviceRoleKey === '') {
-            return;
-        }
-
-        $materialKey = null;
-        $filterColumn = null;
-        if (isset($material['material_id']) && is_scalar($material['material_id'])) {
-            $materialKey = trim((string)$material['material_id']);
-            $filterColumn = 'material_id';
-        } elseif (isset($material['id']) && is_scalar($material['id'])) {
-            $materialKey = trim((string)$material['id']);
-            $filterColumn = 'id';
-        } else {
-            return;
-        }
-
-        if ($materialKey === '' || $filterColumn === null) {
-            return;
-        }
-
-        if (isset($this->storagePathBackfillCache[$materialKey])) {
-            return;
-        }
-        $this->storagePathBackfillCache[$materialKey] = true;
-
-        [$status, , $rawBody] = $this->rest('PATCH', '/rest/v1/learning_materials', [
-            RequestOptions::HEADERS => $this->restHeaders($this->serviceRoleKey) + [
-                'Content-Type' => 'application/json',
-                'Prefer' => 'return=minimal',
-            ],
-            RequestOptions::QUERY => [
-                $filterColumn => 'eq.' . $materialKey,
-            ],
-            RequestOptions::JSON => [
-                'storage_path' => $storagePath,
-            ],
-        ]);
-
-        if ($status < 200 || $status >= 300) {
-            error_log(sprintf('[learning_materials.index] failed to backfill storage_path for %s (%s)', $materialKey, $rawBody));
-        }
-    }
-
-    private function mapContentType(string $mime): string
-    {
-        $normalized = strtolower(trim($mime));
-
-        return match ($normalized) {
-            'application/pdf' => 'pdf',
-            'application/vnd.ms-powerpoint',
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'ppt',
-            'video/mp4', 'video/webm', 'video/quicktime' => 'video',
-            'text/plain', 'text/markdown', 'text/html' => 'article',
-            default => 'article',
-        };
-    }
-
-    private function expandStoredContentType(string $stored): string
-    {
-        $normalized = strtolower(trim($stored));
-        if ($normalized === '' || str_contains($normalized, '/')) {
-            return $stored;
-        }
-
-        return match ($normalized) {
-            'pdf' => 'application/pdf',
-            'ppt', 'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            'video' => 'video/mp4',
-            'article' => 'text/plain',
-            default => $stored,
-        };
-    }
-
-    /**
-     * @param array<string,mixed> $item
-     */
-    private function extractOwnerName(array $item): ?string
-    {
-        $owner = $item['owner'] ?? $item['profiles'] ?? null;
-        if (is_array($owner)) {
-            // Handle two shapes returned by PostgREST: either an associative
-            // object (['username' => '...']) or an array of objects
-            // ([ ['username'=>'...'] ]). Try both.
-            if (isset($owner['username']) && is_string($owner['username'])) {
-                $username = trim($owner['username']);
-                if ($username !== '') {
-                    return $username;
-                }
+        if (is_string($value)) {
+            $trimmed = trim($value);
+            if ($trimmed === '') {
+                return null;
             }
 
-            // Numeric-indexed array (take first element)
-            if (array_values($owner) !== $owner) {
-                // associative not numeric, already handled
-            } else {
-                $first = $owner[0] ?? null;
-                if (is_array($first) && isset($first['username']) && is_string($first['username'])) {
-                    $username = trim($first['username']);
-                    if ($username !== '') {
-                        return $username;
-                    }
-                }
+            $decoded = json_decode($trimmed, true);
+            if (is_array($decoded)) {
+                return array_values(array_filter(array_map('strval', $decoded), fn($tag) => $tag !== ''));
             }
-        }
 
-        $fallback = $item['user_name'] ?? null;
-        if (is_string($fallback)) {
-            $fallback = trim($fallback);
-            if ($fallback !== '') {
-                return $fallback;
-            }
+            $parts = array_map('trim', explode(',', $trimmed));
+            $parts = array_values(array_filter($parts, fn($part) => $part !== ''));
+            return $parts === [] ? null : $parts;
         }
 
         return null;
     }
 
-    private function detectMimeType(string $filePath, string $fallback): string
+    private function determineContentType(array $input, ?array $fileInfo): string
     {
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        if ($finfo !== false) {
-            $detected = finfo_file($finfo, $filePath);
-            finfo_close($finfo);
-            if (is_string($detected) && $detected !== '') {
-                return $detected;
+        $explicit = $this->optionalString($input['content_type'] ?? null);
+        if ($explicit !== null) {
+            $normalized = strtolower($explicit);
+            if ($normalized === 'link') {
+                $normalized = 'article';
+            } elseif ($normalized === 'file') {
+                $normalized = $fileInfo !== null ? $this->mapFileToContentType($fileInfo) : 'pdf';
+            }
+
+            if (in_array($normalized, self::ALLOWED_CONTENT_TYPES, true)) {
+                return $normalized;
             }
         }
 
-        return $fallback !== '' ? $fallback : 'application/octet-stream';
+        if ($fileInfo !== null) {
+            return $this->mapFileToContentType($fileInfo);
+        }
+
+        return 'article';
     }
 
-    /**
-     * @param array<string, mixed> $record
-     */
-    private function dispatchAiProcessing(array $record, string $mime): void
+    private function mapFileToContentType(array $fileInfo): string
     {
-        if ($this->aiClient === null) {
-            return;
-        }
-
-        $materialId = (string)($record['material_id'] ?? $record['id'] ?? '');
-        $fileUrl = (string)($record['file_url'] ?? '');
-        $contentType = $mime !== '' ? $mime : $this->expandStoredContentType((string)($record['content_type'] ?? ''));
-        $storagePath = (string)($record['storage_path'] ?? '');
-
-        if ($materialId === '' || $fileUrl === '') {
-            return;
-        }
-
-        $options = [
-            RequestOptions::JSON => [
-                'material_id' => $materialId,
-                'file_url' => $fileUrl,
-                'content_type' => $contentType !== '' ? $contentType : 'application/octet-stream',
-                'storage_bucket' => $this->storageBucket,
-                'storage_path' => $storagePath !== '' ? $storagePath : null,
-            ],
-            RequestOptions::HEADERS => [
-                'Content-Type' => 'application/json',
-            ],
-        ];
-
-        if ($this->aiServiceApiKey !== null && $this->aiServiceApiKey !== '') {
-            $options[RequestOptions::HEADERS]['Authorization'] = 'Bearer ' . $this->aiServiceApiKey;
-        }
-
-        try {
-            $this->aiClient->post('process-material', $options);
-        } catch (GuzzleException|\Throwable $e) {
-            // Swallow AI dispatch errors to keep upload flow responsive.
-        }
-    }
-
-    private function validateFile(array $file, string $mime): ?string
-    {
-        if (!in_array($mime, self::ALLOWED_MIME_TYPES, true)) {
-            return 'Only PDF or PowerPoint files are allowed';
-        }
-
-        $size = (int)($file['size'] ?? 0);
-        if ($size <= 0) {
-            return 'Uploaded file appears to be empty';
-        }
-
-        if ($size > self::MAX_FILE_SIZE) {
-            $limitMb = (int)ceil(self::MAX_FILE_SIZE / (1024 * 1024));
-            return sprintf('File size exceeds the %dMB limit', $limitMb);
-        }
-
-        return null;
-    }
-
-    private function uploadErrorMessage(int $code): string
-    {
-        switch ($code) {
-            case UPLOAD_ERR_INI_SIZE:
-                $limit = ini_get('upload_max_filesize') ?: 'the configured limit';
-                return sprintf('File exceeds the server upload limit (%s).', $limit);
-            case UPLOAD_ERR_FORM_SIZE:
-                return 'File exceeds the allowed size for this form.';
-            case UPLOAD_ERR_PARTIAL:
-                return 'File was only partially uploaded. Please try again.';
-            case UPLOAD_ERR_NO_FILE:
-                return 'No file was uploaded.';
-            case UPLOAD_ERR_NO_TMP_DIR:
-                return 'Server is missing a temporary folder for uploads.';
-            case UPLOAD_ERR_CANT_WRITE:
-                return 'Server failed to write the uploaded file to disk.';
-            case UPLOAD_ERR_EXTENSION:
-                return 'File upload was blocked by a PHP extension on the server.';
-            default:
-                return 'Upload failed. Please try again.';
-        }
-    }
-
-    private function guessExtension(string $mime, string $originalName): string
-    {
-        $ext = strtolower((string)pathinfo($originalName, PATHINFO_EXTENSION));
-        if ($ext !== '') {
-            return $ext;
-        }
-
-        $map = [
-            'application/pdf' => 'pdf',
-            'application/vnd.ms-powerpoint' => 'ppt',
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
-        ];
-
-        return $map[$mime] ?? 'bin';
-    }
-
-    private function buildObjectPath(string $userId, string $title, string $extension): string
-    {
-        $datePath = date('Y/m/d');
-        $slug = $this->slugify($title);
-        try {
-            $random = bin2hex(random_bytes(5));
-        } catch (\Exception $e) {
-            $random = (string)mt_rand(100000, 999999);
-        }
-
-        $filename = $slug . '-' . $random;
+        $extension = strtolower((string)pathinfo((string)($fileInfo['name'] ?? ''), PATHINFO_EXTENSION));
         if ($extension !== '') {
-            $filename .= '.' . $extension;
+            if (in_array($extension, ['pdf'], true)) {
+                return 'pdf';
+            }
+
+            if (in_array($extension, ['ppt', 'pptx', 'pps', 'ppsx', 'pot', 'potx', 'odp', 'key'], true)) {
+                return 'ppt';
+            }
+
+            if (in_array($extension, ['mp4', 'mov', 'avi', 'mkv', 'webm', 'm4v', 'wmv', 'mpg', 'mpeg'], true)) {
+                return 'video';
+            }
         }
 
-        return trim($userId, '/') . '/' . $datePath . '/' . $filename;
-    }
+        $mime = strtolower((string)($fileInfo['type'] ?? ''));
+        if ($mime !== '') {
+            if (str_contains($mime, 'video/')) {
+                return 'video';
+            }
 
-    private function slugify(string $value): string
-    {
-        $value = strtolower(trim($value));
-        if ($value === '') {
-            return 'material';
+            if (str_contains($mime, 'powerpoint') || str_contains($mime, 'presentation')) {
+                return 'ppt';
+            }
+
+            if ($mime === 'application/pdf') {
+                return 'pdf';
+            }
         }
 
-        $transliterated = iconv('UTF-8', 'ASCII//TRANSLIT', $value);
-        if (is_string($transliterated) && $transliterated !== '') {
-            $value = $transliterated;
-        }
-
-        $value = preg_replace('/[^a-z0-9]+/i', '-', $value);
-        $value = trim((string)$value, '-');
-
-        return $value !== '' ? $value : 'material';
-    }
-
-    private function extractTextContent(string $filePath, string $mime): ?string
-    {
-        if ($mime === 'application/pdf') {
-            return null; // Placeholder for real PDF parsing implementation
-        }
-
-        if (str_starts_with($mime, 'text/')) {
-            return file_get_contents($filePath) ?: null;
-        }
-
-        return null;
+        return 'pdf';
     }
 
     private function toBool($value): bool
@@ -1294,44 +587,405 @@ final class LearningMaterialsController
         }
 
         if (is_string($value)) {
-            return in_array(strtolower($value), ['true', 't', '1', 'yes'], true);
+            $lower = strtolower($value);
+            return in_array($lower, ['1', 'true', 'yes', 'on'], true);
         }
 
-        return (bool)$value;
+        if (is_int($value)) {
+            return $value === 1;
+        }
+
+        return false;
+    }
+
+    private function resolveUploadedFile(?string &$error = null): ?array
+    {
+        $error = null;
+        if (!isset($_FILES['file'])) {
+            return null;
+        }
+
+        $file = $_FILES['file'];
+        if (!is_array($file)) {
+            $error = 'File upload payload malformed';
+            return null;
+        }
+
+        $code = (int)($file['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($code !== UPLOAD_ERR_OK) {
+            if ($code === UPLOAD_ERR_NO_FILE) {
+                return null;
+            }
+
+            $error = $this->uploadErrorMessage($code);
+            return null;
+        }
+
+        if (!isset($file['tmp_name'], $file['name'])) {
+            $error = 'Invalid upload payload';
+            return null;
+        }
+
+        $size = isset($file['size']) ? (int)$file['size'] : null;
+        if ($size !== null && $size > 104_857_600) {
+            $error = 'File exceeds maximum allowed size of 100MB';
+            return null;
+        }
+
+        return [
+            'tmp_name' => (string)$file['tmp_name'],
+            'name' => (string)$file['name'],
+            'size' => $size ?? 0,
+            'type' => isset($file['type']) ? (string)$file['type'] : 'application/octet-stream',
+        ];
+    }
+
+    private function canonicalizePath(string $userId, string $originalName): string
+    {
+        $date = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $slug = $this->slugifyFileName($originalName);
+        $uuid = bin2hex(random_bytes(8));
+
+        return sprintf(
+            '%s/%s/%s/%s/%s-%s',
+            $userId,
+            $date->format('Y'),
+            $date->format('m'),
+            $date->format('d'),
+            $uuid,
+            $slug
+        );
+    }
+
+    private function slugifyFileName(string $name): string
+    {
+        $name = trim($name);
+        if ($name === '') {
+            return 'file';
+        }
+
+        $dotPos = strrpos($name, '.');
+        $base = $dotPos !== false ? substr($name, 0, $dotPos) : $name;
+        $ext = $dotPos !== false ? substr($name, $dotPos + 1) : '';
+
+        $base = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $base) ?? 'file');
+        $base = trim($base, '-');
+        if ($base === '') {
+            $base = 'file';
+        }
+
+        if ($ext !== '') {
+            $ext = strtolower(preg_replace('/[^a-z0-9]+/i', '', $ext) ?? '');
+        }
+
+        return $ext === '' ? $base : $base . '.' . $ext;
+    }
+
+    private function uploadFile(string $storagePath, array $fileInfo, string $token): bool
+    {
+        $uploadHeaders = [
+            'x-upsert' => 'false',
+            'Content-Type' => $fileInfo['type'] ?? 'application/octet-stream',
+        ];
+
+        $attempts = [
+            $token,
+        ];
+
+        if ($this->serviceRoleKey !== null) {
+            $attempts[] = $this->serviceRoleKey;
+        }
+
+        foreach ($attempts as $authToken) {
+            $stream = fopen($fileInfo['tmp_name'], 'rb');
+            if ($stream === false) {
+                JsonResponder::withStatus(500, ['error' => 'Unable to read uploaded file from disk']);
+                return false;
+            }
+
+            $result = $this->send('POST', '/storage/v1/object/' . rawurlencode($this->bucket) . '/' . $this->encodePath($storagePath), [
+                'headers' => array_merge($uploadHeaders, [
+                    'Authorization' => 'Bearer ' . $authToken,
+                    'apikey' => $this->anonKey,
+                ]),
+                'body' => $stream,
+            ]);
+
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+
+            if ($result['status'] >= 200 && $result['status'] < 300) {
+                return true;
+            }
+
+            // If the first attempt with the user's token fails due to
+            // authentication or RLS (401 or 403), retry with the service
+            // role key when available. This handles cases where storage
+            // inserts are blocked by Row-Level Security for non-privileged
+            // tokens.
+            if ($authToken === $token && ($result['status'] === 401 || $result['status'] === 403) && $this->serviceRoleKey !== null) {
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
+                // Try the next (elevated) token in the attempts array.
+                continue;
+            }
+
+            JsonResponder::withStatus($result['status'], [
+                'error' => 'Failed to upload file to storage',
+                'details' => $result['payload'],
+            ]);
+            return false;
+        }
+
+        JsonResponder::withStatus(500, ['error' => 'No authorization available to upload file']);
+        return false;
+    }
+
+    private function deleteObject(string $storagePath, string $token): void
+    {
+        $headers = [
+            'Authorization' => 'Bearer ' . $token,
+            'apikey' => $this->anonKey,
+        ];
+
+        $result = $this->send('DELETE', '/storage/v1/object/' . rawurlencode($this->bucket) . '/' . $this->encodePath($storagePath), [
+            'headers' => $headers,
+        ]);
+
+        if ($result['status'] === 401 && $this->serviceRoleKey !== null) {
+            $result = $this->send('DELETE', '/storage/v1/object/' . rawurlencode($this->bucket) . '/' . $this->encodePath($storagePath), [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->serviceRoleKey,
+                    'apikey' => $this->anonKey,
+                ],
+            ]);
+        }
+    }
+
+    private function signObject(string $materialId, string $storagePath, int $expiresIn, string $token): ?array
+    {
+        $headers = [
+            'Authorization' => 'Bearer ' . $token,
+            'apikey' => $this->anonKey,
+            'Content-Type' => 'application/json',
+        ];
+
+        $result = $this->send('POST', '/storage/v1/object/sign/' . rawurlencode($this->bucket) . '/' . $this->encodePath($storagePath), [
+            'headers' => $headers,
+            'json' => ['expiresIn' => $expiresIn],
+        ]);
+
+        if ($result['status'] === 401 && $this->serviceRoleKey !== null) {
+            $result = $this->send('POST', '/storage/v1/object/sign/' . rawurlencode($this->bucket) . '/' . $this->encodePath($storagePath), [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->serviceRoleKey,
+                    'apikey' => $this->anonKey,
+                    'Content-Type' => 'application/json',
+                ],
+                'json' => ['expiresIn' => $expiresIn],
+            ]);
+        }
+
+        if ($result['status'] === 200 && is_array($result['payload']) && isset($result['payload']['signedURL'])) {
+            $signedPath = (string)$result['payload']['signedURL'];
+            return [
+                'signed_url' => rtrim($this->supabaseUrl, '/') . '/storage/v1' . $signedPath,
+                'expires_at' => time() + $expiresIn,
+            ];
+        }
+
+        if ($result['status'] === 404 && $this->serviceRoleKey !== null) {
+            $this->cleanupMissingStoragePath($materialId);
+        }
+
+        return null;
+    }
+
+    private function cleanupMissingStoragePath($materialId): void
+    {
+        if ($this->serviceRoleKey === null || !is_string($materialId) || $materialId === '') {
+            return;
+        }
+
+        $this->send('PATCH', '/rest/v1/learning_materials', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $this->serviceRoleKey,
+                'apikey' => $this->anonKey,
+                'Content-Type' => 'application/json',
+            ],
+            'query' => ['material_id' => 'eq.' . $materialId],
+            'json' => ['storage_path' => null],
+        ]);
+    }
+
+    private function uploadErrorMessage(int $code): string
+    {
+        return match ($code) {
+            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'File exceeds server upload limit',
+            UPLOAD_ERR_PARTIAL => 'File upload was interrupted',
+            UPLOAD_ERR_NO_TMP_DIR => 'Server temporary folder is missing',
+            UPLOAD_ERR_CANT_WRITE => 'Server failed to write uploaded file to disk',
+            UPLOAD_ERR_EXTENSION => 'File upload blocked by a PHP extension',
+            default => 'File upload failed',
+        };
+    }
+
+    private function encodePath(string $path): string
+    {
+        return implode('/', array_map('rawurlencode', explode('/', $path)));
+    }
+
+    private function normalizeExpires(string $raw): int
+    {
+        $value = (int)$raw;
+        if ($value < 60) {
+            $value = 60;
+        }
+        if ($value > 3600) {
+            $value = 3600;
+        }
+        return $value;
     }
 
     /**
-     * @return array{0:int,1:array<mixed>|null,2:string}
+     * @return array{0:AuthenticatedUser|null,1:string|null}
      */
-    private function rest(string $method, string $path, array $options): array
+    private function resolveOptionalUser(Request $request): array
     {
+        $token = $request->getBearerToken();
+        if ($token === null || $token === '') {
+            return [null, null];
+        }
+
+        $user = $this->supabaseAuth->validateToken($token);
+        if ($user === null) {
+            return [null, null];
+        }
+
+        return [$user, $token];
+    }
+
+    /**
+     * @return array{0:AuthenticatedUser|null,1:string|null}
+     */
+    private function requireAuth(Request $request): array
+    {
+        $user = $request->getAttribute('user');
+        $token = $request->getAttribute('access_token');
+
+        if (!$user instanceof AuthenticatedUser || !is_string($token) || $token === '') {
+            JsonResponder::unauthorized('Authentication required');
+            return [null, null];
+        }
+
+        return [$user, $token];
+    }
+
+    private function canModify(AuthenticatedUser $user, array $material): bool
+    {
+        $ownerId = (string)($material['user_id'] ?? $material['created_by'] ?? $material['uploader_id'] ?? '');
+        if ($ownerId !== '' && $ownerId === $user->getId()) {
+            return true;
+        }
+
+        return $this->hasAdminRole($user);
+    }
+
+    private function canViewPrivate(AuthenticatedUser $user, array $material): bool
+    {
+        return $this->canModify($user, $material);
+    }
+
+    private function hasAdminRole(AuthenticatedUser $user): bool
+    {
+        $raw = $user->getRaw();
+        $role = $raw['app_metadata']['role'] ?? $raw['user_metadata']['role'] ?? null;
+        if (is_string($role) && strtolower($role) === 'admin') {
+            return true;
+        }
+
+        $roles = $raw['app_metadata']['roles'] ?? $raw['user_metadata']['roles'] ?? null;
+        if (is_array($roles)) {
+            foreach ($roles as $candidate) {
+                if (is_string($candidate) && strtolower($candidate) === 'admin') {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private function fetchMaterial(string $id, string $token): ?array
+    {
+        $result = $this->send('GET', '/rest/v1/learning_materials', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $token,
+                'apikey' => $this->anonKey,
+                'Accept' => 'application/json',
+            ],
+            'query' => [
+                'select' => 'material_id,title,description,content_type,file_url,file_name,mime,size,is_public,user_id,created_by,uploader_name,uploader_email,storage_path,tags,tags_jsonb,like_count,likes_count,download_count,downloads_count,created_at,updated_at,deleted_at',
+                'material_id' => 'eq.' . $id,
+                'deleted_at' => 'is.null',
+                'limit' => 1,
+            ],
+        ]);
+
+        if ($result['status'] >= 400 || !is_array($result['payload'])) {
+            return null;
+        }
+
+        $material = $result['payload'][0] ?? null;
+        if (!is_array($material)) {
+            return null;
+        }
+
+        return $material;
+    }
+
+    /**
+     * @param array<string,mixed>|null $body
+     * @return array<string,mixed>
+     */
+    private function collectInput(Request $request): array
+    {
+        $contentType = $request->getHeader('Content-Type') ?? '';
+        if (stripos($contentType, 'multipart/form-data') !== false) {
+            return $_POST;
+        }
+
+        return $request->getBody() ?? [];
+    }
+
+    /**
+     * @param array<string,mixed> $options
+     * @return array{status:int,payload:mixed,headers:array<string,array<int,string>>}
+     */
+    private function send(string $method, string $path, array $options): array
+    {
+        $options['http_errors'] = false;
+        $options['timeout'] = $options['timeout'] ?? 15;
+
         try {
-            $options[RequestOptions::HTTP_ERRORS] = false;
             $response = $this->client->request($method, $path, $options);
             $status = $response->getStatusCode();
             $body = (string)$response->getBody();
             $decoded = json_decode($body, true);
-            $payload = is_array($decoded) ? $decoded : null;
-            return [$status, $payload, $body];
+            $payload = is_array($decoded) ? $decoded : ($body === '' ? null : $body);
+            return [
+                'status' => $status,
+                'payload' => $payload,
+                'headers' => $response->getHeaders(),
+            ];
         } catch (GuzzleException $e) {
-            return [0, null, $e->getMessage()];
+            return [
+                'status' => 502,
+                'payload' => ['error' => 'Upstream request failed', 'message' => $e->getMessage()],
+                'headers' => [],
+            ];
         }
-    }
-
-    /**
-     * @return array<string,string>
-     */
-    private function restHeaders(string $token): array
-    {
-        $headers = [
-            'apikey' => $this->config->getAnonKey(),
-            'Accept' => 'application/json',
-        ];
-
-        if ($token !== '') {
-            $headers['Authorization'] = 'Bearer ' . $token;
-        }
-
-        return $headers;
     }
 }
