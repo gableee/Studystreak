@@ -23,7 +23,7 @@ Turn course materials into personalized multiple-choice quizzes, summarized high
 ---
 
 ## What is StudyStreak?
-StudyStreak goes beyond simple quiz generation. It provides a streamlined workflow that helps learners extract knowledge from documents, practice with targeted multiple-choice quizzes, and build consistent study routines. The platform is designed to scale from individual learners to classrooms and teams.
+StudyStreak goes beyond simple quiz generation. It provides a streamlined workflow that helps learners extract knowledge from documents, practice with targeted multiple-choice quizzes, and build consistent study routines. 
 
 ---
 
