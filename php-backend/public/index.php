@@ -334,6 +334,19 @@ if (preg_match('#^/api/learning-materials/([0-9a-fA-F\-]{36})/like$#', $path, $m
   exit;
 }
 
+// Learning material unlike route
+if (preg_match('#^/api/learning-materials/([0-9a-fA-F\-]{36})/unlike$#', $path, $matches)) {
+  $materialId = $matches[1];
+  if ($method === 'POST') {
+    $authMiddleware->handle($request, function(Request $authedRequest) use ($learningMaterialsController, $materialId): void {
+      $learningMaterialsController->unlike($authedRequest, $materialId);
+    });
+  } else {
+    JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
+  }
+  exit;
+}
+
 // Learning material detail routes
 if (preg_match('#^/api/learning-materials/([0-9a-fA-F\-]{36})$#', $path, $matches)) {
   $materialId = $matches[1];

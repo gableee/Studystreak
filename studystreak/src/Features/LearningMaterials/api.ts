@@ -74,3 +74,7 @@ export async function deleteLearningMaterial(id: string): Promise<void> {
 export async function likeLearningMaterial(id: string): Promise<LearningMaterial> {
   return apiClient.post<LearningMaterial>(`/api/learning-materials/${id}/like`)
 }
+
+export async function unlikeLearningMaterial(id: string): Promise<LearningMaterial> {
+  return apiClient.post<LearningMaterial>(`/api/learning-materials/${id}/unlike`)
+}

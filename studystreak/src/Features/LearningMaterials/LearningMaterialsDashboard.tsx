@@ -1,19 +1,21 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useAuthContext } from '../../Auth/context/useAuthContext'
 import {
   deleteLearningMaterial,
   likeLearningMaterial,
+  unlikeLearningMaterial,
   requestSignedUrl,
 } from './api'
 import type { LearningMaterial, MaterialsFilter, SortOption } from './types'
 import { useLearningMaterialsQuery } from './useLearningMaterialsQuery'
+import { useDebounce } from './hooks/useDebounce'
 import BulkActionsToolbar from './components/BulkActionsToolbar'
 import FilePreviewModal from './components/FilePreviewModal'
 import MaterialsList from './components/MaterialsList'
 import SearchAndFilterBar from './components/SearchAndFilterBar'
 import SectionFilters from './components/SectionFilters'
-import UploadDrawer from './components/UploadDrawer'
+import { UploadDrawer } from './components/UploadDrawer'
 
 const DEFAULT_SORT: SortOption = 'created_at.desc'
 const DEFAULT_PER_PAGE = 12
@@ -52,6 +54,7 @@ const LearningMaterialsDashboard = () => {
 
   const [filter, setFilter] = useState<MaterialsFilter>('all')
   const [search, setSearch] = useState('')
+  const debouncedSearch = useDebounce(search, 400)
   const [sort, setSort] = useState<SortOption>(DEFAULT_SORT)
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE)
@@ -61,15 +64,33 @@ const LearningMaterialsDashboard = () => {
   const [previewMaterial, setPreviewMaterial] = useState<LearningMaterial | null>(null)
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set())
   const [toast, setToast] = useState<ToastState | null>(null)
+  
+  // Local state for optimistic updates
+  const [optimisticLikes, setOptimisticLikes] = useState<Map<string, { user_liked: boolean; likes_count: number }>>(new Map())
 
-  const { materials, loading, error, pagination, refetch } = useLearningMaterialsQuery({
+  const { materials: rawMaterials, loading, error, pagination, refetch } = useLearningMaterialsQuery({
     filter,
-    search,
+    search: debouncedSearch,
     page,
     perPage,
     sort,
     refreshKey,
   })
+  
+  // Apply optimistic updates to materials
+  const materials = useMemo(() => {
+    return rawMaterials.map(material => {
+      const optimistic = optimisticLikes.get(material.id)
+      if (optimistic) {
+        return {
+          ...material,
+          user_liked: optimistic.user_liked,
+          likes_count: optimistic.likes_count,
+        }
+      }
+      return material
+    })
+  }, [rawMaterials, optimisticLikes])
 
   useEffect(() => {
     setPage(1)
@@ -197,25 +218,57 @@ const LearningMaterialsDashboard = () => {
     }
   }
 
-  const handleLike = async (material: LearningMaterial) => {
-    markBusy(material.id, true)
+  const handleLike = useCallback(async (material: LearningMaterial) => {
+    const wasLiked = material.user_liked
+    const newLikedState = !wasLiked
+    const newCount = wasLiked ? material.likes_count - 1 : material.likes_count + 1
+    
+    // Optimistic update - instant UI feedback
+    setOptimisticLikes(prev => {
+      const next = new Map(prev)
+      next.set(material.id, {
+        user_liked: newLikedState,
+        likes_count: Math.max(0, newCount),
+      })
+      return next
+    })
+    
     try {
-      await likeLearningMaterial(material.id)
-      showToast('success', 'Material liked')
+      if (wasLiked) {
+        await unlikeLearningMaterial(material.id)
+      } else {
+        await likeLearningMaterial(material.id)
+      }
+      
+      // Clear optimistic state after successful API call
+      setOptimisticLikes(prev => {
+        const next = new Map(prev)
+        next.delete(material.id)
+        return next
+      })
+      
+      // Refetch in background to sync with server state
       refetch()
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unable to like material'
+      // Revert optimistic update on error
+      setOptimisticLikes(prev => {
+        const next = new Map(prev)
+        next.delete(material.id)
+        return next
+      })
+      
+      const message = err instanceof Error ? err.message : 'Unable to update like'
       showToast('error', message)
-    } finally {
-      markBusy(material.id, false)
     }
-  }
+  }, [])
 
-  const canDelete = (material: LearningMaterial) => {
+  const canDelete = useCallback((material: LearningMaterial) => {
+    // Only show delete button in 'my' materials section or if admin
+    if (filter !== 'my' && !admin) return false
     if (admin) return true
     if (!userId) return false
     return material.uploader_id === userId
-  }
+  }, [admin, userId, filter])
 
   return (
     <div className="relative mx-auto max-w-6xl space-y-8 pb-12">
@@ -244,7 +297,7 @@ const LearningMaterialsDashboard = () => {
         disabled={loading}
       />
 
-      <SectionFilters value={filter} onChange={(value) => setFilter(value)} disabled={loading} />
+      <SectionFilters value={filter} onChange={(value: MaterialsFilter) => setFilter(value)} disabled={loading} />
 
       <BulkActionsToolbar
         count={selectedIds.size}

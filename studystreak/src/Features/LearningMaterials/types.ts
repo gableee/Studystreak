@@ -1,4 +1,4 @@
-export type MaterialsFilter = 'all' | 'my' | 'community' | 'official'
+export type MaterialsFilter = 'all' | 'my' | 'community' | 'official' | 'liked'
 
 export type SortOption =
   | 'created_at.desc'
@@ -20,6 +20,7 @@ export type LearningMaterial = {
   is_public: boolean
   uploader_id: string | null
   uploader_name: string | null
+  uploader_email: string | null
   storage_path: string | null
   tags: string[]
   likes_count: number
@@ -27,6 +28,7 @@ export type LearningMaterial = {
   created_at: string
   updated_at: string
   resolved_url: string | null
+  user_liked: boolean
 }
 
 export type LearningMaterialsResponse = {

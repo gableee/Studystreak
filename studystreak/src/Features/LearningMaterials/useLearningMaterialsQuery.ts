@@ -108,6 +108,7 @@ const normalizeMaterialRecord = (record: unknown): LearningMaterial | null => {
     is_public: toBoolean(raw.is_public),
     uploader_id: uploaderIdCandidate,
     uploader_name: toOptionalString(raw.uploader_name),
+    uploader_email: toOptionalString(raw.uploader_email),
     storage_path: storagePath,
     tags: toStringArray(raw.tags ?? raw.tags_jsonb ?? []),
     likes_count: likesCount,
@@ -115,6 +116,7 @@ const normalizeMaterialRecord = (record: unknown): LearningMaterial | null => {
     created_at: createdAt,
     updated_at: updatedAt,
     resolved_url: directUrl,
+    user_liked: toBoolean(raw.user_liked ?? false),
   }
 
   return normalized

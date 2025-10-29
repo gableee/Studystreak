@@ -1,4 +1,4 @@
-import { BookOpen, FolderOpen, Layers, Users } from 'lucide-react'
+import { BookOpen, FolderOpen, Heart, Layers, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { MaterialsFilter } from '../types'
 
@@ -36,6 +36,15 @@ const SECTIONS: Array<{
     activeGradient: 'from-purple-500/80 to-pink-500/80',
   },
   {
+    key: 'liked',
+    label: 'Liked materials',
+    caption: 'Materials you have liked',
+    icon: Heart,
+    borderColor: 'rgba(244, 63, 94, 0.35)',
+    borderColorActive: 'rgba(244, 63, 94, 0.65)',
+    activeGradient: 'from-rose-500/80 to-pink-500/80',
+  },
+  {
     key: 'community',
     label: 'Community library',
     caption: 'Public materials from all users',
@@ -58,7 +67,7 @@ const SECTIONS: Array<{
 export function SectionFilters({ value, onChange, disabled = false }: SectionFiltersProps) {
   return (
     <section className="surface-section space-y-4">
-      <div className="flex flex-wrap gap-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {SECTIONS.map((section) => {
           const Icon = section.icon
           const isActive = value === section.key
@@ -68,18 +77,29 @@ export function SectionFilters({ value, onChange, disabled = false }: SectionFil
               type="button"
               onClick={() => onChange(section.key)}
               disabled={disabled}
-              className={`inline-flex min-w-[12rem] flex-1 flex-col gap-2 rounded-2xl border px-4 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+              className={`group relative flex flex-col gap-2.5 overflow-hidden rounded-[1.5rem] border-2 px-5 py-4 text-left transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 ${
                 isActive
-                  ? `bg-gradient-to-r ${section.activeGradient} text-white shadow-lg`:
-                  'bg-white/75 text-slate-600 hover:shadow-md dark:bg-white/5 dark:text-slate-200'
-              } ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
-              style={{ borderColor: isActive ? section.borderColorActive : section.borderColor }}
+                  ? `bg-gradient-to-br ${section.activeGradient} border-transparent text-white shadow-xl hover:shadow-2xl transform hover:scale-[1.02]`
+                  : 'border-slate-200/60 bg-white/75 text-slate-600 shadow-sm hover:border-slate-300 hover:shadow-md hover:bg-white dark:border-slate-700/60 dark:bg-slate-900/50 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800/70'
+              } ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+              style={{ 
+                borderColor: isActive ? 'transparent' : section.borderColor 
+              }}
             >
-              <span className="flex items-center gap-2 text-sm font-semibold">
-                <Icon className="h-4 w-4" />
+              {isActive && (
+                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-50" aria-hidden />
+              )}
+              <span className={`relative flex items-center gap-2.5 text-sm font-bold ${isActive ? 'text-white' : ''}`}>
+                <span className={`inline-flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-300 ${
+                  isActive 
+                    ? 'bg-white/20 shadow-lg' 
+                    : 'bg-slate-100 group-hover:bg-slate-200 dark:bg-slate-800 dark:group-hover:bg-slate-700'
+                }`}>
+                  <Icon className="h-4 w-4" />
+                </span>
                 {section.label}
               </span>
-              <span className={`text-xs ${isActive ? 'text-white/80' : 'text-slate-500 dark:text-slate-300'}`}>
+              <span className={`relative text-xs leading-relaxed ${isActive ? 'text-white/90' : 'text-slate-500 dark:text-slate-400'}`}>
                 {section.caption}
               </span>
             </button>
