@@ -1,30 +1,52 @@
-export type SectionKey = 'all' | 'my' | 'community' | 'official'
+export type MaterialsFilter = 'all' | 'my' | 'community' | 'official'
 
-export interface LearningMaterial {
-	material_id: string
-	title: string
-	description?: string | null
-	file_url?: string | null
-	content_type?: string | null
-	content_type_label?: string | null
-	created_at?: string | null
-	user_name?: string | null
-	user_id?: string | null
-	created_by?: string | null
-	is_public?: boolean
-	category?: string | null
-	tags?: string[] | null
-	like_count?: number | null
-	download_count?: number | null
-	storage_path?: string | null
-	estimated_duration?: string | null
-	ai_quiz_generated?: boolean | null
+export type SortOption =
+  | 'created_at.desc'
+  | 'created_at.asc'
+  | 'title.asc'
+  | 'title.desc'
+  | 'likes_count.desc'
+  | 'likes_count.asc'
+  | 'downloads_count.desc'
+  | 'downloads_count.asc'
+
+export type LearningMaterial = {
+  id: string
+  title: string
+  description: string | null
+  file_name: string | null
+  mime: string | null
+  size: number | null
+  is_public: boolean
+  uploader_id: string | null
+  uploader_name: string | null
+  storage_path: string | null
+  tags: string[]
+  likes_count: number
+  downloads_count: number
+  created_at: string
+  updated_at: string
+  resolved_url: string | null
 }
 
-export type CachedLearningMaterial = LearningMaterial & {
-	resolved_url?: string | null
+export type LearningMaterialsResponse = {
+  data: LearningMaterial[]
+  meta: {
+    total: number
+    page: number
+    per_page: number
+  }
 }
 
-export interface SignedUrlResponse {
-	signed_url?: string
+export type SignedUrlResponse = {
+  signed_url: string
+  expires_at: number
+}
+
+export type UploadMaterialPayload = {
+  title: string
+  description?: string | null
+  tags?: string[]
+  isPublic: boolean
+  file?: File | null
 }

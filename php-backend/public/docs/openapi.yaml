@@ -214,7 +214,7 @@ paths:
         - Learning Materials
       summary: Upload a learning material
       description: >-
-        Upload a PDF or PowerPoint file (max 10 MB) and store its metadata in
+        Upload a PDF, PPT, or PPTX file (max 100 MB) and store its metadata in
         Supabase. Requires bearer authentication. Private uploads return a
         signed download URL.
       security:
@@ -250,7 +250,7 @@ paths:
                 file:
                   type: string
                   format: binary
-                  description: PDF or PPT/PPTX document up to 10 MB.
+                  description: PDF, PPT, or PPTX document up to 100 MB.
       responses:
         '201':
           description: Created – metadata saved and file stored successfully
@@ -406,94 +406,4 @@ components:
           description: Raw RPC response returned by the Supabase function.
         profile:
           $ref: '#/components/schemas/GamificationProfile'
-    LearningMaterial:
-      type: object
-      required:
-        - material_id
-        - title
-        - content_type
-        - is_public
-      properties:
-        material_id:
-          type: string
-          format: uuid
-          description: Unique identifier of the learning material.
-        title:
-          type: string
-          example: Pharmacology review deck
-        description:
-          type: string
-          nullable: true
-          example: Summarized lecture slides for week 3 pharmacology.
-        content_type:
-          type: string
-          example: application/pdf
-        file_url:
-          type: string
-          nullable: true
-          format: uri
-          description: Public or signed URL to download the file.
-        estimated_duration:
-          type: integer
-          nullable: true
-        created_at:
-          type: string
-          nullable: true
-          format: date-time
-        extracted_content:
-          type: string
-          nullable: true
-        word_count:
-          type: integer
-          nullable: true
-        ai_quiz_generated:
-          type: boolean
-          description: Indicates if an AI-generated quiz is available.
-        user_id:
-          type: string
-          format: uuid
-        user_name:
-          type: string
-          nullable: true
-          description: Username of the uploader when available.
-        uploader_name:
-          type: string
-          nullable: true
-          description: Display name provided by the uploader at upload time.
-        uploader_email:
-          type: string
-          nullable: true
-          description: Email address provided by the uploader at upload time.
-        uploader_name:
-          type: string
-          nullable: true
-          description: Display name to persist for this upload.
-        uploader_email:
-          type: string
-          nullable: true
-          description: Email address to persist for this upload.
-        is_public:
-          type: boolean
-        category:
-          type: string
-          nullable: true
-        tags:
-          type: array
-          nullable: true
-          items:
-            type: string
-        storage_path:
-          type: string
-          nullable: true
-          description: Object path inside the Supabase storage bucket.
-    LearningMaterialUploadResponse:
-      type: object
-      required:
-        - message
-        - material
-      properties:
-        message:
-          type: string
-          example: File uploaded successfully
-        material:
-          $ref: '#/components/schemas/LearningMaterial'
+

@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-// Ensure PHP upload limits align with the 50MB application constraint.
-ini_set('upload_max_filesize', '60M');
-ini_set('post_max_size', '65M');
+// Ensure PHP upload limits align with the 100MB application constraint.
+ini_set('upload_max_filesize', '120M');
+ini_set('post_max_size', '125M');
 ini_set('max_execution_time', '120');
 ini_set('max_input_time', '120');
 
@@ -52,7 +52,7 @@ $authMiddleware = new AuthMiddleware($supabaseAuth);
 $todoController = new TodoController($config);
 $authController = new AuthController($supabaseAuth);
 $gamificationController = new GamificationController($config);
-$learningMaterialsController = new LearningMaterialsController($config);
+$learningMaterialsController = new LearningMaterialsController($config, $supabaseAuth);
 
 // Basic CORS (dev) - adjust origin in production
 // Allow the health endpoint to be checked by probes that do not send an Origin header.
@@ -60,9 +60,67 @@ $origin = $_SERVER['HTTP_ORIGIN'] ?? null;
 $allowedOrigins = $config->getAllowedOrigins();
 header('Vary: Origin');
 
+$fallbackOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:4173',
+  'http://127.0.0.1:4173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5174',
+  'http://localhost:5175',
+  'http://127.0.0.1:5175',
+  'https://localhost:8173',
+];
+
+$normalizeOrigin = static function (?string $value): ?string {
+  if ($value === null) {
+    return null;
+  }
+  $trimmed = trim($value);
+  if ($trimmed === '') {
+    return null;
+  }
+
+  $trimmed = rtrim($trimmed, '/');
+  $parts = parse_url($trimmed);
+  if ($parts === false || !isset($parts['scheme'], $parts['host'])) {
+    return strtolower($trimmed);
+  }
+
+  $scheme = strtolower($parts['scheme']);
+  $host = strtolower($parts['host']);
+  $port = isset($parts['port']) ? ':' . $parts['port'] : '';
+
+  return $scheme . '://' . $host . $port;
+};
+
+$allowAnyConfiguredOrigin = false;
+$normalizedAllowedMap = [];
+foreach ($allowedOrigins as $candidateOrigin) {
+  if ($candidateOrigin === '*') {
+    $allowAnyConfiguredOrigin = true;
+    continue;
+  }
+
+  $normalized = $normalizeOrigin($candidateOrigin);
+  if ($normalized !== null) {
+    $normalizedAllowedMap[$normalized] = $candidateOrigin;
+  }
+}
+
+$normalizedFallbackMap = [];
+foreach ($fallbackOrigins as $candidateOrigin) {
+  $normalized = $normalizeOrigin($candidateOrigin);
+  if ($normalized !== null) {
+    $normalizedFallbackMap[$normalized] = $candidateOrigin;
+  }
+}
+
+$normalizedOrigin = $normalizeOrigin($origin);
+
 // Quick path: if this is the health endpoint, allow any origin so platform probes succeed.
 $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
-if ($requestPath === '/health' || $requestPath === '/' || str_starts_with($requestPath, '/docs')) {
+if ($requestPath === '/health' || $requestPath === '/' || str_starts_with($requestPath, '/docs') || $requestPath === '/debug-cors') {
   header('Access-Control-Allow-Origin: *');
   header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
   header('Access-Control-Allow-Methods: GET, POST, DELETE, PUT, PATCH, OPTIONS');
@@ -78,30 +136,34 @@ if ($requestPath === '/health' || $requestPath === '/' || str_starts_with($reque
 } else {
   $allowedOrigin = null;
 
-  if ($origin !== null && $config->isOriginAllowed($origin)) {
+  if ($allowAnyConfiguredOrigin && $origin !== null) {
     $allowedOrigin = $origin;
-  } elseif ($allowedOrigins === []) {
-    // No allowlist configured, allow common local origins and hosted preview domains
-    $fallbackOrigins = [
-      'http://localhost:5173',
-      'http://127.0.0.1:5173',
-      'http://localhost:4173',
-      'http://127.0.0.1:4173',
-      'https://localhost:8173',
-    ];
+  } elseif ($normalizedOrigin !== null) {
+    if (isset($normalizedAllowedMap[$normalizedOrigin])) {
+      $allowedOrigin = $origin ?? $normalizedAllowedMap[$normalizedOrigin];
+    } elseif (isset($normalizedFallbackMap[$normalizedOrigin])) {
+      $allowedOrigin = $origin ?? $normalizedFallbackMap[$normalizedOrigin];
+    } elseif ($normalizedAllowedMap === []) {
+      $hostedFallbacks = [
+        'https://studystreak-peach.vercel.app',
+        'https://studystreak-backend.onrender.com',
+      ];
 
-    $hostedFallbacks = [
-      'https://studystreak-peach.vercel.app',
-      'https://studystreak-backend.onrender.com',
-    ];
+      $normalizedHostedFallbackMap = [];
+      foreach ($hostedFallbacks as $candidateOrigin) {
+        $normalized = $normalizeOrigin($candidateOrigin);
+        if ($normalized !== null) {
+          $normalizedHostedFallbackMap[$normalized] = $candidateOrigin;
+        }
+      }
 
-    $fallbacks = array_merge($fallbackOrigins, $hostedFallbacks);
-    if ($origin !== null && in_array($origin, $fallbacks, true)) {
-      $allowedOrigin = $origin;
+      if (isset($normalizedHostedFallbackMap[$normalizedOrigin])) {
+        $allowedOrigin = $origin ?? $normalizedHostedFallbackMap[$normalizedOrigin];
+      }
     }
   }
 
-  if ($allowedOrigin === null && $origin !== null) {
+  if ($allowedOrigin === null && $origin !== null && !$allowAnyConfiguredOrigin) {
     header('Content-Type: application/json');
     http_response_code(403);
     echo json_encode(['error' => 'Origin not allowed']);
@@ -141,6 +203,22 @@ error_log(sprintf('[request] %s %s Host:%s Origin:%s', $method, $path, $_SERVER[
 if ($path === '/' || $path === '/health') {
   header('Content-Type: application/json');
   echo json_encode(['status' => 'ok', 'routes' => ['/api/todos']]);
+  exit;
+}
+
+// Debug CORS route
+if ($path === '/debug-cors') {
+  header('Content-Type: application/json');
+  $origin = $_SERVER['HTTP_ORIGIN'] ?? null;
+  echo json_encode([
+    'origin' => $origin,
+    'normalizedOrigin' => $normalizedOrigin,
+    'allowAnyConfiguredOrigin' => $allowAnyConfiguredOrigin,
+    'allowedOrigins' => $allowedOrigins,
+    'normalizedAllowedOrigins' => array_values(array_unique(array_keys($normalizedAllowedMap))),
+    'fallbackOrigins' => $fallbackOrigins,
+    'normalizedFallbackOrigins' => array_values(array_unique(array_keys($normalizedFallbackMap)))
+  ]);
   exit;
 }
 
@@ -199,73 +277,6 @@ if ($path === '/api/gamification/streak/use-saver' && $method === 'POST') {
   exit;
 }
 
-// Learning materials routes (auth required). Centralize allowed methods for clarity.
-$learningMaterialsRoutes = [
-  '/api/learning-materials' => [
-    'GET' => 'index',
-    'POST' => 'upload',
-  ],
-  // Legacy alias retained temporarily for compatibility with older clients
-  '/api/learning-materials/upload' => [
-    'POST' => 'upload',
-  ],
-];
-
-if (isset($learningMaterialsRoutes[$path])) {
-  $handlersForPath = $learningMaterialsRoutes[$path];
-  if (!isset($handlersForPath[$method])) {
-    $allowedMethods = implode(', ', array_keys($handlersForPath));
-    header('Allow: ' . $allowedMethods);
-    JsonResponder::withStatus(405, [
-      'error' => 'Method not allowed',
-      'allowed_methods' => $handlersForPath,
-    ]);
-    exit;
-  }
-
-  $action = $handlersForPath[$method];
-  $authMiddleware->handle($request, function(Request $authedRequest) use ($learningMaterialsController, $action): void {
-    $learningMaterialsController->{$action}($authedRequest);
-  });
-  exit;
-}
-
-// Route: GET /api/learning-materials/:id/signed-url (auth required)
-if (preg_match('#^/api/learning-materials/([^/]+)/signed-url$#', $path, $m) && $method === 'GET') {
-  $id = $m[1];
-  $authMiddleware->handle($request, function(Request $authedRequest) use ($learningMaterialsController, $id): void {
-    $learningMaterialsController->signedUrl($authedRequest, $id);
-  });
-  exit;
-}
-
-// Route: POST /api/learning-materials/:id/like (auth required)
-if (preg_match('#^/api/learning-materials/([^/]+)/like$#', $path, $m) && $method === 'POST') {
-  $id = $m[1];
-  $authMiddleware->handle($request, function(Request $authedRequest) use ($learningMaterialsController, $id): void {
-    $learningMaterialsController->like($authedRequest, $id);
-  });
-  exit;
-}
-
-// Route: POST /api/learning-materials/:id/download (auth required)
-if (preg_match('#^/api/learning-materials/([^/]+)/download$#', $path, $m) && $method === 'POST') {
-  $id = $m[1];
-  $authMiddleware->handle($request, function(Request $authedRequest) use ($learningMaterialsController, $id): void {
-    $learningMaterialsController->download($authedRequest, $id);
-  });
-  exit;
-}
-
-// Route: GET /api/learning-materials/:id/stream (auth required)
-if (preg_match('#^/api/learning-materials/([^/]+)/stream$#', $path, $m) && $method === 'GET') {
-  $id = $m[1];
-  $authMiddleware->handle($request, function(Request $authedRequest) use ($learningMaterialsController, $id): void {
-    $learningMaterialsController->stream($authedRequest, $id);
-  });
-  exit;
-}
-
 // Route: GET /api/todos and POST /api/todos (auth required)
 if ($path === '/api/todos') {
   $authMiddleware->handle($request, function(Request $authedRequest) use ($todoController, $method): void {
@@ -281,6 +292,65 @@ if ($path === '/api/todos') {
 
     JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
   });
+  exit;
+}
+
+// Learning materials collection routes
+if ($path === '/api/learning-materials' && $method === 'GET') {
+  $learningMaterialsController->index($request);
+  exit;
+}
+
+if ($path === '/api/learning-materials' && $method === 'POST') {
+  $authMiddleware->handle($request, function(Request $authedRequest) use ($learningMaterialsController): void {
+    $learningMaterialsController->create($authedRequest);
+  });
+  exit;
+}
+
+// Learning material signed URL route
+if (preg_match('#^/api/learning-materials/([0-9a-fA-F\-]{36})/signed-url$#', $path, $matches)) {
+  $materialId = $matches[1];
+  if ($method === 'GET') {
+    $authMiddleware->handle($request, function(Request $authedRequest) use ($learningMaterialsController, $materialId): void {
+      $learningMaterialsController->signedUrl($authedRequest, $materialId);
+    });
+  } else {
+    JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
+  }
+  exit;
+}
+
+// Learning material like route
+if (preg_match('#^/api/learning-materials/([0-9a-fA-F\-]{36})/like$#', $path, $matches)) {
+  $materialId = $matches[1];
+  if ($method === 'POST') {
+    $authMiddleware->handle($request, function(Request $authedRequest) use ($learningMaterialsController, $materialId): void {
+      $learningMaterialsController->like($authedRequest, $materialId);
+    });
+  } else {
+    JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
+  }
+  exit;
+}
+
+// Learning material detail routes
+if (preg_match('#^/api/learning-materials/([0-9a-fA-F\-]{36})$#', $path, $matches)) {
+  $materialId = $matches[1];
+
+  if ($method === 'GET') {
+    $learningMaterialsController->show($request, $materialId);
+    exit;
+  }
+
+  if ($method === 'DELETE') {
+    $authMiddleware->handle($request, function(Request $authedRequest) use ($learningMaterialsController, $materialId): void {
+      $learningMaterialsController->delete($authedRequest, $materialId);
+    });
+    exit;
+  }
+
+  JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
   exit;
 }
 

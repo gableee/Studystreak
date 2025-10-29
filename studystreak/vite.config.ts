@@ -50,9 +50,6 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-        // Use index.html as the SPA navigation fallback so the app router can handle routes
-        // Keep offline.html as a dedicated asset for explicit offline UX, but don't use it as primary fallback
-        navigateFallback: '/index.html',
         // Do not apply navigation fallback for API calls, auth callbacks, or URLs that include tokens
         navigateFallbackDenylist: [/^\/api\//, /^\/auth\//, /access_token/, /refresh_token/, /callback/],
         runtimeCaching: [
