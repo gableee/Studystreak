@@ -17,13 +17,23 @@ final class Request
     public function __construct()
     {
         $this->query = $_GET ?? [];
-        $raw = file_get_contents('php://input');
-        $decoded = json_decode($raw, true);
-        $this->body = is_array($decoded) ? $decoded : null;
         $this->headers = $this->fetchAllHeaders();
         $this->method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
         $this->path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
         $this->attributes = [];
+
+        $this->body = null;
+        $contentType = $this->headers['Content-Type'] ?? ($_SERVER['CONTENT_TYPE'] ?? '');
+        if (is_string($contentType)) {
+            $normalized = strtolower($contentType);
+            if (str_contains($normalized, 'json')) {
+                $raw = file_get_contents('php://input');
+                if ($raw !== false && $raw !== '') {
+                    $decoded = json_decode($raw, true);
+                    $this->body = is_array($decoded) ? $decoded : null;
+                }
+            }
+        }
     }
 
     private function fetchAllHeaders(): array

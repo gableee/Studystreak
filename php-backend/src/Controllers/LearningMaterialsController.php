@@ -384,10 +384,16 @@ final class LearningMaterialsController
 
         if ($filters !== []) {
             if (count($filters) === 1) {
-                // For single filter, parse it into key=value
-                $parts = explode('.', $filters[0], 2);
-                if (count($parts) === 2) {
-                    $query[$parts[0]] = $parts[1];
+                $single = $filters[0];
+
+                if (preg_match('/^(or|and)\((.+)\)$/', $single, $matches) === 1) {
+                    $logical = $matches[1];
+                    $query[$logical] = '(' . $matches[2] . ')';
+                } else {
+                    $parts = explode('.', $single, 2);
+                    if (count($parts) === 2) {
+                        $query[$parts[0]] = $parts[1];
+                    }
                 }
             } else {
                 $query['and'] = '(' . implode(',', $filters) . ')';
@@ -602,6 +608,14 @@ final class LearningMaterialsController
     {
         $error = null;
         if (!isset($_FILES['file'])) {
+            $contentLength = isset($_SERVER['CONTENT_LENGTH']) ? (int)$_SERVER['CONTENT_LENGTH'] : 0;
+            $contentType = $_SERVER['CONTENT_TYPE'] ?? ($_SERVER['HTTP_CONTENT_TYPE'] ?? '');
+            if ($contentLength > 0
+                && stripos((string)$contentType, 'multipart/form-data') !== false
+                && empty($_POST)
+            ) {
+                $error = $this->uploadExceededLimitMessage($contentLength);
+            }
             return null;
         }
 
@@ -686,7 +700,12 @@ final class LearningMaterialsController
         $uploadHeaders = [
             'x-upsert' => 'false',
             'Content-Type' => $fileInfo['type'] ?? 'application/octet-stream',
+            'Expect' => '',
         ];
+
+        if (!empty($fileInfo['size'])) {
+            $uploadHeaders['Content-Length'] = (string)$fileInfo['size'];
+        }
 
         $attempts = [
             $token,
@@ -695,6 +714,8 @@ final class LearningMaterialsController
         if ($this->serviceRoleKey !== null) {
             $attempts[] = $this->serviceRoleKey;
         }
+
+        $timeoutSeconds = $this->computeUploadTimeout((int)($fileInfo['size'] ?? 0));
 
         foreach ($attempts as $authToken) {
             $stream = fopen($fileInfo['tmp_name'], 'rb');
@@ -709,6 +730,7 @@ final class LearningMaterialsController
                     'apikey' => $this->anonKey,
                 ]),
                 'body' => $stream,
+                'timeout' => $timeoutSeconds,
             ]);
 
             if (is_resource($stream)) {
@@ -823,7 +845,7 @@ final class LearningMaterialsController
     private function uploadErrorMessage(int $code): string
     {
         return match ($code) {
-            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'File exceeds server upload limit',
+            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'File exceeds server upload limit (increase PHP upload_max_filesize and post_max_size)',
             UPLOAD_ERR_PARTIAL => 'File upload was interrupted',
             UPLOAD_ERR_NO_TMP_DIR => 'Server temporary folder is missing',
             UPLOAD_ERR_CANT_WRITE => 'Server failed to write uploaded file to disk',
@@ -847,6 +869,53 @@ final class LearningMaterialsController
             $value = 3600;
         }
         return $value;
+    }
+
+    private function computeUploadTimeout(int $bytes): int
+    {
+        if ($bytes <= 0) {
+            return 120;
+        }
+
+        $megabytes = (int)ceil($bytes / 1_000_000);
+        $estimated = max(120, $megabytes * 4);
+
+        return min(900, $estimated);
+    }
+
+    private function uploadExceededLimitMessage(int $contentLength): string
+    {
+        $sizeLabel = $contentLength > 0
+            ? sprintf('%s bytes (%s)', number_format($contentLength), $this->formatBytes($contentLength))
+            : 'an unknown size';
+
+        $uploadLimit = ini_get('upload_max_filesize') ?: 'not configured';
+        $postLimit = ini_get('post_max_size') ?: 'not configured';
+
+        return sprintf(
+            'The uploaded payload of %s was rejected before it reached the application. Ensure PHP upload_max_filesize=%s and post_max_size=%s are configured to at least 110M to support 100MB uploads.',
+            $sizeLabel,
+            $uploadLimit,
+            $postLimit
+        );
+    }
+
+    private function formatBytes(int $bytes): string
+    {
+        if ($bytes <= 0) {
+            return '0 bytes';
+        }
+
+        $units = ['bytes', 'KB', 'MB', 'GB', 'TB'];
+        $value = (float)$bytes;
+        $index = 0;
+
+        while ($value >= 1024 && $index < count($units) - 1) {
+            $value /= 1024;
+            $index++;
+        }
+
+        return sprintf('%.2f %s', $value, $units[$index]);
     }
 
     /**
