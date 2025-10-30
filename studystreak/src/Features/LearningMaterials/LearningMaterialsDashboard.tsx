@@ -1,14 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useAuthContext } from '../../Auth/context/useAuthContext'
-import {
-  deleteLearningMaterial,
-  likeLearningMaterial,
-  unlikeLearningMaterial,
-  requestSignedUrl,
-} from './api'
+import { deleteLearningMaterial, likeLearningMaterial, unlikeLearningMaterial, requestSignedUrl } from './api'
 import type { LearningMaterial, MaterialsFilter, SortOption } from './types'
-import { useLearningMaterialsQuery } from './useLearningMaterialsQuery'
+import { normalizeMaterialRecord, useLearningMaterialsQuery } from './useLearningMaterialsQuery'
+import { MaterialsProvider } from './MaterialsProvider'
+import { useMaterialsStore } from './useMaterialsStore'
+import { showToast as showGlobalToast, type ToastType } from '../../components/toastService'
 import { useDebounce } from './hooks/useDebounce'
 import BulkActionsToolbar from './components/BulkActionsToolbar'
 import FilePreviewModal from './components/FilePreviewModal'
@@ -20,11 +18,6 @@ import { UploadDrawer } from './components/UploadDrawer'
 const DEFAULT_SORT: SortOption = 'created_at.desc'
 const DEFAULT_PER_PAGE = 12
 const PER_PAGE_OPTIONS = [12, 24, 48]
-
-type ToastState = {
-  type: 'success' | 'error'
-  text: string
-}
 
 function isAdminUser(user: ReturnType<typeof useAuthContext>['user']): boolean {
   if (!user) return false
@@ -48,7 +41,7 @@ function isAdminUser(user: ReturnType<typeof useAuthContext>['user']): boolean {
 }
 
 const LearningMaterialsDashboard = () => {
-  const { user } = useAuthContext()
+  const { user, loading: authLoading } = useAuthContext()
   const userId = user?.id ?? null
   const admin = isAdminUser(user)
 
@@ -63,70 +56,151 @@ const LearningMaterialsDashboard = () => {
   const [showUpload, setShowUpload] = useState(false)
   const [previewMaterial, setPreviewMaterial] = useState<LearningMaterial | null>(null)
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set())
-  const [toast, setToast] = useState<ToastState | null>(null)
-  
-  // Local state for optimistic updates
-  const [optimisticLikes, setOptimisticLikes] = useState<Map<string, { user_liked: boolean; likes_count: number }>>(new Map())
+  // local toast state removed — use global toast service
+  const [allMaterials, setAllMaterials] = useState<LearningMaterial[]>([])
+  const materialsRef = useRef<LearningMaterial[]>([])
 
-  const { materials: rawMaterials, loading, error, pagination, refetch } = useLearningMaterialsQuery({
+  const { materials: fetchedMaterials, loading: queryLoading, error: queryError, pagination } = useLearningMaterialsQuery({
     filter,
     search: debouncedSearch,
     page,
     perPage,
     sort,
     refreshKey,
+    enabled: !authLoading,
   })
-  
-  // Apply optimistic updates to materials
-  const materials = useMemo(() => {
-    return rawMaterials.map(material => {
-      const optimistic = optimisticLikes.get(material.id)
-      if (optimistic) {
-        return {
-          ...material,
-          user_liked: optimistic.user_liked,
-          likes_count: optimistic.likes_count,
-        }
-      }
-      return material
+
+  const applyMaterialsUpdate = useCallback((updater: (prev: LearningMaterial[]) => LearningMaterial[]) => {
+    setAllMaterials((prev) => {
+      const next = updater(prev)
+      materialsRef.current = next
+      return next
     })
-  }, [rawMaterials, optimisticLikes])
+  }, [])
+
+  const provider = useMaterialsStore()
+
+  useEffect(() => {
+    if (queryLoading) {
+      return
+    }
+
+    // Prefer provider data once the provider has loaded any items. The provider
+    // will prefetch remaining pages in the background and set `isFullyLoaded`.
+    if (provider && provider.allMaterials && provider.allMaterials.length > 0) {
+      materialsRef.current = provider.allMaterials
+      setAllMaterials(provider.allMaterials)
+      return
+    }
+
+    materialsRef.current = fetchedMaterials
+    setAllMaterials(fetchedMaterials)
+  }, [fetchedMaterials, queryLoading, provider])
 
   useEffect(() => {
     setPage(1)
   }, [filter, search, sort, perPage])
 
-  useEffect(() => {
-    if (toast === null) return
-    const timeout = window.setTimeout(() => setToast(null), 4000)
-    return () => window.clearTimeout(timeout)
-  }, [toast])
+  // global showToast helper
+  const showToast = useCallback((type: ToastType, text: string) => {
+    showGlobalToast({ type, text })
+  }, [])
 
   useEffect(() => {
     setSelectedIds((prev) => {
       if (prev.size === 0) return prev
-      const existing = new Set(materials.map((item) => item.id))
+      const existing = new Set(allMaterials.map((item) => item.id))
       const next = new Set<string>()
       prev.forEach((id) => {
         if (existing.has(id)) next.add(id)
       })
       return next
     })
-  }, [materials])
+  }, [allMaterials])
 
+  const searchQuery = debouncedSearch.trim().toLowerCase()
+
+  const filteredMaterials = useMemo(() => {
+    let items = allMaterials
+
+    if (searchQuery !== '') {
+      const terms = searchQuery.split(/\s+/).filter((term) => term.length > 0)
+      if (terms.length > 0) {
+        items = items.filter((material) => {
+          const haystack = [
+            material.title,
+            material.description ?? '',
+            material.file_name ?? '',
+            material.uploader_name ?? '',
+            material.tags.join(' '),
+          ]
+            .join(' ')
+            .toLowerCase()
+
+          return terms.every((term) => haystack.includes(term))
+        })
+      }
+    }
+
+    return items
+  }, [allMaterials, searchQuery])
+
+  const sortedMaterials = useMemo(() => {
+    const items = [...filteredMaterials]
+    const [field, dirRaw] = sort.split('.') as [string, string?]
+    const direction = dirRaw === 'asc' ? 1 : -1
+
+    const toTimestamp = (value: string) => {
+      const time = Date.parse(value)
+      return Number.isNaN(time) ? 0 : time
+    }
+
+    items.sort((a, b) => {
+      switch (field) {
+        case 'title':
+          return a.title.localeCompare(b.title) * direction
+        case 'likes_count':
+          return (a.likes_count - b.likes_count) * direction
+        case 'downloads_count':
+          return (a.downloads_count - b.downloads_count) * direction
+        case 'created_at':
+        default:
+          return (toTimestamp(a.created_at) - toTimestamp(b.created_at)) * direction
+      }
+    })
+
+    return items
+  }, [filteredMaterials, sort])
+
+  const totalItems = pagination.total
   const totalPages = useMemo(() => {
-    if (pagination.total === 0) return 1
-    return Math.max(1, Math.ceil(pagination.total / pagination.perPage))
-  }, [pagination.total, pagination.perPage])
+    const per = pagination.perPage > 0 ? pagination.perPage : perPage
+    if (per <= 0) {
+      return 1
+    }
+    return Math.max(1, Math.ceil(totalItems / per))
+  }, [pagination.perPage, perPage, totalItems])
+
+  useEffect(() => {
+    setPage((current) => {
+      if (current > totalPages) return totalPages
+      if (current < 1) return 1
+      return current
+    })
+  }, [totalPages])
 
   const currentRange = useMemo(() => {
-    if (pagination.total === 0) {
+    if (totalItems === 0) {
       return { from: 0, to: 0 }
     }
     const from = (pagination.page - 1) * pagination.perPage + 1
-    const to = Math.min(pagination.total, pagination.page * pagination.perPage)
+    const to = Math.min(totalItems, from + sortedMaterials.length - 1)
     return { from, to }
-  }, [pagination.page, pagination.perPage, pagination.total])
+  }, [pagination.page, pagination.perPage, sortedMaterials.length, totalItems])
+
+  const materials = sortedMaterials
+
+  const listIsLoading = queryLoading && materials.length === 0
 
   const toggleSelection = (material: LearningMaterial) => {
     setSelectedIds((prev) => {
@@ -142,10 +216,6 @@ const LearningMaterialsDashboard = () => {
 
   const clearSelection = () => setSelectedIds(new Set())
 
-  const showToast = (type: ToastState['type'], text: string) => {
-    setToast({ type, text })
-  }
-
   const markBusy = (id: string, active: boolean) => {
     setBusyIds((prev) => {
       const next = new Set(prev)
@@ -158,9 +228,9 @@ const LearningMaterialsDashboard = () => {
     })
   }
 
-  const refreshData = () => {
+  const refreshData = useCallback(() => {
     setRefreshKey((value) => value + 1)
-  }
+  }, [])
 
   const handleDownload = async (material: LearningMaterial) => {
     try {
@@ -192,7 +262,7 @@ const LearningMaterialsDashboard = () => {
         next.delete(material.id)
         return next
       })
-      refreshData()
+      applyMaterialsUpdate((prev) => prev.filter((item) => item.id !== material.id))
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unable to delete material'
       showToast('error', message)
@@ -209,7 +279,8 @@ const LearningMaterialsDashboard = () => {
       await Promise.all(ids.map((id) => deleteLearningMaterial(id).catch((error) => error)))
       showToast('success', `Deleted ${ids.length} material${ids.length === 1 ? '' : 's'}`)
       clearSelection()
-      refreshData()
+      const idSet = new Set(ids)
+      applyMaterialsUpdate((prev) => prev.filter((item) => !idSet.has(item.id)))
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unable to delete selected materials'
       showToast('error', message)
@@ -219,48 +290,78 @@ const LearningMaterialsDashboard = () => {
   }
 
   const handleLike = useCallback(async (material: LearningMaterial) => {
-    const wasLiked = material.user_liked
-    const newLikedState = !wasLiked
-    const newCount = wasLiked ? material.likes_count - 1 : material.likes_count + 1
-    
-    // Optimistic update - instant UI feedback
-    setOptimisticLikes(prev => {
-      const next = new Map(prev)
-      next.set(material.id, {
-        user_liked: newLikedState,
-        likes_count: Math.max(0, newCount),
-      })
+    // Prevent anonymous likes
+    if (!userId) {
+      showToast('error', 'Please sign in to like materials')
+      return
+    }
+
+    // Prevent concurrent like/unlike requests for the same material
+    let started = false
+    setBusyIds((prev) => {
+      if (prev.has(material.id)) return prev
+      const next = new Set(prev)
+      next.add(material.id)
+      started = true
       return next
     })
-    
+
+    if (!started) return
+
+    const previous = materialsRef.current.find((item) => item.id === material.id)
+    if (!previous) {
+      // Clear busy state if we couldn't find the item
+      setBusyIds((prev) => {
+        const next = new Set(prev)
+        next.delete(material.id)
+        return next
+      })
+      return
+    }
+
+    const wasLiked = previous.user_liked
+
+    // Optimistic UI update
+    applyMaterialsUpdate((prev) =>
+      prev.map((item) => {
+        if (item.id !== material.id) return item
+        const shouldLike = !item.user_liked
+        const nextCount = shouldLike ? item.likes_count + 1 : Math.max(0, item.likes_count - 1)
+        return {
+          ...item,
+          user_liked: shouldLike,
+          likes_count: nextCount,
+        }
+      }),
+    )
+
     try {
       if (wasLiked) {
         await unlikeLearningMaterial(material.id)
+        showToast('success', 'Removed like')
       } else {
         await likeLearningMaterial(material.id)
+        showToast('success', 'Material liked')
       }
-      
-      // Clear optimistic state after successful API call
-      setOptimisticLikes(prev => {
-        const next = new Map(prev)
-        next.delete(material.id)
-        return next
-      })
-      
-      // Refetch in background to sync with server state
-      refetch()
     } catch (err) {
       // Revert optimistic update on error
-      setOptimisticLikes(prev => {
-        const next = new Map(prev)
+      applyMaterialsUpdate((prev) =>
+        prev.map((item) => {
+          if (item.id !== material.id) return item
+          return { ...previous }
+        }),
+      )
+      const message = err instanceof Error ? err.message : 'Unable to update like'
+      showToast('error', message)
+    } finally {
+      // Clear busy flag
+      setBusyIds((prev) => {
+        const next = new Set(prev)
         next.delete(material.id)
         return next
       })
-      
-      const message = err instanceof Error ? err.message : 'Unable to update like'
-      showToast('error', message)
     }
-  }, [])
+  }, [applyMaterialsUpdate, showToast, userId])
 
   const canDelete = useCallback((material: LearningMaterial) => {
     // Only show delete button in 'my' materials section or if admin
@@ -271,21 +372,11 @@ const LearningMaterialsDashboard = () => {
   }, [admin, userId, filter])
 
   return (
-    <div className="relative mx-auto max-w-6xl space-y-8 pb-12">
+    <MaterialsProvider>
+      <div className="relative mx-auto max-w-6xl space-y-8 pb-12">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-purple-500/20 via-transparent to-transparent blur-3xl" aria-hidden />
 
-      {toast && (
-        <div
-          className={`mx-auto flex max-w-3xl items-center gap-2 rounded-2xl border px-4 py-3 text-sm shadow ${
-            toast.type === 'success'
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-900/20 dark:text-emerald-200'
-              : 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/40 dark:bg-red-900/20 dark:text-red-200'
-          }`}
-        >
-          <AlertCircle className="h-4 w-4" />
-          <span>{toast.text}</span>
-        </div>
-      )}
+      {/* Global ToastProvider will render toasts */}
 
       <SearchAndFilterBar
         search={search}
@@ -294,22 +385,22 @@ const LearningMaterialsDashboard = () => {
         onSortChange={(value) => setSort(value)}
         onRefresh={refreshData}
         onUpload={() => setShowUpload(true)}
-        disabled={loading}
+        disabled={queryLoading && materials.length === 0}
       />
 
-      <SectionFilters value={filter} onChange={(value: MaterialsFilter) => setFilter(value)} disabled={loading} />
+      <SectionFilters value={filter} onChange={(value: MaterialsFilter) => setFilter(value)} disabled={queryLoading && materials.length === 0} />
 
       <BulkActionsToolbar
         count={selectedIds.size}
         onBulkDelete={handleBulkDelete}
         onClear={clearSelection}
-        disabled={loading}
+        disabled={queryLoading && materials.length === 0}
       />
 
       <MaterialsList
         materials={materials}
-        loading={loading}
-        error={error}
+        loading={listIsLoading}
+        error={queryError}
         selectedIds={selectedIds}
         onToggleSelect={toggleSelection}
         onPreview={setPreviewMaterial}
@@ -322,10 +413,10 @@ const LearningMaterialsDashboard = () => {
         busyIds={busyIds}
       />
 
-      {pagination.total > 0 && (
+      {totalItems > 0 && (
         <footer className="flex flex-col items-center justify-between gap-3 rounded-2xl border border-slate-200/60 bg-white/70 p-4 text-sm text-slate-600 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/80 dark:text-slate-300 sm:flex-row">
           <div>
-            Showing {currentRange.from}&ndash;{currentRange.to} of {pagination.total}
+            Showing {currentRange.from}&ndash;{currentRange.to} of {totalItems}
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-2">
@@ -370,18 +461,22 @@ const LearningMaterialsDashboard = () => {
       <UploadDrawer
         open={showUpload}
         onClose={() => setShowUpload(false)}
-        onSuccess={() => {
+        onSuccess={(created) => {
+          const normalized = normalizeMaterialRecord(created) ?? created
+          applyMaterialsUpdate((prev) => {
+            const filtered = prev.filter((item) => item.id !== normalized.id)
+            return [normalized, ...filtered]
+          })
           showToast('success', 'Material uploaded successfully')
           setShowUpload(false)
           setPreviewMaterial(null)
           setPage(1)
-          // Immediately reflect the freshly uploaded item.
-          refreshData()
         }}
       />
 
       <FilePreviewModal material={previewMaterial} onClose={() => setPreviewMaterial(null)} />
-    </div>
+      </div>
+    </MaterialsProvider>
   )
 }
 

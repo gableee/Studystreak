@@ -15,7 +15,7 @@ $response = $client->request('GET', '/rest/v1/learning_materials', [
         'Accept' => 'application/json',
     ],
     'query' => [
-        'select' => 'material_id,title,description,content_type,file_url,file_name,mime,size,is_public,user_id,created_by,uploader_name,uploader_email,storage_path,tags,tags_jsonb,like_count,likes_count,download_count,downloads_count,created_at,updated_at,deleted_at',
+        'select' => 'material_id,title,description,content_type,file_url,file_name,mime,size,is_public,user_id,storage_path,tags_jsonb,likes_count,download_count,created_at,updated_at,deleted_at,uploader_name,uploader_email',
         'material_id' => 'eq.' . $materialId,
         'deleted_at' => 'is.null',
         'limit' => 1,
@@ -39,7 +39,7 @@ $response2 = $client->request('GET', '/rest/v1/learning_materials', [
         'Accept' => 'application/json',
     ],
     'query' => [
-        'select' => 'material_id,title,description,content_type,file_url,file_name,mime,size,is_public,user_id,created_by,uploader_name,uploader_email,storage_path,tags,tags_jsonb,like_count,likes_count,download_count,downloads_count,created_at,updated_at,deleted_at',
+        'select' => 'material_id,title,description,content_type,file_url,file_name,mime,size,is_public,user_id,storage_path,tags_jsonb,likes_count,download_count,created_at,updated_at,deleted_at,uploader_name,uploader_email',
         'material_id' => 'eq.' . $materialId,
         'limit' => 1,
     ],

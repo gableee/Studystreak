@@ -36,60 +36,44 @@ final class LearningMaterialsController
     public function index(Request $request): void
     {
         [$user, $token] = $this->resolveOptionalUser($request);
-        $filter = strtolower((string)($request->getQueryParams()['filter'] ?? 'all'));
-        
-        // Handle 'liked' filter differently - fetch liked material IDs first
+        $params = $request->getQueryParams();
+        $filter = strtolower((string)($params['filter'] ?? 'all'));
+        $page = max(1, (int)($params['page'] ?? 1));
+        $perPage = max(1, min(50, (int)($params['per_page'] ?? 20)));
+
         $likedMaterialIds = [];
+        $likedIdsFetched = false;
+
         if ($filter === 'liked') {
-            if ($user === null || $token === null) {
-                // Not authenticated, return empty list
+            if ($user === null) {
                 JsonResponder::ok([
                     'data' => [],
                     'meta' => [
                         'total' => 0,
-                        'page' => 1,
-                        'per_page' => (int)($request->getQueryParams()['per_page'] ?? 20),
+                        'page' => $page,
+                        'per_page' => $perPage,
                     ],
                 ]);
                 return;
             }
-            
-            // Fetch all material IDs the user has liked
-            $likesResult = $this->send('GET', '/rest/v1/material_likes', [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $token,
-                    'apikey' => $this->anonKey,
-                    'Accept' => 'application/json',
-                ],
-                'query' => [
-                    'user_id' => 'eq.' . $user->getId(),
-                    'select' => 'material_id',
-                ],
-            ]);
-            
-            if ($likesResult['status'] === 200 && is_array($likesResult['payload'])) {
-                foreach ($likesResult['payload'] as $like) {
-                    if (isset($like['material_id'])) {
-                        $likedMaterialIds[] = $like['material_id'];
-                    }
-                }
-            }
-            
-            // If user hasn't liked anything, return empty result
-            if (empty($likedMaterialIds)) {
+
+            $likedMaterialIds = $this->fetchUserLikedMaterialIds($user->getId(), $token);
+            $likedIdsFetched = true;
+
+            if ($likedMaterialIds === []) {
                 JsonResponder::ok([
                     'data' => [],
                     'meta' => [
                         'total' => 0,
-                        'page' => 1,
-                        'per_page' => (int)($request->getQueryParams()['per_page'] ?? 20),
+                        'page' => $page,
+                        'per_page' => $perPage,
                     ],
                 ]);
                 return;
             }
         }
-        
-        $query = $this->buildListQuery($request->getQueryParams(), $user, $likedMaterialIds);
+
+        $query = $this->buildListQuery($params, $user, $likedMaterialIds);
         $headers = [
             'apikey' => $this->anonKey,
             'Authorization' => 'Bearer ' . ($token ?? $this->anonKey),
@@ -103,6 +87,16 @@ final class LearningMaterialsController
         ]);
 
         if ($result['status'] !== 200) {
+            // Log upstream (PostgREST) response for debugging
+            @mkdir(__DIR__ . '/../../../tmp', 0755, true);
+            @file_put_contents(__DIR__ . '/../../../tmp/postgrest_error.log', json_encode([
+                'time' => gmdate('c'),
+                'status' => $result['status'],
+                'headers' => $result['headers'],
+                'payload' => $result['payload'],
+                'query' => $query,
+            ], JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
+
             JsonResponder::withStatus($result['status'], [
                 'error' => 'Unable to fetch learning materials',
                 'details' => $result['payload'],
@@ -111,48 +105,27 @@ final class LearningMaterialsController
         }
 
         $materials = is_array($result['payload']) ? $result['payload'] : [];
-        
-        // Fetch user's likes if authenticated
+        $materials = $this->enrichMaterialsWithProfiles($materials, $token);
+
         $userLikes = [];
-        if ($user !== null && $token !== null && count($materials) > 0) {
-            $materialIds = array_map(function($m) { 
-                return $m['material_id'] ?? $m['id'] ?? ''; 
-            }, $materials);
-            $materialIds = array_filter($materialIds, function($id) { return $id !== ''; });
-            
-            if (count($materialIds) > 0) {
-                $likesResult = $this->send('GET', '/rest/v1/material_likes', [
-                    'headers' => [
-                        'Authorization' => 'Bearer ' . $token,
-                        'apikey' => $this->anonKey,
-                        'Accept' => 'application/json',
-                    ],
-                    'query' => [
-                        'user_id' => 'eq.' . $user->getId(),
-                        'material_id' => 'in.(' . implode(',', $materialIds) . ')',
-                        'select' => 'material_id',
-                    ],
-                ]);
-                
-                if ($likesResult['status'] === 200 && is_array($likesResult['payload'])) {
-                    foreach ($likesResult['payload'] as $like) {
-                        if (isset($like['material_id'])) {
-                            $userLikes[$like['material_id']] = true;
-                        }
-                    }
-                }
+        if ($user !== null) {
+            if (!$likedIdsFetched) {
+                $likedMaterialIds = $this->fetchUserLikedMaterialIds($user->getId(), $token);
+                $likedIdsFetched = true;
+            }
+
+            foreach ($likedMaterialIds as $likedId) {
+                $userLikes[(string)$likedId] = true;
             }
         }
-        
+
         $transformed = array_map(function (array $item) use ($userLikes): array {
-            $materialId = $item['material_id'] ?? $item['id'] ?? '';
+            $materialId = isset($item['material_id']) ? (string)$item['material_id'] : (string)($item['id'] ?? '');
             $item['user_liked'] = isset($userLikes[$materialId]);
             return $this->transformMaterial($item);
         }, $materials);
 
         $total = $this->parseTotalFromHeaders($result['headers']);
-        $page = max(1, (int)($request->getQueryParams()['page'] ?? 1));
-        $perPage = max(1, min(50, (int)($request->getQueryParams()['per_page'] ?? 20)));
 
         JsonResponder::ok([
             'data' => $transformed,
@@ -179,25 +152,15 @@ final class LearningMaterialsController
             return;
         }
 
+        $enriched = $this->enrichMaterialsWithProfiles([$material], $token);
+        if ($enriched !== []) {
+            $material = $enriched[0];
+        }
+
         // Check if user has liked this material
         $material['user_liked'] = false;
-        if ($user !== null && $token !== null) {
-            $likesResult = $this->send('GET', '/rest/v1/material_likes', [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $token,
-                    'apikey' => $this->anonKey,
-                    'Accept' => 'application/json',
-                ],
-                'query' => [
-                    'user_id' => 'eq.' . $user->getId(),
-                    'material_id' => 'eq.' . $id,
-                    'select' => 'id',
-                ],
-            ]);
-            
-            if ($likesResult['status'] === 200 && is_array($likesResult['payload']) && count($likesResult['payload']) > 0) {
-                $material['user_liked'] = true;
-            }
+        if ($user !== null) {
+            $material['user_liked'] = $this->userHasLikedMaterial($user->getId(), $id, $token);
         }
 
         JsonResponder::ok($this->transformMaterial($material));
@@ -257,7 +220,6 @@ final class LearningMaterialsController
             'size' => $size,
             'is_public' => $isPublic,
             'user_id' => $user->getId(),
-            'created_by' => $user->getId(),
             'tags_jsonb' => $tags,
         ];
 
@@ -408,7 +370,7 @@ final class LearningMaterialsController
         }
 
         // Check if user already liked this material
-        $checkResult = $this->send('GET', '/rest/v1/material_likes', [
+        $checkResult = $this->send('GET', '/rest/v1/learning_material_likes', [
             'headers' => [
                 'Authorization' => 'Bearer ' . $token,
                 'apikey' => $this->anonKey,
@@ -417,7 +379,7 @@ final class LearningMaterialsController
             'query' => [
                 'material_id' => 'eq.' . $id,
                 'user_id' => 'eq.' . $user->getId(),
-                'select' => 'id',
+                'select' => 'like_id',
             ],
         ]);
 
@@ -428,7 +390,7 @@ final class LearningMaterialsController
         }
 
         // Insert like record
-        $insertResult = $this->send('POST', '/rest/v1/material_likes', [
+        $insertResult = $this->send('POST', '/rest/v1/learning_material_likes', [
             'headers' => [
                 'Authorization' => 'Bearer ' . $token,
                 'apikey' => $this->anonKey,
@@ -450,11 +412,10 @@ final class LearningMaterialsController
         }
 
         // Increment like count
-        $currentLikes = (int)($material['likes_count'] ?? $material['like_count'] ?? 0);
+        $currentLikes = (int)($material['likes_count'] ?? 0);
         $nextLikes = $currentLikes + 1;
         $payload = [
             'likes_count' => $nextLikes,
-            'like_count' => $nextLikes,
         ];
 
         $result = $this->send('PATCH', '/rest/v1/learning_materials', [
@@ -482,6 +443,8 @@ final class LearningMaterialsController
             return;
         }
 
+        $updated['user_liked'] = true;
+
         JsonResponder::ok($this->transformMaterial($updated));
     }
 
@@ -498,10 +461,63 @@ final class LearningMaterialsController
             return;
         }
 
-        // Delete like record
-        $deleteResult = $this->send('DELETE', '/rest/v1/material_likes', [
+        $deleteResult = $this->send('DELETE', '/rest/v1/learning_material_likes', [
             'headers' => [
                 'Authorization' => 'Bearer ' . $token,
+                'apikey' => $this->anonKey,
+                'Prefer' => 'return=minimal',
+                'Content-Type' => 'application/json',
+            ],
+            'query' => [
+                'material_id' => 'eq.' . $id,
+                'user_id' => 'eq.' . $user->getId(),
+            ],
+        ]);
+
+        if ($deleteResult['status'] >= 400 && $deleteResult['status'] !== 404) {
+            JsonResponder::withStatus($deleteResult['status'], [
+                'error' => 'Unable to remove like',
+                'details' => $deleteResult['payload'],
+            ]);
+            return;
+        }
+
+        $currentLikes = (int)($material['likes_count'] ?? 0);
+        $nextLikes = max(0, $currentLikes - 1);
+        $payload = [
+            'likes_count' => $nextLikes,
+        ];
+
+        $result = $this->send('PATCH', '/rest/v1/learning_materials', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $token,
+                'apikey' => $this->anonKey,
+                'Prefer' => 'return=representation',
+                'Content-Type' => 'application/json',
+            ],
+            'query' => ['material_id' => 'eq.' . $id],
+            'json' => $payload,
+        ]);
+
+        if ($result['status'] >= 400 || !is_array($result['payload'])) {
+            JsonResponder::withStatus($result['status'], [
+                'error' => 'Unable to update like count',
+                'details' => $result['payload'],
+            ]);
+            return;
+        }
+
+        $updated = $result['payload'][0] ?? null;
+        if (!is_array($updated)) {
+            JsonResponder::withStatus(500, ['error' => 'Unexpected response from backend']);
+            return;
+        }
+
+        $updated['user_liked'] = false;
+
+        JsonResponder::ok($this->transformMaterial($updated));
+    }
+
     /**
      * @param array<string,mixed> $params
      * @param array<string> $likedMaterialIds
@@ -516,7 +532,7 @@ final class LearningMaterialsController
         $search = trim((string)($params['q'] ?? ''));
 
         $query = [
-            'select' => 'material_id,title,description,content_type,file_url,file_name,mime,size,is_public,user_id,created_by,uploader_name,uploader_email,storage_path,tags,tags_jsonb,like_count,likes_count,download_count,downloads_count,created_at,updated_at,deleted_at',
+            'select' => 'material_id,title,description,content_type,file_url,file_name,mime,size,is_public,user_id,storage_path,tags_jsonb,likes_count,download_count,created_at,updated_at,deleted_at,uploader_name,uploader_email',
             'order' => $sort,
             'limit' => $perPage,
             'offset' => ($page - 1) * $perPage,
@@ -525,82 +541,26 @@ final class LearningMaterialsController
 
         $filters = [];
         if ($filter === 'liked') {
-            // Filter by liked material IDs (passed from index method)
             if (!empty($likedMaterialIds)) {
-                $filters[] = 'material_id.in.(' . implode(',', $likedMaterialIds) . ')';
+                $escaped = array_map(static function (string $id): string {
+                    $sanitized = str_replace('"', '""', $id);
+                    return '"' . $sanitized . '"';
+                }, $likedMaterialIds);
+                $filters[] = 'material_id.in.(' . implode(',', $escaped) . ')';
             } else {
-                // No liked materials, force empty result
                 $filters[] = 'material_id.eq.__none__';
             }
         } elseif ($filter === 'my') {
             if ($user !== null) {
                 $filters[] = 'user_id.eq.' . $user->getId();
             } else {
-                // Without auth default to only public rows, results will be empty for my filter
                 $filters[] = 'user_id.eq.__none__';
             }
         } elseif ($filter === 'community') {
             $filters[] = 'is_public.eq.true';
         } elseif ($filter === 'official') {
-            // For official materials, we need materials uploaded by admin users
-            // This is complex to filter in a single query, so for now we'll show all public materials
-            // TODO: Implement proper admin filtering
             $filters[] = 'is_public.eq.true';
         } else {
-            // 'all' filter - show all materials the user can access
-            if ($user !== null) {
-                $filters[] = sprintf('or(is_public.eq.true,user_id.eq.%s)', $user->getId());
-            } else {
-                $filters[] = 'is_public.eq.true';
-            }
-        }
-
-        $updated = $result['payload'][0] ?? null;
-        if (!is_array($updated)) {
-            JsonResponder::withStatus(500, ['error' => 'Unexpected response from backend']);
-            return;
-        }
-
-        JsonResponder::ok($this->transformMaterial($updated));
-    }
-
-    /**
-     * @param array<string,mixed> $params
-     * @return array<string,mixed>
-     */
-    private function buildListQuery(array $params, ?AuthenticatedUser $user): array
-    {
-        $page = max(1, (int)($params['page'] ?? 1));
-        $perPage = max(1, min(50, (int)($params['per_page'] ?? 20)));
-        $filter = strtolower((string)($params['filter'] ?? 'all'));
-        $sort = $this->normalizeSort((string)($params['sort'] ?? 'created_at.desc'));
-        $search = trim((string)($params['q'] ?? ''));
-
-        $query = [
-            'select' => 'material_id,title,description,content_type,file_url,file_name,mime,size,is_public,user_id,created_by,uploader_name,uploader_email,storage_path,tags,tags_jsonb,like_count,likes_count,download_count,downloads_count,created_at,updated_at,deleted_at',
-            'order' => $sort,
-            'limit' => $perPage,
-            'offset' => ($page - 1) * $perPage,
-            'deleted_at' => 'is.null',
-        ];
-
-        $filters = [];
-        if ($filter === 'my') {
-            if ($user !== null) {
-                $filters[] = 'user_id.eq.' . $user->getId();
-            } else {
-                // Without auth default to only public rows, results will be empty for my filter
-                $filters[] = 'user_id.eq.__none__';
-            }
-        } elseif ($filter === 'community') {
-            $filters[] = 'is_public.eq.true';
-        } elseif ($filter === 'official') {
-            // For official materials, we need materials uploaded by admin users
-            // This is complex to filter in a single query, so for now we'll show all public materials
-            // TODO: Implement proper admin filtering
-            $filters[] = 'is_public.eq.true';
-        } else {
-            // 'all' filter - show all materials the user can access
             if ($user !== null) {
                 $filters[] = sprintf('or(is_public.eq.true,user_id.eq.%s)', $user->getId());
             } else {
@@ -636,13 +596,18 @@ final class LearningMaterialsController
 
     private function normalizeSort(string $raw): string
     {
-        $allowed = ['created_at', 'title', 'likes_count', 'downloads_count'];
+        $allowed = ['created_at', 'title', 'likes_count', 'downloads_count', 'download_count'];
         $parts = explode('.', strtolower($raw));
         $field = in_array($parts[0] ?? 'created_at', $allowed, true) ? $parts[0] : 'created_at';
         $direction = $parts[1] ?? 'desc';
         if ($direction !== 'asc' && $direction !== 'desc') {
             $direction = 'desc';
         }
+        // Normalize known aliases to actual DB column names
+        if ($field === 'downloads_count') {
+            $field = 'download_count';
+        }
+
         return $field . '.' . $direction;
     }
 
@@ -657,9 +622,9 @@ final class LearningMaterialsController
         $item['id'] = isset($item['material_id']) ? (string)$item['material_id'] : (string)($item['id'] ?? '');
         unset($item['material_id']);
 
-        $ownerId = (string)($item['user_id'] ?? $item['created_by'] ?? $item['uploader_id'] ?? '');
+        $ownerId = (string)($item['user_id'] ?? $item['uploader_id'] ?? '');
         $item['uploader_id'] = $ownerId !== '' ? $ownerId : null;
-        unset($item['user_id'], $item['created_by']);
+        unset($item['user_id']);
 
         $tags = [];
         if (isset($item['tags_jsonb']) && is_array($item['tags_jsonb'])) {
@@ -679,16 +644,29 @@ final class LearningMaterialsController
         $item['tags'] = $tags;
         unset($item['tags_jsonb']);
 
-        $likes = $item['likes_count'] ?? $item['like_count'] ?? 0;
-        $item['likes_count'] = (int)$likes;
-        unset($item['like_count']);
+        $item['likes_count'] = isset($item['likes_count']) ? (int)$item['likes_count'] : 0;
 
         $downloads = $item['downloads_count'] ?? $item['download_count'] ?? 0;
         $item['downloads_count'] = (int)$downloads;
         unset($item['download_count']);
 
         $item['size'] = isset($item['size']) ? (int)$item['size'] : null;
-        
+
+        $name = null;
+        if (isset($item['uploader_name']) && is_string($item['uploader_name'])) {
+            $trimmed = trim($item['uploader_name']);
+            $name = $trimmed !== '' ? $trimmed : null;
+        }
+
+        $email = null;
+        if (isset($item['uploader_email']) && is_string($item['uploader_email'])) {
+            $trimmed = trim($item['uploader_email']);
+            $email = $trimmed !== '' ? $trimmed : null;
+        }
+
+        $item['uploader_name'] = $name;
+        $item['uploader_email'] = $email;
+
         // Preserve user_liked if set, default to false
         if (!isset($item['user_liked'])) {
             $item['user_liked'] = false;
@@ -708,6 +686,197 @@ final class LearningMaterialsController
         unset($item['deleted_at']);
 
         return $item;
+    }
+
+    /**
+     * @param array<int,array<string,mixed>> $materials
+     * @return array<int,array<string,mixed>>
+     */
+    private function enrichMaterialsWithProfiles(array $materials, ?string $token): array
+    {
+        if ($materials === []) {
+            return $materials;
+        }
+
+        $uniqueIds = [];
+        foreach ($materials as $material) {
+            if (!is_array($material)) {
+                continue;
+            }
+
+            $ownerId = (string)($material['user_id'] ?? $material['uploader_id'] ?? '');
+            if ($ownerId !== '') {
+                $uniqueIds[$ownerId] = true;
+            }
+        }
+
+        if ($uniqueIds === []) {
+            return $materials;
+        }
+
+        $idList = array_keys($uniqueIds);
+        $escaped = array_map(static function (string $id): string {
+            $sanitized = str_replace('"', '""', $id);
+            return '"' . $sanitized . '"';
+        }, $idList);
+
+        $authToken = $this->serviceRoleKey ?? $token;
+        $authorization = $authToken ?? $this->anonKey;
+        $apiKey = $authToken !== null && $authToken === $this->serviceRoleKey ? $this->serviceRoleKey : $this->anonKey;
+
+        $response = $this->send('GET', '/rest/v1/profiles', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $authorization,
+                'apikey' => $apiKey,
+                'Accept' => 'application/json',
+            ],
+            'query' => [
+                'select' => 'id,full_name,email',
+                'id' => 'in.(' . implode(',', $escaped) . ')',
+            ],
+        ]);
+
+        if ($response['status'] !== 200 || !is_array($response['payload'])) {
+            return $materials;
+        }
+
+        $profiles = [];
+        foreach ($response['payload'] as $profile) {
+            if (!is_array($profile)) {
+                continue;
+            }
+
+            $profileId = isset($profile['id']) ? (string)$profile['id'] : '';
+            if ($profileId === '') {
+                continue;
+            }
+
+            $profiles[$profileId] = [
+                'full_name' => isset($profile['full_name']) && is_string($profile['full_name']) ? $profile['full_name'] : null,
+                'email' => isset($profile['email']) && is_string($profile['email']) ? $profile['email'] : null,
+            ];
+        }
+
+        if ($profiles === []) {
+            return $materials;
+        }
+
+        foreach ($materials as &$material) {
+            if (!is_array($material)) {
+                continue;
+            }
+
+            $ownerId = (string)($material['user_id'] ?? $material['uploader_id'] ?? '');
+            if ($ownerId === '' || !isset($profiles[$ownerId])) {
+                continue;
+            }
+
+            $profile = $profiles[$ownerId];
+            if ($profile['full_name'] !== null) {
+                $material['uploader_name'] = $profile['full_name'];
+            }
+
+            if ($profile['email'] !== null) {
+                $material['uploader_email'] = $profile['email'];
+            }
+        }
+        unset($material);
+
+        return $materials;
+    }
+
+    /**
+     * @return array<string>
+     */
+    private function fetchUserLikedMaterialIds(string $userId, ?string $token): array
+    {
+        $response = $this->requestMaterialLikes([
+            'user_id' => 'eq.' . $userId,
+            'select' => 'material_id',
+        ], $token);
+
+        if ($response['status'] !== 200 || !is_array($response['payload'])) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($response['payload'] as $row) {
+            if (is_array($row) && isset($row['material_id'])) {
+                $ids[] = (string)$row['material_id'];
+            }
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    private function userHasLikedMaterial(string $userId, string $materialId, ?string $token): bool
+    {
+        $response = $this->requestMaterialLikes([
+            'user_id' => 'eq.' . $userId,
+            'material_id' => 'eq.' . $materialId,
+            'select' => 'id',
+            'limit' => 1,
+        ], $token);
+
+        return $response['status'] === 200 && is_array($response['payload']) && count($response['payload']) > 0;
+    }
+
+    /**
+     * @param array<string,string> $query
+     * @return array{status:int,payload:mixed,headers:array<string,array<int,string>>}
+     */
+    private function requestMaterialLikes(array $query, ?string $token): array
+    {
+        $attemptHeaders = [];
+
+        if ($token !== null && $token !== '') {
+            $attemptHeaders[] = [
+                'Authorization' => 'Bearer ' . $token,
+                'apikey' => $this->anonKey,
+                'Accept' => 'application/json',
+            ];
+        }
+
+        if ($this->serviceRoleKey !== null && $this->serviceRoleKey !== '') {
+            $attemptHeaders[] = [
+                'Authorization' => 'Bearer ' . $this->serviceRoleKey,
+                'apikey' => $this->serviceRoleKey,
+                'Accept' => 'application/json',
+            ];
+        }
+
+        if ($attemptHeaders === []) {
+            $attemptHeaders[] = [
+                'Authorization' => 'Bearer ' . $this->anonKey,
+                'apikey' => $this->anonKey,
+                'Accept' => 'application/json',
+            ];
+        }
+
+        $lastResponse = [
+            'status' => 403,
+            'payload' => ['error' => 'Forbidden'],
+            'headers' => [],
+        ];
+
+        foreach ($attemptHeaders as $headers) {
+            $response = $this->send('GET', '/rest/v1/learning_material_likes', [
+                'headers' => $headers,
+                'query' => $query,
+            ]);
+
+            if ($response['status'] === 200) {
+                return $response;
+            }
+
+            $lastResponse = $response;
+
+            if (!in_array($response['status'], [401, 403], true)) {
+                return $response;
+            }
+        }
+
+        return $lastResponse;
     }
 
     private function parseTotalFromHeaders(array $headers): int
@@ -1054,7 +1223,22 @@ final class LearningMaterialsController
             ];
         }
 
+        // Log non-success responses from the storage sign endpoint to aid debugging
+        if (!is_dir(__DIR__ . '/../../../tmp')) {
+            @mkdir(__DIR__ . '/../../../tmp', 0755, true);
+        }
+        @file_put_contents(__DIR__ . '/../../../tmp/storage_error.log', json_encode([
+            'time' => gmdate('c'),
+            'material_id' => $materialId,
+            'bucket' => $this->bucket,
+            'storage_path' => $storagePath,
+            'status' => $result['status'],
+            'payload' => $result['payload'],
+        ], JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
+
         if ($result['status'] === 404 && $this->serviceRoleKey !== null) {
+            // If object is missing and we have a service role key, clear the
+            // storage_path in the database to avoid repeated failed requests.
             $this->cleanupMissingStoragePath($materialId);
         }
 
@@ -1190,7 +1374,7 @@ final class LearningMaterialsController
 
     private function canModify(AuthenticatedUser $user, array $material): bool
     {
-        $ownerId = (string)($material['user_id'] ?? $material['created_by'] ?? $material['uploader_id'] ?? '');
+        $ownerId = (string)($material['user_id'] ?? $material['uploader_id'] ?? '');
         if ($ownerId !== '' && $ownerId === $user->getId()) {
             return true;
         }
@@ -1232,7 +1416,7 @@ final class LearningMaterialsController
                 'Accept' => 'application/json',
             ],
             'query' => [
-                'select' => 'material_id,title,description,content_type,file_url,file_name,mime,size,is_public,user_id,created_by,uploader_name,uploader_email,storage_path,tags,tags_jsonb,like_count,likes_count,download_count,downloads_count,created_at,updated_at,deleted_at',
+                'select' => 'material_id,title,description,content_type,file_url,file_name,mime,size,is_public,user_id,storage_path,tags_jsonb,likes_count,download_count,created_at,updated_at,deleted_at,uploader_name,uploader_email',
                 'material_id' => 'eq.' . $id,
                 'deleted_at' => 'is.null',
                 'limit' => 1,

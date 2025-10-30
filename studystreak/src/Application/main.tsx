@@ -2,6 +2,8 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
+import ToastProvider from "../components/ToastProvider";
+import { showToast } from "../components/toastService";
 import { registerSW } from 'virtual:pwa-register'
 import { AuthProvider } from "@/Auth/context/AuthProvider.tsx";
 
@@ -159,7 +161,7 @@ function handleInAppBrowser() {
         const input = document.getElementById('browser-link') as HTMLInputElement;
         input.select();
         document.execCommand('copy');
-        alert('Link copied! Paste it in your browser.');
+        showToast({ type: 'success', text: 'Link copied! Paste it in your browser.' });
       });
       document.getElementById('continue-anyway')?.addEventListener('click', () => {
         document.body.removeChild(modal);
@@ -190,8 +192,10 @@ handleInAppBrowser();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
+    <ToastProvider>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </ToastProvider>
   </StrictMode>
 );

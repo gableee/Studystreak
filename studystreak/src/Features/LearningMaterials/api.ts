@@ -29,11 +29,52 @@ const buildQueryString = ({ filter, search, page, perPage, sort }: FetchMaterial
   return params.toString()
 }
 
+// Simple in-memory cache + in-flight request coalescing
+const materialsCache = new Map<string, { fetchedAt: number; data: LearningMaterialsResponse }>()
+const inflight = new Map<string, Promise<LearningMaterialsResponse>>()
+const CACHE_TTL_MS = 30_000 // 30 seconds cache lifetime; adjust as needed
+
+export function getCachedLearningMaterials(params: FetchMaterialsParams): LearningMaterialsResponse | null {
+  const key = buildQueryString(params)
+  const cached = materialsCache.get(key)
+  if (!cached) return null
+  if (Date.now() - cached.fetchedAt > CACHE_TTL_MS) {
+    materialsCache.delete(key)
+    return null
+  }
+  return cached.data
+}
+
 export async function fetchLearningMaterials(params: FetchMaterialsParams): Promise<LearningMaterialsResponse> {
   const query = buildQueryString(params)
-  return apiClient.get<LearningMaterialsResponse>(`/api/learning-materials?${query}`, {
+
+  // Return inflight promise if present to avoid duplicate requests
+  if (inflight.has(query)) {
+    return inflight.get(query) as Promise<LearningMaterialsResponse>
+  }
+
+  // If cached and fresh, return it immediately (resolved promise)
+  const cached = materialsCache.get(query)
+  if (cached && Date.now() - cached.fetchedAt <= CACHE_TTL_MS) {
+    return Promise.resolve(cached.data)
+  }
+
+  const promise = apiClient.get<LearningMaterialsResponse>(`/api/learning-materials?${query}`, {
     signal: params.signal,
   })
+    .then((res) => {
+      // store in cache only on success
+      materialsCache.set(query, { fetchedAt: Date.now(), data: res })
+      inflight.delete(query)
+      return res
+    })
+    .catch((err) => {
+      inflight.delete(query)
+      throw err
+    })
+
+  inflight.set(query, promise)
+  return promise
 }
 
 export async function fetchLearningMaterial(id: string): Promise<LearningMaterial> {
