@@ -17,7 +17,6 @@ $payload = [
     'content_type' => 'pdf',
     'is_public' => false,
     'user_id' => '20c43da0-a3a8-446f-9f19-4027fae844f5',
-    'created_by' => '20c43da0-a3a8-446f-9f19-4027fae844f5',
     'tags_jsonb' => json_decode('["diag"]'),
 ];
 try {

@@ -3,7 +3,7 @@
         'name' => 'studystreak/php-backend',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '2381c31172768d42e95e26484be9a118128b3e6f',
+        'reference' => '04d5c868f4199fb2d48d92580fad0330592ef2d3',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -121,7 +121,7 @@
         'studystreak/php-backend' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '2381c31172768d42e95e26484be9a118128b3e6f',
+            'reference' => '04d5c868f4199fb2d48d92580fad0330592ef2d3',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

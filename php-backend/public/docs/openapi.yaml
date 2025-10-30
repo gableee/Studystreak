@@ -17,6 +17,8 @@ servers:
     description: Production deployment
   - url: http://localhost:8181
     description: Local development server
+  - url: http://localhost:8182
+    description: Local development server (alternate - PHP built-in with raised upload limits)
 paths:
   /api/todos:
     get:

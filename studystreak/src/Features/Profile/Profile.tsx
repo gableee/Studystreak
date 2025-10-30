@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { showToast } from '@/components/toastService'
 import { Save, User } from 'lucide-react'
 import { useAuth } from '@/Auth/hooks/useAuth'
 import { supabase } from '@/lib/supabaseClient'
@@ -62,10 +63,10 @@ export default function Profile() {
       // update supabase user metadata
       const { error } = await supabase.auth.updateUser({ data: metadata })
       if (error) throw error
-      alert('Profile saved')
+      showToast({ type: 'success', text: 'Profile saved' })
     } catch (err) {
       console.error('Failed to update profile', err)
-      alert('Failed to save profile')
+      showToast({ type: 'error', text: 'Failed to save profile' })
     } finally {
       setSaving(false)
     }
