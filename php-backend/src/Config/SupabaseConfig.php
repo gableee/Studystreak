@@ -20,6 +20,8 @@ final class SupabaseConfig
 	private array $allowedOrigins;
 	private string $storageBucket;
 	private string $storagePublicBaseUrl;
+	private string $storagePublicBucket;
+	private string $storagePublicBucketBaseUrl;
 	private ?string $aiServiceUrl;
 	private ?string $aiServiceApiKey;
 
@@ -41,11 +43,20 @@ final class SupabaseConfig
 		$bucket = (string)($env['SUPABASE_STORAGE_BUCKET'] ?? getenv('SUPABASE_STORAGE_BUCKET') ?? '');
 		$this->storageBucket = $bucket !== '' ? $bucket : 'learning-materials';
 
+		$publicBucket = (string)($env['SUPABASE_STORAGE_PUBLIC_BUCKET'] ?? getenv('SUPABASE_STORAGE_PUBLIC_BUCKET') ?? '');
+		$this->storagePublicBucket = $publicBucket !== '' ? $publicBucket : 'learning-materials-public';
+
 		$publicBase = (string)($env['SUPABASE_STORAGE_PUBLIC_BASE_URL'] ?? getenv('SUPABASE_STORAGE_PUBLIC_BASE_URL') ?? '');
 		if ($publicBase === '') {
 			$publicBase = $this->url . '/storage/v1/object/public/' . $this->storageBucket;
 		}
 		$this->storagePublicBaseUrl = rtrim($publicBase, '/') . '/';
+
+		$publicBucketBase = (string)($env['SUPABASE_STORAGE_PUBLIC_BUCKET_BASE_URL'] ?? getenv('SUPABASE_STORAGE_PUBLIC_BUCKET_BASE_URL') ?? '');
+		if ($publicBucketBase === '') {
+			$publicBucketBase = $this->url . '/storage/v1/object/public/' . $this->storagePublicBucket;
+		}
+		$this->storagePublicBucketBaseUrl = rtrim($publicBucketBase, '/') . '/';
 
 		$aiServiceUrl = (string)($env['AI_SERVICE_URL'] ?? getenv('AI_SERVICE_URL') ?? '');
 		$this->aiServiceUrl = $aiServiceUrl !== '' ? rtrim($aiServiceUrl, '/') : null;
@@ -107,9 +118,23 @@ final class SupabaseConfig
 	 * Default: {SUPABASE_URL}/storage/v1/object/public/{bucket}/
 	 * Controllers use this to compose public file URLs returned to clients.
 	 */
-	public function getStoragePublicBaseUrl(): string
+	/**
+	 * Return the public storage bucket name used for public file uploads.
+	 * Defaults to `learning-materials-public` when not configured.
+	 */
+	public function getStoragePublicBucket(): string
 	{
-		return $this->storagePublicBaseUrl;
+		return $this->storagePublicBucket;
+	}
+
+	/**
+	 * Return the public base URL prefix for public storage objects.
+	 * Default: {SUPABASE_URL}/storage/v1/object/public/{public_bucket}/
+	 * Controllers use this to compose public file URLs for public materials.
+	 */
+	public function getStoragePublicBucketBaseUrl(): string
+	{
+		return $this->storagePublicBucketBaseUrl;
 	}
 
 	public function getAiServiceUrl(): ?string

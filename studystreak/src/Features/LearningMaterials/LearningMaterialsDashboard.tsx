@@ -85,9 +85,9 @@ const LearningMaterialsDashboard = () => {
       return
     }
 
-    // Prefer provider data once the provider has loaded any items. The provider
-    // will prefetch remaining pages in the background and set `isFullyLoaded`.
-    if (provider && provider.allMaterials && provider.allMaterials.length > 0) {
+    // Prefer provider data only when the current filter is 'all' and the provider has loaded items.
+    // The provider will prefetch remaining pages in the background and set `isFullyLoaded`.
+    if (filter === 'all' && provider && provider.allMaterials && provider.allMaterials.length > 0) {
       materialsRef.current = provider.allMaterials
       setAllMaterials(provider.allMaterials)
       return
@@ -95,7 +95,7 @@ const LearningMaterialsDashboard = () => {
 
     materialsRef.current = fetchedMaterials
     setAllMaterials(fetchedMaterials)
-  }, [fetchedMaterials, queryLoading, provider])
+  }, [fetchedMaterials, queryLoading, provider, filter])
 
   useEffect(() => {
     setPage(1)
