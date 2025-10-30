@@ -19,7 +19,8 @@ final class LearningMaterialsController
     private string $anonKey;
     private ?string $serviceRoleKey;
     private string $bucket;
-    private string $publicBaseUrl;
+    private string $publicBucket;
+    private string $publicBucketBaseUrl;
     private const ALLOWED_CONTENT_TYPES = ['pdf', 'video', 'ppt', 'article'];
 
     public function __construct(SupabaseConfig $config, SupabaseAuth $supabaseAuth)
@@ -29,7 +30,8 @@ final class LearningMaterialsController
         $this->anonKey = $config->getAnonKey();
         $this->serviceRoleKey = $config->getServiceRoleKey();
         $this->bucket = $config->getStorageBucket();
-        $this->publicBaseUrl = $config->getStoragePublicBaseUrl();
+        $this->publicBucket = $config->getStoragePublicBucket();
+        $this->publicBucketBaseUrl = $config->getStoragePublicBucketBaseUrl();
         $this->client = new Client(['base_uri' => $this->supabaseUrl]);
     }
 
@@ -86,16 +88,15 @@ final class LearningMaterialsController
             'query' => $query,
         ]);
 
-        if ($result['status'] !== 200) {
+        if ($result['status'] !== 200 && $result['status'] !== 206) {
             // Log upstream (PostgREST) response for debugging
-            @mkdir(__DIR__ . '/../../../tmp', 0755, true);
-            @file_put_contents(__DIR__ . '/../../../tmp/postgrest_error.log', json_encode([
+            error_log('PostgREST error: ' . json_encode([
                 'time' => gmdate('c'),
                 'status' => $result['status'],
                 'headers' => $result['headers'],
                 'payload' => $result['payload'],
                 'query' => $query,
-            ], JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
+            ]));
 
             JsonResponder::withStatus($result['status'], [
                 'error' => 'Unable to fetch learning materials',
@@ -198,7 +199,7 @@ final class LearningMaterialsController
 
         if ($fileInfo !== null) {
             $storagePath = $this->canonicalizePath($user->getId(), $fileInfo['name']);
-            $uploadResult = $this->uploadFile($storagePath, $fileInfo, $token);
+            $uploadResult = $this->uploadFile($storagePath, $fileInfo, $token, $isPublic);
             if ($uploadResult === false) {
                 return;
             }
@@ -277,7 +278,7 @@ final class LearningMaterialsController
         }
 
         if (isset($material['storage_path']) && is_string($material['storage_path']) && $material['storage_path'] !== '') {
-            $this->deleteObject($material['storage_path'], $token);
+            $this->deleteObject($material['storage_path'], $token, (bool)($material['is_public'] ?? false));
         }
 
         $result = $this->send('PATCH', '/rest/v1/learning_materials', [
@@ -340,14 +341,15 @@ final class LearningMaterialsController
         }
 
         if ((bool)$material['is_public']) {
+            $baseUrl = $this->publicBucketBaseUrl;
             JsonResponder::ok([
-                'signed_url' => $this->publicBaseUrl . ltrim($storagePath, '/'),
+                'signed_url' => $baseUrl . ltrim($storagePath, '/'),
                 'expires_at' => time() + $expiresIn,
             ]);
             return;
         }
 
-        $signed = $this->signObject($id, $storagePath, $expiresIn, $token);
+        $signed = $this->signObject($id, $storagePath, $expiresIn, $token, (bool)$material['is_public']);
         if ($signed === null) {
             JsonResponder::withStatus(404, ['error' => 'Material file is missing']);
             return;
@@ -678,7 +680,7 @@ final class LearningMaterialsController
         if ($fileUrl !== '') {
             $item['resolved_url'] = $fileUrl;
         } elseif ($isPublic && $path !== '') {
-            $item['resolved_url'] = $this->publicBaseUrl . ltrim($path, '/');
+            $item['resolved_url'] = $this->publicBucketBaseUrl . ltrim($path, '/');
         } else {
             $item['resolved_url'] = null;
         }
@@ -736,7 +738,7 @@ final class LearningMaterialsController
             ],
         ]);
 
-        if ($response['status'] !== 200 || !is_array($response['payload'])) {
+        if ($response['status'] !== 200 && $response['status'] !== 206 && !is_array($response['payload'])) {
             return $materials;
         }
 
@@ -795,7 +797,7 @@ final class LearningMaterialsController
             'select' => 'material_id',
         ], $token);
 
-        if ($response['status'] !== 200 || !is_array($response['payload'])) {
+        if ($response['status'] !== 200 && $response['status'] !== 206 || !is_array($response['payload'])) {
             return [];
         }
 
@@ -818,7 +820,7 @@ final class LearningMaterialsController
             'limit' => 1,
         ], $token);
 
-        return $response['status'] === 200 && is_array($response['payload']) && count($response['payload']) > 0;
+        return $response['status'] === 200 || $response['status'] === 206 && is_array($response['payload']) && count($response['payload']) > 0;
     }
 
     /**
@@ -865,7 +867,7 @@ final class LearningMaterialsController
                 'query' => $query,
             ]);
 
-            if ($response['status'] === 200) {
+            if ($response['status'] === 200 || $response['status'] === 206) {
                 return $response;
             }
 
@@ -1100,8 +1102,9 @@ final class LearningMaterialsController
         return $ext === '' ? $base : $base . '.' . $ext;
     }
 
-    private function uploadFile(string $storagePath, array $fileInfo, string $token): bool
+    private function uploadFile(string $storagePath, array $fileInfo, string $token, bool $isPublic): bool
     {
+        $bucket = $isPublic ? $this->publicBucket : $this->bucket;
         $uploadHeaders = [
             'x-upsert' => 'false',
             'Content-Type' => $fileInfo['type'] ?? 'application/octet-stream',
@@ -1129,7 +1132,7 @@ final class LearningMaterialsController
                 return false;
             }
 
-            $result = $this->send('POST', '/storage/v1/object/' . rawurlencode($this->bucket) . '/' . $this->encodePath($storagePath), [
+            $result = $this->send('POST', '/storage/v1/object/' . rawurlencode($bucket) . '/' . $this->encodePath($storagePath), [
                 'headers' => array_merge($uploadHeaders, [
                     'Authorization' => 'Bearer ' . $authToken,
                     'apikey' => $this->anonKey,
@@ -1170,19 +1173,20 @@ final class LearningMaterialsController
         return false;
     }
 
-    private function deleteObject(string $storagePath, string $token): void
+    private function deleteObject(string $storagePath, string $token, bool $isPublic): void
     {
+        $bucket = $isPublic ? $this->publicBucket : $this->bucket;
         $headers = [
             'Authorization' => 'Bearer ' . $token,
             'apikey' => $this->anonKey,
         ];
 
-        $result = $this->send('DELETE', '/storage/v1/object/' . rawurlencode($this->bucket) . '/' . $this->encodePath($storagePath), [
+        $result = $this->send('DELETE', '/storage/v1/object/' . rawurlencode($bucket) . '/' . $this->encodePath($storagePath), [
             'headers' => $headers,
         ]);
 
         if ($result['status'] === 401 && $this->serviceRoleKey !== null) {
-            $result = $this->send('DELETE', '/storage/v1/object/' . rawurlencode($this->bucket) . '/' . $this->encodePath($storagePath), [
+            $result = $this->send('DELETE', '/storage/v1/object/' . rawurlencode($bucket) . '/' . $this->encodePath($storagePath), [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->serviceRoleKey,
                     'apikey' => $this->anonKey,
@@ -1191,21 +1195,22 @@ final class LearningMaterialsController
         }
     }
 
-    private function signObject(string $materialId, string $storagePath, int $expiresIn, string $token): ?array
+    private function signObject(string $materialId, string $storagePath, int $expiresIn, string $token, bool $isPublic): ?array
     {
+        $bucket = $isPublic ? $this->publicBucket : $this->bucket;
         $headers = [
             'Authorization' => 'Bearer ' . $token,
             'apikey' => $this->anonKey,
             'Content-Type' => 'application/json',
         ];
 
-        $result = $this->send('POST', '/storage/v1/object/sign/' . rawurlencode($this->bucket) . '/' . $this->encodePath($storagePath), [
+        $result = $this->send('POST', '/storage/v1/object/sign/' . rawurlencode($bucket) . '/' . $this->encodePath($storagePath), [
             'headers' => $headers,
             'json' => ['expiresIn' => $expiresIn],
         ]);
 
         if ($result['status'] === 401 && $this->serviceRoleKey !== null) {
-            $result = $this->send('POST', '/storage/v1/object/sign/' . rawurlencode($this->bucket) . '/' . $this->encodePath($storagePath), [
+            $result = $this->send('POST', '/storage/v1/object/sign/' . rawurlencode($bucket) . '/' . $this->encodePath($storagePath), [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->serviceRoleKey,
                     'apikey' => $this->anonKey,
@@ -1215,7 +1220,7 @@ final class LearningMaterialsController
             ]);
         }
 
-        if ($result['status'] === 200 && is_array($result['payload']) && isset($result['payload']['signedURL'])) {
+        if (($result['status'] === 200 || $result['status'] === 206) && is_array($result['payload']) && isset($result['payload']['signedURL'])) {
             $signedPath = (string)$result['payload']['signedURL'];
             return [
                 'signed_url' => rtrim($this->supabaseUrl, '/') . '/storage/v1' . $signedPath,
@@ -1423,7 +1428,7 @@ final class LearningMaterialsController
             ],
         ]);
 
-        if ($result['status'] >= 400 || !is_array($result['payload'])) {
+        if ($result['status'] >= 400 || ($result['status'] !== 200 && $result['status'] !== 206) || !is_array($result['payload'])) {
             return null;
         }
 
