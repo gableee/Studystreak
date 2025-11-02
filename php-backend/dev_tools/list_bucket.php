@@ -12,7 +12,7 @@ $prefix = $argv[1] ?? '';
 $response = $client->request('POST', '/storage/v1/object/list/' . rawurlencode($bucket), [
     'headers' => [
         'Authorization' => 'Bearer ' . ($config->getServiceRoleKey() ?? $config->getAnonKey()),
-        'apikey' => $config->getAnonKey(),
+        'apikey' => $config->getServiceRoleKey() ?? $config->getAnonKey(),
         'Content-Type' => 'application/json',
     ],
     'json' => [

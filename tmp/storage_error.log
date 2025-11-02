@@ -1,0 +1,36 @@
+{
+    "time": "2025-11-02T03:55:07+00:00",
+    "material_id": "78140416-715b-49b3-8349-09ff662e5162",
+    "bucket": "learning-materials-v2",
+    "storage_path": "20c43da0-a3a8-446f-9f19-4027fae844f5\/2025\/11\/01\/f063af08d7806d94-studystreak-group6-chapter-1-software-development-1.pdf",
+    "status": 400,
+    "payload": {
+        "statusCode": "404",
+        "error": "not_found",
+        "message": "Object not found"
+    }
+}
+{
+    "time": "2025-11-02T03:59:38+00:00",
+    "material_id": "f13cc558-c048-4d3a-9ee4-d83d20af9ac4",
+    "bucket": "learning-materials-v2",
+    "storage_path": "20c43da0-a3a8-446f-9f19-4027fae844f5\/2025\/10\/30\/c6d7672252558c79-group-11-sliding-blocks-puzzle.pdf",
+    "status": 400,
+    "payload": {
+        "statusCode": "404",
+        "error": "not_found",
+        "message": "Object not found"
+    }
+}
+{
+    "time": "2025-11-02T03:59:41+00:00",
+    "material_id": "f13cc558-c048-4d3a-9ee4-d83d20af9ac4",
+    "bucket": "learning-materials-v2",
+    "storage_path": "20c43da0-a3a8-446f-9f19-4027fae844f5\/2025\/10\/30\/c6d7672252558c79-group-11-sliding-blocks-puzzle.pdf",
+    "status": 400,
+    "payload": {
+        "statusCode": "404",
+        "error": "not_found",
+        "message": "Object not found"
+    }
+}

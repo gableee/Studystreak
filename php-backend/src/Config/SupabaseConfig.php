@@ -19,9 +19,6 @@ final class SupabaseConfig
 	private ?string $serviceRoleKey;
 	private array $allowedOrigins;
 	private string $storageBucket;
-	private string $storagePublicBaseUrl;
-	private string $storagePublicBucket;
-	private string $storagePublicBucketBaseUrl;
 	private ?string $aiServiceUrl;
 	private ?string $aiServiceApiKey;
 
@@ -40,23 +37,8 @@ final class SupabaseConfig
 		$originsRaw = (string)($env['API_ALLOWED_ORIGINS'] ?? getenv('API_ALLOWED_ORIGINS') ?? '');
 		$this->allowedOrigins = array_values(array_filter(array_map('trim', explode(',', $originsRaw))));
 
-		$bucket = (string)($env['SUPABASE_STORAGE_BUCKET'] ?? getenv('SUPABASE_STORAGE_BUCKET') ?? '');
-		$this->storageBucket = $bucket !== '' ? $bucket : 'learning-materials';
-
-		$publicBucket = (string)($env['SUPABASE_STORAGE_PUBLIC_BUCKET'] ?? getenv('SUPABASE_STORAGE_PUBLIC_BUCKET') ?? '');
-		$this->storagePublicBucket = $publicBucket !== '' ? $publicBucket : 'learning-materials-public';
-
-		$publicBase = (string)($env['SUPABASE_STORAGE_PUBLIC_BASE_URL'] ?? getenv('SUPABASE_STORAGE_PUBLIC_BASE_URL') ?? '');
-		if ($publicBase === '') {
-			$publicBase = $this->url . '/storage/v1/object/public/' . $this->storageBucket;
-		}
-		$this->storagePublicBaseUrl = rtrim($publicBase, '/') . '/';
-
-		$publicBucketBase = (string)($env['SUPABASE_STORAGE_PUBLIC_BUCKET_BASE_URL'] ?? getenv('SUPABASE_STORAGE_PUBLIC_BUCKET_BASE_URL') ?? '');
-		if ($publicBucketBase === '') {
-			$publicBucketBase = $this->url . '/storage/v1/object/public/' . $this->storagePublicBucket;
-		}
-		$this->storagePublicBucketBaseUrl = rtrim($publicBucketBase, '/') . '/';
+		$bucket = trim((string)($env['SUPABASE_STORAGE_BUCKET'] ?? getenv('SUPABASE_STORAGE_BUCKET') ?? ''));
+		$this->storageBucket = $bucket !== '' ? $bucket : 'learning-materials-v2';
 
 		$aiServiceUrl = (string)($env['AI_SERVICE_URL'] ?? getenv('AI_SERVICE_URL') ?? '');
 		$this->aiServiceUrl = $aiServiceUrl !== '' ? rtrim($aiServiceUrl, '/') : null;
@@ -106,35 +88,11 @@ final class SupabaseConfig
 
 	/**
 	 * Return the storage bucket name used for file uploads.
-	 * Defaults to `learning-materials` when not configured.
+	 * Defaults to `learning-materials-v2` when not configured.
 	 */
 	public function getStorageBucket(): string
 	{
 		return $this->storageBucket;
-	}
-
-	/**
-	 * Return the public base URL prefix for storage objects.
-	 * Default: {SUPABASE_URL}/storage/v1/object/public/{bucket}/
-	 * Controllers use this to compose public file URLs returned to clients.
-	 */
-	/**
-	 * Return the public storage bucket name used for public file uploads.
-	 * Defaults to `learning-materials-public` when not configured.
-	 */
-	public function getStoragePublicBucket(): string
-	{
-		return $this->storagePublicBucket;
-	}
-
-	/**
-	 * Return the public base URL prefix for public storage objects.
-	 * Default: {SUPABASE_URL}/storage/v1/object/public/{public_bucket}/
-	 * Controllers use this to compose public file URLs for public materials.
-	 */
-	public function getStoragePublicBucketBaseUrl(): string
-	{
-		return $this->storagePublicBucketBaseUrl;
 	}
 
 	public function getAiServiceUrl(): ?string

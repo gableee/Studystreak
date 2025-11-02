@@ -264,6 +264,177 @@ paths:
           description: Invalid payload or unsupported file
         '401':
           description: Unauthorized – missing or invalid bearer token
+  /api/learning-materials/{id}:
+    get:
+      tags:
+        - Learning Materials
+      summary: Get a single learning material
+      description: Retrieve a single material by id. Private materials require the owner or an elevated token.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Material id
+      responses:
+        '200':
+          description: Learning material
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningMaterial'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
+    patch:
+      tags:
+        - Learning Materials
+      summary: Update a learning material
+      description: Update title, description, tags or visibility. Requires authentication and ownership.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                  nullable: true
+                is_public:
+                  type: boolean
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Updated learning material
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningMaterial'
+        '400':
+          description: Invalid payload
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+    delete:
+      tags:
+        - Learning Materials
+      summary: Delete a learning material
+      description: Soft-delete a material and remove its storage object. Requires authentication and ownership.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+  /api/learning-materials/{id}/signed-url:
+    get:
+      tags:
+        - Learning Materials
+      summary: Request a signed URL for a material
+      description: Returns a signed URL (or direct file_url) for downloading or previewing the stored object.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: purpose
+          schema:
+            type: string
+            enum: [download, preview]
+          description: Purpose of the signed URL
+        - in: query
+          name: expiresIn
+          schema:
+            type: integer
+            default: 900
+          description: Expiration in seconds (max 3600)
+      responses:
+        '200':
+          description: Signed URL response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignedUrlResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Material or object not found
+  /api/learning-materials/{id}/like:
+    post:
+      tags:
+        - Learning Materials
+      summary: Like a material
+      description: Record that the authenticated user likes the specified material.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated material with like count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningMaterial'
+        '401':
+          description: Unauthorized
+  /api/learning-materials/{id}/unlike:
+    post:
+      tags:
+        - Learning Materials
+      summary: Unlike a material
+      description: Remove the authenticated user's like from the specified material.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated material with like count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningMaterial'
+        '401':
+          description: Unauthorized
 components:
   securitySchemes:
     bearerAuth:
@@ -408,4 +579,93 @@ components:
           description: Raw RPC response returned by the Supabase function.
         profile:
           $ref: '#/components/schemas/GamificationProfile'
+    LearningMaterial:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+        title:
+          type: string
+          example: "Anatomy Notes"
+        description:
+          type: string
+          nullable: true
+        content_type:
+          type: string
+          example: "pdf"
+        file_url:
+          type: string
+          nullable: true
+          example: "https://.../signed-url"
+        storage_path:
+          type: string
+          nullable: true
+          example: "user123/2025/11/02/abcd1234-notes.pdf"
+        file_name:
+          type: string
+          nullable: true
+          example: "notes.pdf"
+        mime:
+          type: string
+          nullable: true
+          example: "application/pdf"
+        size:
+          type: integer
+          nullable: true
+          example: 123456
+        is_public:
+          type: boolean
+          example: false
+        user_liked:
+          type: boolean
+          example: false
+        likes_count:
+          type: integer
+          example: 3
+        downloads_count:
+          type: integer
+          example: 12
+        tags:
+          type: array
+          items:
+            type: string
+        uploader_id:
+          type: string
+          nullable: true
+        uploader_name:
+          type: string
+          nullable: true
+        uploader_email:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LearningMaterialUploadResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        storage_path:
+          type: string
+          nullable: true
+        file_url:
+          type: string
+          nullable: true
+        is_public:
+          type: boolean
+    SignedUrlResponse:
+      type: object
+      properties:
+        signed_url:
+          type: string
+        expires_at:
+          type: integer
+          description: Unix timestamp when the signed URL expires
 
