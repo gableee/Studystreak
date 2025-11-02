@@ -441,13 +441,20 @@ final class LearningMaterialsController
 
         $storagePath = (string)($material['storage_path'] ?? '');
         if ($storagePath === '') {
-            JsonResponder::withStatus(404, ['error' => 'Material has no storage object attached']);
-            return;
+            // Attempt to auto-recover missing storage_path by locating the object in Storage
+            $recovered = $this->findAndRestoreStoragePath($material);
+            if (is_string($recovered) && $recovered !== '') {
+                $storagePath = $recovered;
+            } else {
+                JsonResponder::withStatus(404, ['error' => 'Material has no storage object attached']);
+                return;
+            }
         }
 
-        // Always sign from the single private bucket. Public materials are allowed even without auth.
-        $authToken = (string)($token ?? ($this->serviceRoleKey ?? $this->anonKey));
-        $signed = $this->signObject($id, $storagePath, $expiresIn, $authToken, false);
+        // Always sign from the configured private bucket. Public materials are allowed even without auth.
+        // Prefer caller token if available, otherwise use service role (best) then anon.
+        $authToken = (string)($maybeToken ?? ($this->serviceRoleKey ?? $this->anonKey));
+        $signed = $this->signObject($id, $storagePath, $expiresIn, $authToken, (bool)($material['is_public'] ?? false));
         if ($signed === null) {
             JsonResponder::withStatus(404, ['error' => 'Material file is missing']);
             return;
@@ -460,6 +467,135 @@ final class LearningMaterialsController
         }
 
         JsonResponder::ok($signed);
+    }
+
+    /**
+     * Attempt to locate the storage object for a material when storage_path is missing.
+     * Strategy:
+     *  - Compute the canonical date-based prefix userId/YYYY/MM/DD/ using created_at
+     *  - List objects under that prefix across candidate buckets (configured, legacy)
+     *  - Pick the object whose filename ends with "-slugified(file_name)" (matches our canonical naming)
+     *  - If found, persist storage_path back into DB and return it
+     */
+    private function findAndRestoreStoragePath(array $material): ?string
+    {
+        $this->appendTmpLog('storage_error.log', 'findAndRestoreStoragePath: Starting recovery for material: ' . json_encode($material));
+        $ownerId = (string)($material['user_id'] ?? $material['uploader_id'] ?? '');
+        $fileName = (string)($material['file_name'] ?? '');
+        $createdAt = (string)($material['created_at'] ?? '');
+
+        if ($ownerId === '' || $fileName === '' || $createdAt === '') {
+            return null;
+        }
+
+        try {
+            $dt = new \DateTimeImmutable($createdAt);
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        $prefix = sprintf('%s/%s/%s/%s/', $ownerId, $dt->format('Y'), $dt->format('m'), $dt->format('d'));
+        $slug = $this->slugifyFileName($fileName);
+        $this->appendTmpLog('storage_error.log', 'findAndRestoreStoragePath: Computed prefix=' . $prefix . ', slug=' . $slug);
+
+        // Build candidate buckets
+        $buckets = [$this->bucket];
+        if (!in_array('learning-materials', $buckets, true)) {
+            $buckets[] = 'learning-materials';
+        }
+        if (!in_array('learning-materials-v2', $buckets, true)) {
+            $buckets[] = 'learning-materials-v2';
+        }
+
+        // Service role is preferred for listing
+        $authToken = $this->serviceRoleKey ?? $this->anonKey;
+        $apiKey = $authToken;
+
+        $bestMatch = null; // ['bucket' => string, 'name' => string]
+
+        foreach ($buckets as $bucket) {
+            $this->appendTmpLog('storage_error.log', 'findAndRestoreStoragePath: Checking bucket: ' . $bucket);
+            // POST /storage/v1/object/list/{bucket}
+            $listUrl = '/storage/v1/object/list/' . rawurlencode($bucket);
+            $listPayload = [
+                'prefix' => $prefix,
+                'limit' => 1000,
+                'offset' => 0,
+            ];
+            $this->appendTmpLog('storage_error.log', 'findAndRestoreStoragePath: Sending POST to ' . $listUrl . ' with payload: ' . json_encode($listPayload));
+
+            $result = $this->send('POST', $listUrl, [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $authToken,
+                    'apikey' => $apiKey,
+                    'Content-Type' => 'application/json',
+                ],
+                'json' => $listPayload,
+                'timeout' => 20,
+            ]);
+
+            $this->appendTmpLog('storage_error.log', 'findAndRestoreStoragePath: List response from bucket ' . $bucket . ': Status=' . $result['status'] . ', Payload=' . json_encode($result['payload']));
+
+            if (($result['status'] === 200 || $result['status'] === 206) && is_array($result['payload'])) {
+                foreach ($result['payload'] as $obj) {
+                    if (!is_array($obj)) {
+                        continue;
+                    }
+                    $name = isset($obj['name']) ? (string)$obj['name'] : '';
+                    if ($name === '') {
+                        continue;
+                    }
+                    $this->appendTmpLog('storage_error.log', 'findAndRestoreStoragePath: Checking object: ' . $name);
+                    // The 'name' from the list response is the object name within the prefix, not the full path.
+                    // The prefix check is therefore redundant and incorrect here.
+                    // We just need to check if the object name matches our slug pattern.
+                    if ($name === $slug || str_ends_with($name, '-' . $slug)) {
+                        // Candidate found. Prefer the most recently updated.
+                        $ts = isset($obj['updated_at']) ? strtotime((string)$obj['updated_at']) : 0;
+                        if ($bestMatch === null || $ts > ($bestMatch['ts'] ?? 0)) {
+                            // Reconstruct the full path for the match.
+                            $fullPath = $prefix . $name;
+                            $bestMatch = ['bucket' => $bucket, 'name' => $fullPath, 'ts' => $ts];
+                            $this->appendTmpLog('storage_error.log', 'findAndRestoreStoragePath: Found new best match: ' . json_encode($bestMatch));
+                        }
+                    }
+                }
+            }
+        }
+
+        if ($bestMatch === null) {
+            $this->appendTmpLog('storage_error.log', 'findAndRestoreStoragePath: No match found in any bucket. Returning null.');
+            return null;
+        }
+
+        $foundPath = $bestMatch['name'];
+        $this->appendTmpLog('storage_error.log', 'findAndRestoreStoragePath: Final match found. Path: ' . $foundPath);
+
+        // Persist storage_path back to DB for future requests (service role only)
+        if ($this->serviceRoleKey !== null) {
+            $materialId = isset($material['material_id']) ? (string)$material['material_id'] : (string)($material['id'] ?? '');
+            if ($materialId !== '') {
+                $this->appendTmpLog('storage_error.log', 'findAndRestoreStoragePath: Persisting path for material_id ' . $materialId);
+                $this->send('PATCH', '/rest/v1/learning_materials', [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $this->serviceRoleKey,
+                        'apikey' => $this->serviceRoleKey,
+                        'Content-Type' => 'application/json',
+                    ],
+                    'query' => ['material_id' => 'eq.' . $materialId],
+                    'json' => ['storage_path' => $foundPath],
+                ]);
+            }
+        }
+
+        // Ensure metadata is set for recovered objects (important for RLS policies)
+        $isPublic = (bool)($material['is_public'] ?? false);
+        if ($isPublic) {
+            $this->appendTmpLog('storage_error.log', 'findAndRestoreStoragePath: Updating metadata for public object: ' . $foundPath);
+            $this->updateObjectMetadata($foundPath, ['is_public' => true], $authToken);
+        }
+
+        return $foundPath;
     }
 
     private function incrementDownloadCount(string $materialId, array $material, ?string $maybeToken): void
@@ -661,7 +797,7 @@ final class LearningMaterialsController
         $search = trim((string)($params['q'] ?? ''));
 
         $query = [
-            'select' => 'material_id,title,description,content_type,file_url,file_name,mime,size,is_public,user_id,storage_path,tags_jsonb,likes_count,download_count,created_at,updated_at,deleted_at,uploader_name,uploader_email',
+            'select' => 'material_id,title,description,content_type,file_url,file_name,mime,size,is_public,user_id,storage_path,tags_jsonb,likes_count,download_count,created_at,updated_at,deleted_at',
             'order' => $sort,
             'limit' => $perPage,
             'offset' => ($page - 1) * $perPage,
@@ -1238,27 +1374,42 @@ final class LearningMaterialsController
      */
     private function updateObjectMetadata(string $storagePath, array $metadata, string $token): bool
     {
-        $bucket = $this->bucket;
-        
         // Prefer service role for metadata updates to avoid RLS issues
         $authToken = $this->serviceRoleKey ?? $token;
         $apiKey = $authToken === $this->serviceRoleKey ? $this->serviceRoleKey : $this->anonKey;
         
-        $result = $this->send('POST', '/storage/v1/object/' . rawurlencode($bucket) . '/' . $this->encodePath($storagePath), [
+        // Convert metadata values to strings as required by Supabase storage
+        $stringMetadata = [];
+        foreach ($metadata as $key => $value) {
+            if (is_bool($value)) {
+                $stringMetadata[$key] = $value ? 'true' : 'false';
+            } else {
+                $stringMetadata[$key] = (string)$value;
+            }
+        }
+        
+        // Update metadata directly in storage.objects table via PostgREST
+        // This is more reliable than using the storage API PUT endpoint
+        $result = $this->send('PATCH', '/rest/v1/storage.objects', [
             'headers' => [
                 'Authorization' => 'Bearer ' . $authToken,
                 'apikey' => $apiKey,
                 'Content-Type' => 'application/json',
+                'Prefer' => 'return=minimal',
+            ],
+            'query' => [
+                'name' => 'eq.' . $storagePath,
+                'bucket_id' => 'eq.' . $this->bucket,
             ],
             'json' => [
-                'metadata' => $metadata,
+                'metadata' => $stringMetadata,
             ],
         ]);
         
         if ($result['status'] >= 200 && $result['status'] < 300) {
             error_log(sprintf('[METADATA UPDATE] Successfully updated metadata for %s: %s', 
                 $storagePath, 
-                json_encode($metadata)
+                json_encode($stringMetadata)
             ));
             return true;
         }
@@ -1304,8 +1455,8 @@ final class LearningMaterialsController
         // inline.)
 
         // Build attempt order.
-        // - For PUBLIC uploads: force service role only (most reliable), then fall back to user token ONLY if no service role is configured.
-        // - For PRIVATE uploads: try user token first (owner-scoped), then fallback to service role if available.
+        // - For PUBLIC uploads: force service role only (most reliable), then fall back to user token ONLY IF no service role is configured.
+        // - For PRIVATE uploads: try user token first, then fallback to service role if available.
         $attempts = [];
         if ($isPublic) {
             if ($this->serviceRoleKey !== null && $this->serviceRoleKey !== '') {
@@ -1465,39 +1616,77 @@ final class LearningMaterialsController
 
     private function signObject(string $materialId, string $storagePath, int $expiresIn, string $token, bool $isPublic): ?array
     {
-        // Always use the single private bucket.
-        $bucket = $this->bucket;
-        $apiKey = ($this->serviceRoleKey !== null && $token === $this->serviceRoleKey)
-            ? $this->serviceRoleKey
-            : $this->anonKey;
-        $headers = [
-            'Authorization' => 'Bearer ' . $token,
-            'apikey' => $apiKey,
-            'Content-Type' => 'application/json',
-        ];
-
-        $result = $this->send('POST', '/storage/v1/object/sign/' . rawurlencode($bucket) . '/' . $this->encodePath($storagePath), [
-            'headers' => $headers,
-            'json' => ['expiresIn' => $expiresIn],
-        ]);
-
-        if (in_array($result['status'], [401, 403, 404], true) && $this->serviceRoleKey !== null) {
-            $result = $this->send('POST', '/storage/v1/object/sign/' . rawurlencode($bucket) . '/' . $this->encodePath($storagePath), [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $this->serviceRoleKey,
-                    'apikey' => $this->serviceRoleKey,
-                    'Content-Type' => 'application/json',
-                ],
-                'json' => ['expiresIn' => $expiresIn],
-            ]);
+        // Try multiple buckets to be robust to migrations. Primary is the configured bucket;
+        // fallback to legacy bucket names when object not found (404).
+        $bucketsToTry = [$this->bucket];
+        if ($this->bucket !== 'learning-materials') {
+            $bucketsToTry[] = 'learning-materials';
+        }
+        if ($this->bucket !== 'learning-materials-v2' && !in_array('learning-materials-v2', $bucketsToTry, true)) {
+            $bucketsToTry[] = 'learning-materials-v2';
         }
 
-        if (($result['status'] === 200 || $result['status'] === 206) && is_array($result['payload']) && isset($result['payload']['signedURL'])) {
-            $signedPath = (string)$result['payload']['signedURL'];
-            return [
-                'signed_url' => rtrim($this->supabaseUrl, '/') . '/storage/v1' . $signedPath,
-                'expires_at' => time() + $expiresIn,
+        $all404 = true;
+        $hadAuthError = false;
+        $lastResult = null;
+        $lastBucketTried = null;
+
+        foreach ($bucketsToTry as $bucket) {
+            $lastBucketTried = $bucket;
+            $apiKey = ($this->serviceRoleKey !== null && $token === $this->serviceRoleKey)
+                ? $this->serviceRoleKey
+                : $this->anonKey;
+            $headers = [
+                'Authorization' => 'Bearer ' . $token,
+                'apikey' => $apiKey,
+                'Content-Type' => 'application/json',
             ];
+
+            $result = $this->send('POST', '/storage/v1/object/sign/' . rawurlencode($bucket) . '/' . $this->encodePath($storagePath), [
+                'headers' => $headers,
+                'json' => ['expiresIn' => $expiresIn],
+            ]);
+
+            $status = $this->normalizeStorageSignStatus($result['status'], $result['payload']);
+
+            if (in_array($status, [401, 403, 404], true) && $this->serviceRoleKey !== null && $token !== $this->serviceRoleKey) {
+                // Retry with service role for this bucket
+                $result = $this->send('POST', '/storage/v1/object/sign/' . rawurlencode($bucket) . '/' . $this->encodePath($storagePath), [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $this->serviceRoleKey,
+                        'apikey' => $this->serviceRoleKey,
+                        'Content-Type' => 'application/json',
+                    ],
+                    'json' => ['expiresIn' => $expiresIn],
+                ]);
+                $status = $this->normalizeStorageSignStatus($result['status'], $result['payload']);
+            }
+
+            $lastResult = $result;
+            $lastResult['normalized_status'] = $status;
+
+            if (($status === 200 || $status === 206) && is_array($result['payload']) && isset($result['payload']['signedURL'])) {
+                $signedPath = (string)$result['payload']['signedURL'];
+                return [
+                    'signed_url' => rtrim($this->supabaseUrl, '/') . '/storage/v1' . $signedPath,
+                    'expires_at' => time() + $expiresIn,
+                ];
+            }
+
+            if (!in_array($status, [404, 401, 403], true)) {
+                // Non-retryable error; stop here.
+                break;
+            }
+
+            if (in_array($status, [401, 403], true)) {
+                $hadAuthError = true;
+            }
+
+            if ($status !== 404) {
+                $all404 = false;
+            }
+
+            // On 404, continue to next bucket candidate
         }
 
         // Log non-success responses from the storage sign endpoint to aid debugging
@@ -1507,15 +1696,19 @@ final class LearningMaterialsController
         @file_put_contents(__DIR__ . '/../../../tmp/storage_error.log', json_encode([
             'time' => gmdate('c'),
             'material_id' => $materialId,
-            'bucket' => $this->bucket,
+            'buckets_tried' => $bucketsToTry,
             'storage_path' => $storagePath,
-            'status' => $result['status'],
-            'payload' => $result['payload'],
+            'last_status' => $lastResult['status'] ?? null,
+            'normalized_status' => $lastResult['normalized_status'] ?? null,
+            'last_payload' => $lastResult['payload'] ?? null,
+            'last_bucket' => $lastBucketTried,
+            'had_auth_error' => $hadAuthError,
+            'service_role_available' => $this->serviceRoleKey !== null,
         ], JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
 
-        if ($result['status'] === 404 && $this->serviceRoleKey !== null) {
-            // If object is missing and we have a service role key, clear the
-            // storage_path in the database to avoid repeated failed requests.
+        // Only clean up the storage_path if we definitively could not find the object
+        // in any candidate bucket (all attempts returned 404). Avoid cleanup on auth errors.
+        if ($all404 && $this->serviceRoleKey !== null) {
             $this->cleanupMissingStoragePath($materialId);
         }
 
@@ -1537,6 +1730,35 @@ final class LearningMaterialsController
             'query' => ['material_id' => 'eq.' . $materialId],
             'json' => ['storage_path' => null],
         ]);
+    }
+
+    /**
+     * Normalize Supabase Storage sign responses that embed the true HTTP status inside the payload.
+     * Some edge cases respond with HTTP 400 but include statusCode=404 and error="not_found".
+     */
+    private function normalizeStorageSignStatus(int $status, $payload): int
+    {
+        if ($status === 400 && is_array($payload)) {
+            $statusCode = (string)($payload['statusCode'] ?? '');
+            if ($statusCode !== '') {
+                $code = (int)$statusCode;
+                if (in_array($code, [401, 403, 404], true)) {
+                    return $code;
+                }
+            }
+
+            $error = strtolower((string)($payload['error'] ?? ''));
+            if ($error === 'not_found') {
+                return 404;
+            }
+
+            $message = strtolower((string)($payload['message'] ?? ''));
+            if ($message !== '' && str_contains($message, 'not found')) {
+                return 404;
+            }
+        }
+
+        return $status;
     }
 
     private function uploadErrorMessage(int $code): string
@@ -1693,7 +1915,7 @@ final class LearningMaterialsController
                 'Accept' => 'application/json',
             ],
             'query' => [
-                'select' => 'material_id,title,description,content_type,file_url,file_name,mime,size,is_public,user_id,storage_path,tags_jsonb,likes_count,download_count,created_at,updated_at,deleted_at,uploader_name,uploader_email',
+                'select' => 'material_id,title,description,content_type,file_url,file_name,mime,size,is_public,user_id,storage_path,tags_jsonb,likes_count,download_count,created_at,updated_at,deleted_at',
                 'material_id' => 'eq.' . $id,
                 'deleted_at' => 'is.null',
                 'limit' => 1,
