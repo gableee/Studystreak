@@ -92,6 +92,9 @@ export async function uploadLearningMaterial(payload: UploadMaterialPayload): Pr
   const form = new FormData()
   form.append('title', payload.title)
   form.append('is_public', String(payload.isPublic))
+  if (typeof payload.aiToggleEnabled === 'boolean') {
+    form.append('ai_toggle_enabled', String(payload.aiToggleEnabled))
+  }
 
   if (payload.description) {
     form.append('description', payload.description)
@@ -110,6 +113,22 @@ export async function uploadLearningMaterial(payload: UploadMaterialPayload): Pr
 
 export async function deleteLearningMaterial(id: string): Promise<void> {
   await apiClient.delete(`/api/learning-materials/${id}`)
+}
+
+export async function updateLearningMaterial(id: string, payload: Partial<{
+  title: string
+  description?: string | null
+  isPublic?: boolean
+  tags?: string[] | null
+}>): Promise<LearningMaterial> {
+  // For simplicity send as JSON; the backend accepts JSON for PATCH updates
+  const body: any = {}
+  if (payload.title !== undefined) body.title = payload.title
+  if (payload.description !== undefined) body.description = payload.description
+  if (payload.isPublic !== undefined) body.is_public = String(payload.isPublic)
+  if (payload.tags !== undefined) body.tags = payload.tags
+
+  return apiClient.patch<LearningMaterial>(`/api/learning-materials/${id}`, body)
 }
 
 export async function likeLearningMaterial(id: string): Promise<LearningMaterial> {

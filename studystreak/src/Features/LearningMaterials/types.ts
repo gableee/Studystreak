@@ -50,5 +50,6 @@ export type UploadMaterialPayload = {
   description?: string | null
   tags?: string[]
   isPublic: boolean
+  aiToggleEnabled?: boolean
   file?: File | null
 }

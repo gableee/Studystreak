@@ -10,10 +10,12 @@ import { showToast as showGlobalToast, type ToastType } from '../../components/t
 import { useDebounce } from './hooks/useDebounce'
 import BulkActionsToolbar from './components/BulkActionsToolbar'
 import FilePreviewModal from './components/FilePreviewModal'
+import EditMaterialModal from './components/EditMaterialModal'
 import MaterialsList from './components/MaterialsList'
 import SearchAndFilterBar from './components/SearchAndFilterBar'
 import SectionFilters from './components/SectionFilters'
 import { UploadDrawer } from './components/UploadDrawer'
+import { updateLearningMaterial } from './api'
 
 const DEFAULT_SORT: SortOption = 'created_at.desc'
 const DEFAULT_PER_PAGE = 12
@@ -55,6 +57,7 @@ const LearningMaterialsDashboard = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [showUpload, setShowUpload] = useState(false)
   const [previewMaterial, setPreviewMaterial] = useState<LearningMaterial | null>(null)
+  const [editMaterial, setEditMaterial] = useState<LearningMaterial | null>(null)
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set())
   // local toast state removed — use global toast service
   const [allMaterials, setAllMaterials] = useState<LearningMaterial[]>([])
@@ -407,6 +410,7 @@ const LearningMaterialsDashboard = () => {
         onDownload={handleDownload}
         onDelete={handleDelete}
         onLike={handleLike}
+        onEdit={(m) => setEditMaterial(m)}
         onUpload={() => setShowUpload(true)}
         filter={filter}
         canDelete={canDelete}
@@ -475,6 +479,25 @@ const LearningMaterialsDashboard = () => {
       />
 
       <FilePreviewModal material={previewMaterial} onClose={() => setPreviewMaterial(null)} />
+      <EditMaterialModal
+        material={editMaterial}
+        onClose={() => setEditMaterial(null)}
+        onSubmit={async (payload) => {
+          if (!editMaterial) return
+          try {
+            const updated = await updateLearningMaterial(editMaterial.id, payload)
+            const normalized = normalizeMaterialRecord(updated) ?? updated
+            applyMaterialsUpdate((prev) => {
+              return prev.map((item) => (item.id === normalized.id ? normalized : item))
+            })
+            showToast('success', 'Material updated')
+          } catch (err) {
+            const message = err instanceof Error ? err.message : 'Unable to update material'
+            showToast('error', message)
+            throw err
+          }
+        }}
+      />
       </div>
     </MaterialsProvider>
   )

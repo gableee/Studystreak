@@ -23,8 +23,9 @@ if ($probePath === '/docs/openapi.yaml') {
 }
 
 if ($probePath === '/health' || $probePath === '/') {
+  header('X-SS-Route-Version: 2025-11-02-2');
   header('Content-Type: application/json');
-  echo json_encode(['status' => 'ok']);
+  echo json_encode(['status' => 'ok', 'route_version' => '2025-11-02-2']);
   exit;
 }
 
@@ -312,9 +313,8 @@ if ($path === '/api/learning-materials' && $method === 'POST') {
 if (preg_match('#^/api/learning-materials/([0-9a-fA-F\-]{36})/signed-url$#', $path, $matches)) {
   $materialId = $matches[1];
   if ($method === 'GET') {
-    $authMiddleware->handle($request, function(Request $authedRequest) use ($learningMaterialsController, $materialId): void {
-      $learningMaterialsController->signedUrl($authedRequest, $materialId);
-    });
+    // Allow unauthenticated access; controller enforces visibility rules.
+    $learningMaterialsController->signedUrl($request, $materialId);
   } else {
     JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
   }
@@ -350,6 +350,7 @@ if (preg_match('#^/api/learning-materials/([0-9a-fA-F\-]{36})/unlike$#', $path, 
 // Learning material detail routes
 if (preg_match('#^/api/learning-materials/([0-9a-fA-F\-]{36})$#', $path, $matches)) {
   $materialId = $matches[1];
+  error_log(sprintf('[ROUTE MATCH] Material ID: %s, Method: %s', $materialId, $method));
 
   if ($method === 'GET') {
     $learningMaterialsController->show($request, $materialId);
@@ -363,9 +364,20 @@ if (preg_match('#^/api/learning-materials/([0-9a-fA-F\-]{36})$#', $path, $matche
     exit;
   }
 
+  // Accept both PATCH and PUT for updates (some clients or proxies may use PUT)
+  if ($method === 'PATCH' || $method === 'PUT') {
+    error_log('[ROUTE] Executing PATCH/PUT handler for learning material');
+    $authMiddleware->handle($request, function(Request $authedRequest) use ($learningMaterialsController, $materialId): void {
+      $learningMaterialsController->update($authedRequest, $materialId);
+    });
+    exit;
+  }
+
+  error_log(sprintf('[ROUTE] No handler matched for method: %s', $method));
   JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
   exit;
 }
 
+error_log(sprintf('[ROUTE] No route matched. Path: %s, Method: %s', $path, $method));
 http_response_code(404);
 echo json_encode(['error' => 'Not found']);

@@ -1,0 +1,67 @@
+{
+    "title": "testestest",
+    "description": null,
+    "content_type": "pdf",
+    "storage_path": "20c43da0-a3a8-446f-9f19-4027fae844f5\/2025\/11\/02\/5c0864b644054ac3-studystreak-group6-chapter-1-software-development-1.pdf",
+    "file_name": "StudyStreak_Group6_Chapter 1 _Software Development (1).pdf",
+    "mime": "application\/pdf",
+    "size": 751998,
+    "is_public": true,
+    "user_id": "20c43da0-a3a8-446f-9f19-4027fae844f5",
+    "tags_jsonb": null,
+    "ai_toggle_enabled": false
+}
+{
+    "title": "testests",
+    "description": null,
+    "content_type": "pdf",
+    "storage_path": "20c43da0-a3a8-446f-9f19-4027fae844f5\/2025\/11\/02\/ceeaddcdb924050b-studystreak-group6-chapter-1-software-development-1.pdf",
+    "file_name": "StudyStreak_Group6_Chapter 1 _Software Development (1).pdf",
+    "mime": "application\/pdf",
+    "size": 751998,
+    "is_public": true,
+    "user_id": "20c43da0-a3a8-446f-9f19-4027fae844f5",
+    "tags_jsonb": null,
+    "ai_toggle_enabled": false
+}
+{
+    "title": "WOrking N aBaaaa",
+    "description": null,
+    "content_type": "pdf",
+    "storage_path": "20c43da0-a3a8-446f-9f19-4027fae844f5\/2025\/11\/02\/15a9da58afaeb3ed-activitysheet08a-sd3a-isidro-leegabriel.pdf",
+    "file_name": "ActivitySheet08A_SD3A_Isidro_LeeGabriel.pdf",
+    "mime": "application\/pdf",
+    "size": 111576,
+    "is_public": true,
+    "user_id": "20c43da0-a3a8-446f-9f19-4027fae844f5",
+    "tags_jsonb": null,
+    "ai_toggle_enabled": false
+}
+{
+    "title": "PrivateV1",
+    "description": "testtt",
+    "content_type": "pdf",
+    "storage_path": "20c43da0-a3a8-446f-9f19-4027fae844f5\/2025\/11\/02\/bde3dfd558277490-studystreak-group6-chapter-1-software-development-1.pdf",
+    "file_name": "StudyStreak_Group6_Chapter 1 _Software Development (1).pdf",
+    "mime": "application\/pdf",
+    "size": 751998,
+    "is_public": false,
+    "user_id": "20c43da0-a3a8-446f-9f19-4027fae844f5",
+    "tags_jsonb": [
+        "testing"
+    ],
+    "ai_toggle_enabled": false
+}
+{
+    "title": "PublicV1",
+    "description": "123",
+    "content_type": "pdf",
+    "storage_path": "20c43da0-a3a8-446f-9f19-4027fae844f5\/2025\/11\/02\/9286fd8cc7d50a79-isidro-lee-gabriel-salonga-activity-sheet-2.pdf",
+    "file_name": "Isidro, Lee Gabriel Salonga - Activity Sheet 2.pdf",
+    "mime": "application\/pdf",
+    "size": 206236,
+    "is_public": true,
+    "user_id": "20c43da0-a3a8-446f-9f19-4027fae844f5",
+    "tags_jsonb": null,
+    "ai_toggle_enabled": false
+}

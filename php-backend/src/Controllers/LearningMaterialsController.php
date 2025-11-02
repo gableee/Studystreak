@@ -19,8 +19,6 @@ final class LearningMaterialsController
     private string $anonKey;
     private ?string $serviceRoleKey;
     private string $bucket;
-    private string $publicBucket;
-    private string $publicBucketBaseUrl;
     private const ALLOWED_CONTENT_TYPES = ['pdf', 'video', 'ppt', 'article'];
 
     public function __construct(SupabaseConfig $config, SupabaseAuth $supabaseAuth)
@@ -30,8 +28,6 @@ final class LearningMaterialsController
         $this->anonKey = $config->getAnonKey();
         $this->serviceRoleKey = $config->getServiceRoleKey();
         $this->bucket = $config->getStorageBucket();
-        $this->publicBucket = $config->getStoragePublicBucket();
-        $this->publicBucketBaseUrl = $config->getStoragePublicBucketBaseUrl();
         $this->client = new Client(['base_uri' => $this->supabaseUrl]);
     }
 
@@ -148,7 +144,10 @@ final class LearningMaterialsController
             return;
         }
 
-        if (!$material['is_public'] && ($user === null || $material['uploader_id'] !== $user->getId())) {
+        $ownerId = isset($material['uploader_id']) ? (string)$material['uploader_id'] : (string)($material['user_id'] ?? '');
+        // Avoid undefined array key warnings by normalizing is_public access
+        $isPublic = (bool)($material['is_public'] ?? false);
+        if (!$isPublic && ($user === null || $ownerId === '' || $ownerId !== $user->getId())) {
             JsonResponder::unauthorized('You do not have access to this material');
             return;
         }
@@ -174,7 +173,11 @@ final class LearningMaterialsController
             return;
         }
 
+        error_log('[CREATE] Starting create for user: ' . $user->getId() . ', token: ' . substr($token, 0, 20) . '...');
+
         $input = $this->collectInput($request);
+        error_log('[CREATE] Input: ' . json_encode($input));
+        error_log('[CREATE] FILES: ' . json_encode($_FILES));
         $title = trim((string)($input['title'] ?? ''));
         if ($title === '') {
             JsonResponder::badRequest('Title is required');
@@ -182,6 +185,7 @@ final class LearningMaterialsController
         }
 
         $isPublic = $this->toBool($input['is_public'] ?? false);
+        $aiToggleEnabled = $this->toBool($input['ai_toggle_enabled'] ?? false);
         $description = $this->optionalString($input['description'] ?? null);
         $tags = $this->normalizeTags($input['tags'] ?? null);
 
@@ -192,6 +196,8 @@ final class LearningMaterialsController
             return;
         }
 
+        error_log('[CREATE] File info: ' . json_encode($fileInfo));
+
         $storagePath = null;
         $fileName = null;
         $mime = null;
@@ -199,10 +205,16 @@ final class LearningMaterialsController
 
         if ($fileInfo !== null) {
             $storagePath = $this->canonicalizePath($user->getId(), $fileInfo['name']);
+            error_log('[CREATE] About to upload file to path: ' . $storagePath . ', bucket: ' . $this->bucket);
             $uploadResult = $this->uploadFile($storagePath, $fileInfo, $token, $isPublic);
             if ($uploadResult === false) {
+                error_log('[CREATE] Upload failed');
                 return;
             }
+            error_log('[CREATE] Upload successful');
+            // After a successful upload, explicitly set metadata (is_public)
+            // using a privileged call to avoid RLS anomalies.
+            $this->updateObjectMetadata($storagePath, ['is_public' => $isPublic], $token);
             $fileName = $fileInfo['name'];
             $mime = $fileInfo['type'] !== '' ? $fileInfo['type'] : null;
             $size = $fileInfo['size'];
@@ -222,6 +234,7 @@ final class LearningMaterialsController
             'is_public' => $isPublic,
             'user_id' => $user->getId(),
             'tags_jsonb' => $tags,
+            'ai_toggle_enabled' => $aiToggleEnabled,
         ];
 
         if ($payload['file_url'] === null) {
@@ -258,6 +271,98 @@ final class LearningMaterialsController
 
         JsonResponder::created($this->transformMaterial($material));
     }
+
+        public function update(Request $request, string $id): void
+        {
+            [$user, $token] = $this->requireAuth($request);
+            if ($user === null || $token === null) {
+                return;
+            }
+
+            $existing = $this->fetchMaterial($id, $token);
+            if ($existing === null) {
+                JsonResponder::withStatus(404, ['error' => 'Learning material not found']);
+                return;
+            }
+
+            if (!$this->canModify($user, $existing)) {
+                JsonResponder::unauthorized('You are not allowed to modify this material');
+                return;
+            }
+
+            $input = $this->collectInput($request);
+
+            $payload = [];
+            if (isset($input['title'])) {
+                $title = trim((string)$input['title']);
+                if ($title === '') {
+                    JsonResponder::badRequest('Title cannot be empty');
+                    return;
+                }
+                $payload['title'] = $title;
+            }
+
+            if (array_key_exists('description', $input)) {
+                $payload['description'] = $this->optionalString($input['description'] ?? null);
+            }
+
+            if (array_key_exists('is_public', $input)) {
+                $newIsPublic = $this->toBool($input['is_public']);
+                $payload['is_public'] = $newIsPublic;
+                
+                // Update Storage object metadata when toggling visibility
+                $storagePath = (string)($existing['storage_path'] ?? '');
+                if ($storagePath !== '') {
+                    $this->updateObjectMetadata($storagePath, ['is_public' => $newIsPublic], $token);
+                }
+            }
+
+            if (array_key_exists('tags', $input)) {
+                $tags = $this->normalizeTags($input['tags'] ?? null);
+                $payload['tags_jsonb'] = $tags;
+            }
+
+            if ($payload === []) {
+                JsonResponder::badRequest('No updatable fields provided');
+                return;
+            }
+
+            $result = $this->send('PATCH', '/rest/v1/learning_materials', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $token,
+                    'apikey' => $this->anonKey,
+                    'Prefer' => 'return=representation',
+                    'Content-Type' => 'application/json',
+                ],
+                'query' => ['material_id' => 'eq.' . $id],
+                'json' => $payload,
+            ]);
+
+            if ($result['status'] >= 400 || !is_array($result['payload'])) {
+                JsonResponder::withStatus($result['status'], [
+                    'error' => 'Unable to update learning material',
+                    'details' => $result['payload'],
+                ]);
+                return;
+            }
+
+            $updated = $result['payload'][0] ?? null;
+            if (!is_array($updated)) {
+                JsonResponder::withStatus(500, ['error' => 'Unexpected response from backend']);
+                return;
+            }
+
+            // Enrich and return
+            $enriched = $this->enrichMaterialsWithProfiles([$updated], $token);
+            if ($enriched !== []) {
+                $updated = $enriched[0];
+            }
+
+            // Preserve user_liked status
+            $updated['user_liked'] = $this->userHasLikedMaterial($user->getId(), $id, $token);
+
+            JsonResponder::ok($this->transformMaterial($updated));
+        }
 
     public function delete(Request $request, string $id): void
     {
@@ -308,18 +413,18 @@ final class LearningMaterialsController
 
     public function signedUrl(Request $request, string $id): void
     {
-        [$user, $token] = $this->requireAuth($request);
-        if ($user === null || $token === null) {
-            return;
-        }
+        // Allow unauthenticated access for public materials. Use optional auth when available.
+        [$user, $maybeToken] = $this->resolveOptionalUser($request);
+        $tokenForSelect = $maybeToken ?? $this->anonKey;
 
-        $material = $this->fetchMaterial($id, $token);
+        $material = $this->fetchMaterial($id, $tokenForSelect);
         if ($material === null) {
             JsonResponder::withStatus(404, ['error' => 'Learning material not found']);
             return;
         }
 
-        if (!$material['is_public'] && !$this->canViewPrivate($user, $material)) {
+        // Normalize is_public to avoid PHP notices when the DB omits the key
+        if (!(bool)($material['is_public'] ?? false) && ($user === null || !$this->canViewPrivate($user, $material))) {
             JsonResponder::unauthorized('You are not allowed to access this material');
             return;
         }
@@ -340,22 +445,44 @@ final class LearningMaterialsController
             return;
         }
 
-        if ((bool)$material['is_public']) {
-            $baseUrl = $this->publicBucketBaseUrl;
-            JsonResponder::ok([
-                'signed_url' => $baseUrl . ltrim($storagePath, '/'),
-                'expires_at' => time() + $expiresIn,
-            ]);
-            return;
-        }
-
-        $signed = $this->signObject($id, $storagePath, $expiresIn, $token, (bool)$material['is_public']);
+        // Always sign from the single private bucket. Public materials are allowed even without auth.
+        $authToken = (string)($token ?? ($this->serviceRoleKey ?? $this->anonKey));
+        $signed = $this->signObject($id, $storagePath, $expiresIn, $authToken, false);
         if ($signed === null) {
             JsonResponder::withStatus(404, ['error' => 'Material file is missing']);
             return;
         }
 
+        // Optional telemetry: bump download_count when purpose=download
+        $purpose = strtolower((string)($request->getQueryParams()['purpose'] ?? ''));
+        if ($purpose === 'download') {
+            $this->incrementDownloadCount($id, $material, $maybeToken);
+        }
+
         JsonResponder::ok($signed);
+    }
+
+    private function incrementDownloadCount(string $materialId, array $material, ?string $maybeToken): void
+    {
+        // Prefer service role for anonymous/public downloads; fall back to authed token if available and owner.
+        $authToken = $this->serviceRoleKey ?? $maybeToken;
+        if (!is_string($authToken) || $authToken === '') {
+            return;
+        }
+
+        $current = (int)($material['download_count'] ?? 0);
+        $next = $current + 1;
+
+        $this->send('PATCH', '/rest/v1/learning_materials', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $authToken,
+                'apikey' => $authToken === $this->serviceRoleKey ? $this->serviceRoleKey : $this->anonKey,
+                'Prefer' => 'return=minimal',
+                'Content-Type' => 'application/json',
+            ],
+            'query' => ['material_id' => 'eq.' . $materialId],
+            'json' => ['download_count' => $next],
+        ]);
     }
 
     public function like(Request $request, string $id): void
@@ -676,11 +803,10 @@ final class LearningMaterialsController
 
         $path = (string)($item['storage_path'] ?? '');
         $fileUrl = (string)($item['file_url'] ?? '');
-        $isPublic = (bool)($item['is_public'] ?? false);
+        // With single private bucket, avoid returning a direct public URL.
+        // Clients should request a signed URL via /signed-url when needed.
         if ($fileUrl !== '') {
             $item['resolved_url'] = $fileUrl;
-        } elseif ($isPublic && $path !== '') {
-            $item['resolved_url'] = $this->publicBucketBaseUrl . ltrim($path, '/');
         } else {
             $item['resolved_url'] = null;
         }
@@ -1102,9 +1228,65 @@ final class LearningMaterialsController
         return $ext === '' ? $base : $base . '.' . $ext;
     }
 
+    /**
+     * Update Storage object metadata. Used to set is_public flag for RLS policies.
+     * 
+     * @param string $storagePath The storage path of the object
+     * @param array<string,mixed> $metadata Key-value pairs to set in metadata
+     * @param string $token Auth token (will use service role if available)
+     * @return bool True if metadata was updated successfully
+     */
+    private function updateObjectMetadata(string $storagePath, array $metadata, string $token): bool
+    {
+        $bucket = $this->bucket;
+        
+        // Prefer service role for metadata updates to avoid RLS issues
+        $authToken = $this->serviceRoleKey ?? $token;
+        $apiKey = $authToken === $this->serviceRoleKey ? $this->serviceRoleKey : $this->anonKey;
+        
+        $result = $this->send('POST', '/storage/v1/object/' . rawurlencode($bucket) . '/' . $this->encodePath($storagePath), [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $authToken,
+                'apikey' => $apiKey,
+                'Content-Type' => 'application/json',
+            ],
+            'json' => [
+                'metadata' => $metadata,
+            ],
+        ]);
+        
+        if ($result['status'] >= 200 && $result['status'] < 300) {
+            error_log(sprintf('[METADATA UPDATE] Successfully updated metadata for %s: %s', 
+                $storagePath, 
+                json_encode($metadata)
+            ));
+            return true;
+        }
+        
+        error_log(sprintf('[METADATA UPDATE] Failed to update metadata for %s: Status %d, %s', 
+            $storagePath,
+            $result['status'],
+            json_encode($result['payload'])
+        ));
+        
+        return false;
+    }
+
     private function uploadFile(string $storagePath, array $fileInfo, string $token, bool $isPublic): bool
     {
-        $bucket = $isPublic ? $this->publicBucket : $this->bucket;
+        // Always use the single private bucket. Visibility is controlled via DB (is_public) and signed URLs.
+        $bucket = $this->bucket;
+        
+        // DEBUG: Log upload attempt (console + file)
+        $debugLine = sprintf('[UPLOAD DEBUG] Bucket: %s, Path: %s, IsPublic: %s, Token: %s...',
+            $bucket,
+            $storagePath,
+            $isPublic ? 'true' : 'false',
+            substr($token, 0, 20)
+        );
+        error_log($debugLine);
+        $this->appendTmpLog('upload_debug.log', $debugLine);
+        
         $uploadHeaders = [
             'x-upsert' => 'false',
             'Content-Type' => $fileInfo['type'] ?? 'application/octet-stream',
@@ -1114,28 +1296,79 @@ final class LearningMaterialsController
         if (!empty($fileInfo['size'])) {
             $uploadHeaders['Content-Length'] = (string)$fileInfo['size'];
         }
+        
+        // Do not rely on setting metadata during upload: some Supabase setups
+        // can treat metadata writes differently depending on auth. Upload the
+        // object first, then set metadata via the privileged service role.
+        // (This avoids RLS / 404 anomalies when clients try to set metadata
+        // inline.)
 
-        $attempts = [
-            $token,
-        ];
-
-        if ($this->serviceRoleKey !== null) {
-            $attempts[] = $this->serviceRoleKey;
+        // Build attempt order.
+        // - For PUBLIC uploads: force service role only (most reliable), then fall back to user token ONLY if no service role is configured.
+        // - For PRIVATE uploads: try user token first (owner-scoped), then fallback to service role if available.
+        $attempts = [];
+        if ($isPublic) {
+            if ($this->serviceRoleKey !== null && $this->serviceRoleKey !== '') {
+                $attempts[] = [
+                    'label' => 'service-role-only',
+                    'token' => $this->serviceRoleKey,
+                    'apiKey' => $this->serviceRoleKey,
+                ];
+            } else {
+                // No service role available, try with user token as a last resort
+                $attempts[] = [
+                    'label' => 'user-token-public-fallback',
+                    'token' => $token,
+                    'apiKey' => $this->anonKey,
+                ];
+            }
+        } else {
+            // Private upload path: user's token first, then service role fallback if present
+            $attempts[] = [
+                'label' => 'user-token',
+                'token' => $token,
+                'apiKey' => ($this->serviceRoleKey !== null && $token === $this->serviceRoleKey)
+                    ? $this->serviceRoleKey
+                    : $this->anonKey,
+            ];
+            if ($this->serviceRoleKey !== null && $this->serviceRoleKey !== '' && $this->serviceRoleKey !== $token) {
+                $attempts[] = [
+                    'label' => 'service-role-fallback',
+                    'token' => $this->serviceRoleKey,
+                    'apiKey' => $this->serviceRoleKey,
+                ];
+            }
         }
 
         $timeoutSeconds = $this->computeUploadTimeout((int)($fileInfo['size'] ?? 0));
-
-        foreach ($attempts as $authToken) {
+        
+        $attemptNum = 0;
+        foreach ($attempts as $attempt) {
+            $attemptNum++;
+            $authToken = $attempt['token'];
+            $apiKey = $attempt['apiKey'];
+            
+            error_log(sprintf('[UPLOAD DEBUG] Attempt %d (%s): Using token %s... with apiKey %s...', 
+                $attemptNum,
+                $attempt['label'] ?? 'unknown',
+                substr($authToken, 0, 20),
+                substr($apiKey, 0, 20)
+            ));
+            
             $stream = fopen($fileInfo['tmp_name'], 'rb');
             if ($stream === false) {
                 JsonResponder::withStatus(500, ['error' => 'Unable to read uploaded file from disk']);
                 return false;
             }
 
-            $result = $this->send('POST', '/storage/v1/object/' . rawurlencode($bucket) . '/' . $this->encodePath($storagePath), [
+            $uploadUrl = '/storage/v1/object/' . rawurlencode($bucket) . '/' . $this->encodePath($storagePath);
+            $this->appendTmpLog('upload_debug.log', '[UPLOAD DEBUG] Upload URL: ' . $uploadUrl);
+            error_log('[UPLOAD DEBUG] Upload URL: ' . $uploadUrl);
+            
+            $result = $this->send('POST', $uploadUrl, [
                 'headers' => array_merge($uploadHeaders, [
                     'Authorization' => 'Bearer ' . $authToken,
-                    'apikey' => $this->anonKey,
+                    'apikey' => $apiKey,
                 ]),
                 'body' => $stream,
                 'timeout' => $timeoutSeconds,
@@ -1144,52 +1377,87 @@ final class LearningMaterialsController
             if (is_resource($stream)) {
                 fclose($stream);
             }
+            
+            $this->appendTmpLog('upload_debug.log', sprintf('[UPLOAD DEBUG] Attempt %d (%s) result: Status %d, Payload: %s', 
+                $attemptNum, 
+                $attempt['label'] ?? 'unknown',
+                $result['status'],
+                json_encode($result['payload'])
+            ));
+            error_log(sprintf('[UPLOAD DEBUG] Attempt %d (%s) result: Status %d, Payload: %s', 
+                $attemptNum,
+                $attempt['label'] ?? 'unknown',
+                $result['status'],
+                json_encode($result['payload'])
+            ));
 
             if ($result['status'] >= 200 && $result['status'] < 300) {
+                error_log('[UPLOAD DEBUG] Upload successful!');
                 return true;
             }
 
             // If the first attempt with the user's token fails due to
-            // authentication or RLS (401 or 403), retry with the service
+            // authentication, RLS, or bucket visibility (401, 403, or 404), retry with the service
             // role key when available. This handles cases where storage
-            // inserts are blocked by Row-Level Security for non-privileged
+            // operations are blocked by Row-Level Security or bucket visibility for non-privileged
             // tokens.
-            if ($authToken === $token && ($result['status'] === 401 || $result['status'] === 403) && $this->serviceRoleKey !== null) {
-                if (is_resource($stream)) {
-                    fclose($stream);
-                }
-                // Try the next (elevated) token in the attempts array.
+            if ($authToken === $token && in_array($result['status'], [401, 403, 404], true) && $this->serviceRoleKey !== null) {
+                error_log('[UPLOAD DEBUG] First attempt failed with status ' . $result['status'] . ', retrying with service role...');
                 continue;
             }
 
+            $this->appendTmpLog('upload_debug.log', '[UPLOAD DEBUG] Upload failed, returning error to client');
+            error_log('[UPLOAD DEBUG] Upload failed, returning error to client');
             JsonResponder::withStatus($result['status'], [
                 'error' => 'Failed to upload file to storage',
                 'details' => $result['payload'],
+                'bucket' => $bucket,
+                'upload_url' => $uploadUrl,
             ]);
             return false;
         }
 
-        JsonResponder::withStatus(500, ['error' => 'No authorization available to upload file']);
+        $this->appendTmpLog('upload_debug.log', '[UPLOAD DEBUG] All attempts exhausted');
+        error_log('[UPLOAD DEBUG] All attempts exhausted');
+        JsonResponder::withStatus(500, ['error' => 'No authorization available to upload file', 'bucket' => $bucket]);
         return false;
+    }
+
+    /**
+     * Append a line to a file under tmp/ directory.
+     */
+    private function appendTmpLog(string $file, string $line): void
+    {
+        $dir = __DIR__ . '/../../../tmp';
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        $path = $dir . '/' . $file;
+        error_log('[TMP LOG] Writing to ' . $path . ': ' . $line);
+        file_put_contents($path, '[' . gmdate('c') . '] ' . $line . "\n", FILE_APPEND);
     }
 
     private function deleteObject(string $storagePath, string $token, bool $isPublic): void
     {
-        $bucket = $isPublic ? $this->publicBucket : $this->bucket;
+        // Always use the single private bucket.
+        $bucket = $this->bucket;
+        $apiKey = ($this->serviceRoleKey !== null && $token === $this->serviceRoleKey)
+            ? $this->serviceRoleKey
+            : $this->anonKey;
         $headers = [
             'Authorization' => 'Bearer ' . $token,
-            'apikey' => $this->anonKey,
+            'apikey' => $apiKey,
         ];
 
         $result = $this->send('DELETE', '/storage/v1/object/' . rawurlencode($bucket) . '/' . $this->encodePath($storagePath), [
             'headers' => $headers,
         ]);
 
-        if ($result['status'] === 401 && $this->serviceRoleKey !== null) {
+        if (in_array($result['status'], [401, 403, 404], true) && $this->serviceRoleKey !== null) {
             $result = $this->send('DELETE', '/storage/v1/object/' . rawurlencode($bucket) . '/' . $this->encodePath($storagePath), [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->serviceRoleKey,
-                    'apikey' => $this->anonKey,
+                    'apikey' => $this->serviceRoleKey,
                 ],
             ]);
         }
@@ -1197,10 +1465,14 @@ final class LearningMaterialsController
 
     private function signObject(string $materialId, string $storagePath, int $expiresIn, string $token, bool $isPublic): ?array
     {
-        $bucket = $isPublic ? $this->publicBucket : $this->bucket;
+        // Always use the single private bucket.
+        $bucket = $this->bucket;
+        $apiKey = ($this->serviceRoleKey !== null && $token === $this->serviceRoleKey)
+            ? $this->serviceRoleKey
+            : $this->anonKey;
         $headers = [
             'Authorization' => 'Bearer ' . $token,
-            'apikey' => $this->anonKey,
+            'apikey' => $apiKey,
             'Content-Type' => 'application/json',
         ];
 
@@ -1209,11 +1481,11 @@ final class LearningMaterialsController
             'json' => ['expiresIn' => $expiresIn],
         ]);
 
-        if ($result['status'] === 401 && $this->serviceRoleKey !== null) {
+        if (in_array($result['status'], [401, 403, 404], true) && $this->serviceRoleKey !== null) {
             $result = $this->send('POST', '/storage/v1/object/sign/' . rawurlencode($bucket) . '/' . $this->encodePath($storagePath), [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->serviceRoleKey,
-                    'apikey' => $this->anonKey,
+                    'apikey' => $this->serviceRoleKey,
                     'Content-Type' => 'application/json',
                 ],
                 'json' => ['expiresIn' => $expiresIn],
@@ -1259,7 +1531,7 @@ final class LearningMaterialsController
         $this->send('PATCH', '/rest/v1/learning_materials', [
             'headers' => [
                 'Authorization' => 'Bearer ' . $this->serviceRoleKey,
-                'apikey' => $this->anonKey,
+                'apikey' => $this->serviceRoleKey,
                 'Content-Type' => 'application/json',
             ],
             'query' => ['material_id' => 'eq.' . $materialId],
