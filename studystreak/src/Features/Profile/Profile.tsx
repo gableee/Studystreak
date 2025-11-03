@@ -3,6 +3,7 @@ import { showToast } from '@/components/toastService'
 import { Save, User } from 'lucide-react'
 import { useAuth } from '@/Auth/hooks/useAuth'
 import { supabase } from '@/lib/supabaseClient'
+import { profileService } from '@/Auth/services/profileService'
 
 const blankProfile = {
   initials: 'JD',
@@ -63,6 +64,13 @@ export default function Profile() {
       // update supabase user metadata
       const { error } = await supabase.auth.updateUser({ data: metadata })
       if (error) throw error
+      // Also persist preferred name in the public profiles table for server-side usage
+      try {
+        await profileService.updateProfile(user.id, { preferred_name: name })
+      } catch (e) {
+        // Non-fatal: server may have stricter RLS; UI metadata is still saved
+        console.debug('profileService.updateProfile preferred_name failed (non-fatal):', e)
+      }
       showToast({ type: 'success', text: 'Profile saved' })
     } catch (err) {
       console.error('Failed to update profile', err)

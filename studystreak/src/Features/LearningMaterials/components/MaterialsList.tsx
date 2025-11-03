@@ -1,4 +1,5 @@
 import { BookOpen, Download, Eye, Heart, Lock, Globe, Trash2, User, Calendar, FileText, HardDrive } from 'lucide-react'
+import { useAuth } from '@/Auth/hooks/useAuth'
 import type { LearningMaterial, MaterialsFilter } from '../types'
 import EmptyState from './EmptyState'
 import ListSkeleton from './ListSkeleton'
@@ -60,6 +61,8 @@ export function MaterialsList({
   busyIds,
   onEdit,
 }: MaterialsListProps) {
+  const { user } = useAuth()
+
   if (loading) {
     return <ListSkeleton />
   }
@@ -119,7 +122,21 @@ export function MaterialsList({
                 </h3>
                 <p className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                   <User className="h-3 w-3" />
-                  {material.uploader_name || material.uploader_email || 'Unknown'}
+                  {
+                    // Prefer an explicit uploader name supplied by the API
+                    // If missing and the uploader_id matches the currently
+                    // authenticated user, prefer the user's auth metadata
+                    // full_name (the "preferred name" set in Profile.tsx).
+                    (() => {
+                      if (material.uploader_name) return material.uploader_name
+                      const currentUserId = user?.id ?? null
+                      const authFullName = user?.user_metadata?.full_name as string | undefined
+                      if (material.uploader_id && currentUserId && material.uploader_id === currentUserId) {
+                        return authFullName ?? material.uploader_email ?? 'Unknown'
+                      }
+                      return material.uploader_email ?? 'Unknown'
+                    })()
+                  }
                 </p>
               </div>
 

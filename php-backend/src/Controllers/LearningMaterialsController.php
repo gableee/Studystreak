@@ -995,7 +995,8 @@ final class LearningMaterialsController
                 'Accept' => 'application/json',
             ],
             'query' => [
-                'select' => 'id,full_name,email',
+                // Prefer an explicit preferred_name when present, else compose from first/last, else username/email.
+                'select' => 'id,preferred_name,first_name,last_name,username,email',
                 'id' => 'in.(' . implode(',', $escaped) . ')',
             ],
         ]);
@@ -1015,9 +1016,24 @@ final class LearningMaterialsController
                 continue;
             }
 
+            $preferred = isset($profile['preferred_name']) && is_string($profile['preferred_name']) ? trim($profile['preferred_name']) : '';
+            $first = isset($profile['first_name']) && is_string($profile['first_name']) ? trim($profile['first_name']) : '';
+            $last = isset($profile['last_name']) && is_string($profile['last_name']) ? trim($profile['last_name']) : '';
+            $username = isset($profile['username']) && is_string($profile['username']) ? trim($profile['username']) : '';
+            $email = isset($profile['email']) && is_string($profile['email']) ? trim($profile['email']) : null;
+
+            $full = $preferred !== '' ? $preferred : trim(($first . ' ' . $last));
+            if ($full === '') {
+                $full = $username !== '' ? $username : null;
+            }
+            if ($full === null && $email !== null) {
+                $atPos = strpos($email, '@');
+                $full = $atPos !== false ? substr($email, 0, $atPos) : $email;
+            }
+
             $profiles[$profileId] = [
-                'full_name' => isset($profile['full_name']) && is_string($profile['full_name']) ? $profile['full_name'] : null,
-                'email' => isset($profile['email']) && is_string($profile['email']) ? $profile['email'] : null,
+                'name' => $full,
+                'email' => $email,
             ];
         }
 
@@ -1036,8 +1052,8 @@ final class LearningMaterialsController
             }
 
             $profile = $profiles[$ownerId];
-            if ($profile['full_name'] !== null) {
-                $material['uploader_name'] = $profile['full_name'];
+            if ($profile['name'] !== null) {
+                $material['uploader_name'] = $profile['name'];
             }
 
             if ($profile['email'] !== null) {

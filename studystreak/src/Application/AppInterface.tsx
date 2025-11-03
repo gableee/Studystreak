@@ -319,6 +319,11 @@ export function SideBar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
   }, [userId])
 
   const displayName = useMemo(() => {
+    // Canonical public nickname: profiles.preferred_name
+    if (profile?.preferred_name && profile.preferred_name.trim() !== '') return profile.preferred_name
+    // Secondary: auth metadata full_name (useful for immediate UI updates)
+    const authFullName = session?.user?.user_metadata?.full_name as string | undefined
+    if (authFullName && authFullName.trim() !== '') return authFullName
     if (profile?.username) return profile.username
     if (profile?.first_name || profile?.last_name) {
       return [profile?.first_name, profile?.last_name].filter(Boolean).join(' ')

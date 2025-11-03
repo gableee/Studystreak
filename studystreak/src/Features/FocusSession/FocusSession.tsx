@@ -73,7 +73,9 @@ function PomodoroInner() {
           if (!username && email) username = String(email).split('@')[0];
           if (!username) username = `user_${String(userId).slice(0, 8)}`;
 
+          const preferred_name = (meta?.full_name as string | undefined) || (username as string | undefined) || undefined;
           const upsertPayload: Record<string, unknown> = { id: userId, username, first_name, last_name };
+          if (preferred_name) upsertPayload.preferred_name = preferred_name;
           if (email) upsertPayload.email = email;
 
           const { error: upsertErr } = await supabase.from('profiles').upsert([upsertPayload]);

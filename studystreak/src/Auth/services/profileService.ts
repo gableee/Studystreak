@@ -7,6 +7,7 @@ export type UserProfile = {
   last_name: string
   username: string
   email: string
+  preferred_name?: string | null
   created_at?: string
   updated_at?: string
   avatar_url?: string
@@ -26,7 +27,7 @@ export const profileService = {
   getProfileByUserId: async (userId: string) => {
     return await supabase
       .from('profiles')
-      .select('id, first_name, last_name, username, created_at')
+      .select('id, first_name, last_name, username, created_at, preferred_name, email')
       .eq('id', userId)
       .single()
   },
