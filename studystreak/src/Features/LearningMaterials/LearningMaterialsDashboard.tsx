@@ -475,6 +475,9 @@ const LearningMaterialsDashboard = () => {
           setShowUpload(false)
           setPreviewMaterial(null)
           setPage(1)
+          // Force a refresh of the listing cache so the backend's persisted
+          // state (including ai_toggle_enabled) is fetched and reconciled.
+          setRefreshKey((k) => k + 1)
         }}
       />
 

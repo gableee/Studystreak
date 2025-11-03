@@ -119,6 +119,7 @@ export async function updateLearningMaterial(id: string, payload: Partial<{
   title: string
   description?: string | null
   isPublic?: boolean
+  aiToggleEnabled?: boolean
   tags?: string[] | null
 }>): Promise<LearningMaterial> {
   // For simplicity send as JSON; the backend accepts JSON for PATCH updates
@@ -126,6 +127,7 @@ export async function updateLearningMaterial(id: string, payload: Partial<{
   if (payload.title !== undefined) body.title = payload.title
   if (payload.description !== undefined) body.description = payload.description
   if (payload.isPublic !== undefined) body.is_public = String(payload.isPublic)
+  if (payload.aiToggleEnabled !== undefined) body.ai_toggle_enabled = String(payload.aiToggleEnabled)
   if (payload.tags !== undefined) body.tags = payload.tags
 
   return apiClient.patch<LearningMaterial>(`/api/learning-materials/${id}`, body)
