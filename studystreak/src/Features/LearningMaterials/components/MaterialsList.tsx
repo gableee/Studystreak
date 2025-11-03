@@ -1,4 +1,4 @@
-import { BookOpen, Download, Eye, Heart, Lock, Globe, Trash2, User, Calendar, FileText, HardDrive } from 'lucide-react'
+import { BookOpen, Download, Eye, Heart, Lock, Globe, Trash2, User, Calendar, FileText, HardDrive, Sparkles } from 'lucide-react'
 import { useAuth } from '@/Auth/hooks/useAuth'
 import type { LearningMaterial, MaterialsFilter } from '../types'
 import EmptyState from './EmptyState'
@@ -89,6 +89,7 @@ export function MaterialsList({
         const deletable = canDelete ? canDelete(material) : false
         const busy = actionIsBusy(material.id)
         const isPublic = Boolean(material.is_public)
+        const aiEnabled = Boolean(material.ai_toggle_enabled)
         const tags = Array.isArray(material.tags) ? material.tags : []
         const isLiked = material.user_liked
 
@@ -164,6 +165,20 @@ export function MaterialsList({
                 <FileText className="h-3.5 w-3.5" />
                 <span className="truncate font-mono">{material.file_name || 'Unknown file'}</span>
               </div>
+
+              {/* AI Features Badge */}
+              {aiEnabled && (
+                <div className="flex items-center gap-1.5 rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50 to-violet-50 px-3 py-2 dark:border-purple-800/50 dark:from-purple-950/30 dark:to-violet-950/30">
+                  <Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  <span className="text-xs font-medium text-purple-700 dark:text-purple-300">
+                    AI Features Available
+                  </span>
+                  <span className="text-xs text-purple-600 dark:text-purple-400">•</span>
+                  <span className="text-xs text-purple-600 dark:text-purple-400">
+                    Quiz, Summary & More
+                  </span>
+                </div>
+              )}
 
               {/* Tags */}
               {tags.length > 0 && (

@@ -115,6 +115,7 @@ export const normalizeMaterialRecord = (record: unknown): LearningMaterial | nul
     created_at: createdAt,
     updated_at: updatedAt,
     resolved_url: directUrl,
+    ai_toggle_enabled: toBoolean(raw.ai_toggle_enabled ?? false),
     user_liked: toBoolean(raw.user_liked ?? false),
   }
 

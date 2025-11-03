@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { FileUp, Loader2, X } from 'lucide-react'
 import { uploadLearningMaterial } from '../api'
 import type { LearningMaterial, UploadMaterialPayload } from '../types'
+import { Switch } from '../../../components/ui/switch'
 
 type UploadDrawerProps = {
   open: boolean
@@ -154,13 +155,11 @@ export function UploadDrawer({ open, onClose, onSuccess }: UploadDrawerProps) {
             </label>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                <span>Enable AI generation</span>
-                <input
-                  type="checkbox"
+              <label className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm transition-all duration-200 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-750">
+                <span className="font-medium">Enable AI generation</span>
+                <Switch
                   checked={Boolean(payload.aiToggleEnabled)}
-                  onChange={(event) => setPayload((prev) => ({ ...prev, aiToggleEnabled: event.target.checked }))}
-                  className="h-4 w-4"
+                  onCheckedChange={(checked) => setPayload((prev) => ({ ...prev, aiToggleEnabled: checked }))}
                 />
               </label>
             </div>

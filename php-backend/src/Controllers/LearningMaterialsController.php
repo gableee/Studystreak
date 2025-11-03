@@ -317,6 +317,10 @@ final class LearningMaterialsController
                 }
             }
 
+            if (array_key_exists('ai_toggle_enabled', $input)) {
+                $payload['ai_toggle_enabled'] = $this->toBool($input['ai_toggle_enabled']);
+            }
+
             if (array_key_exists('tags', $input)) {
                 $tags = $this->normalizeTags($input['tags'] ?? null);
                 $payload['tags_jsonb'] = $tags;
@@ -797,7 +801,7 @@ final class LearningMaterialsController
         $search = trim((string)($params['q'] ?? ''));
 
         $query = [
-            'select' => 'material_id,title,description,content_type,file_url,file_name,mime,size,is_public,user_id,storage_path,tags_jsonb,likes_count,download_count,created_at,updated_at,deleted_at',
+            'select' => 'material_id,title,description,content_type,file_url,file_name,mime,size,is_public,user_id,storage_path,tags_jsonb,likes_count,download_count,ai_toggle_enabled,created_at,updated_at,deleted_at',
             'order' => $sort,
             'limit' => $perPage,
             'offset' => ($page - 1) * $perPage,

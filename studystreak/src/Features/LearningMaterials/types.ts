@@ -18,6 +18,7 @@ export type LearningMaterial = {
   mime: string | null
   size: number | null
   is_public: boolean
+  ai_toggle_enabled?: boolean
   uploader_id: string | null
   uploader_name: string | null
   uploader_email: string | null
