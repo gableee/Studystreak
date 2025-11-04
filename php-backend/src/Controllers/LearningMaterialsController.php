@@ -318,7 +318,16 @@ final class LearningMaterialsController
             }
 
             if (array_key_exists('ai_toggle_enabled', $input)) {
-                $payload['ai_toggle_enabled'] = $this->toBool($input['ai_toggle_enabled']);
+                $newAiToggle = $this->toBool($input['ai_toggle_enabled']);
+                
+                // AI Toggle Lock: once enabled, cannot be disabled
+                $currentAiToggle = $this->toBool($existing['ai_toggle_enabled'] ?? false);
+                if ($currentAiToggle === true && $newAiToggle === false) {
+                    JsonResponder::badRequest('AI cannot be disabled once enabled to preserve resources');
+                    return;
+                }
+                
+                $payload['ai_toggle_enabled'] = $newAiToggle;
             }
 
             if (array_key_exists('tags', $input)) {

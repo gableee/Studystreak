@@ -48,6 +48,34 @@
   animation: gradient-x 3s ease-in-out infinite;
 }
 
+/* Fade-in animation for Study Tools tabs */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out;
+}
+
+/* 3D flip transform utilities for Flashcards */
+.perspective-1000 {
+  perspective: 1000px;
+}
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+.backface-hidden {
+  backface-visibility: hidden;
+}
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
 
 
 @layer components {

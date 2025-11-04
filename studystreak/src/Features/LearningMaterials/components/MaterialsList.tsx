@@ -1,5 +1,6 @@
 import { BookOpen, Download, Eye, Heart, Lock, Globe, Trash2, User, Calendar, FileText, HardDrive, Sparkles } from 'lucide-react'
 import { useAuth } from '@/Auth/hooks/useAuth'
+import { useNavigate } from 'react-router-dom'
 import type { LearningMaterial, MaterialsFilter } from '../types'
 import EmptyState from './EmptyState'
 import ListSkeleton from './ListSkeleton'
@@ -58,10 +59,11 @@ export function MaterialsList({
   onUpload,
   filter,
   canDelete,
-  busyIds,
+  busyIds = new Set(),
   onEdit,
 }: MaterialsListProps) {
   const { user } = useAuth()
+  const navigate = useNavigate()
 
   if (loading) {
     return <ListSkeleton />
@@ -266,19 +268,18 @@ export function MaterialsList({
                   <span>{isLiked ? 'Liked' : 'Like'}</span>
                 </button>
 
-                {/* Quiz button */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    // TODO: Implement quiz generation
-                    console.log('Quiz button clicked for material:', material.id)
-                  }}
-                  disabled={busy}
-                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-violet-600 px-3 py-2 text-sm font-medium text-white shadow-md transition-all duration-200 hover:from-purple-700 hover:to-violet-700 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <BookOpen className="h-4 w-4" />
-                  <span>Quiz</span>
-                </button>
+                {/* Study Tools button (only shown when AI enabled) */}
+                {material.ai_toggle_enabled && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/materials/${material.id}/study-tools`)}
+                    disabled={busy}
+                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-violet-600 px-3 py-2 text-sm font-medium text-white shadow-md transition-all duration-200 hover:from-purple-700 hover:to-violet-700 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    <span>Study Tools</span>
+                  </button>
+                )}
 
                 {/* Edit/Delete buttons (conditionally shown) */}
                 {deletable && (
