@@ -1,4 +1,4 @@
-import { BookOpen, Download, Eye, Heart, Lock, Globe, Trash2, User, Calendar, FileText, HardDrive, Sparkles } from 'lucide-react'
+import {  Download, Eye, Heart, Lock, Globe, Trash2, User, Calendar, FileText, HardDrive, Sparkles } from 'lucide-react'
 import { useAuth } from '@/Auth/hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import type { LearningMaterial, MaterialsFilter } from '../types'

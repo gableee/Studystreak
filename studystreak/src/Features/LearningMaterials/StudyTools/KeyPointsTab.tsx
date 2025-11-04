@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Sparkles, Loader2, AlertCircle, ChevronDown } from 'lucide-react';
 import { fetchKeyPoints } from './api';
-import type { StudyKeyPoints, KeyPoint } from './types';
+import type { StudyKeyPoints } from './types';
 
 interface KeyPointsTabProps {
   materialId: string;
