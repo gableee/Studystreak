@@ -40,6 +40,7 @@ use App\Controllers\AuthController;
 use App\Middleware\AuthMiddleware;
 use App\Controllers\GamificationController;
 use App\Controllers\LearningMaterialsController;
+use App\Controllers\StudyToolsController;
 
 
 // Load env
@@ -54,6 +55,7 @@ $todoController = new TodoController($config);
 $authController = new AuthController($supabaseAuth);
 $gamificationController = new GamificationController($config);
 $learningMaterialsController = new LearningMaterialsController($config, $supabaseAuth);
+$studyToolsController = new StudyToolsController($config, $supabaseAuth);
 
 // Basic CORS (dev) - adjust origin in production
 // Allow the health endpoint to be checked by probes that do not send an Origin header.
@@ -375,6 +377,51 @@ if (preg_match('#^/api/learning-materials/([0-9a-fA-F\-]{36})$#', $path, $matche
 
   error_log(sprintf('[ROUTE] No handler matched for method: %s', $method));
   JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
+  exit;
+}
+
+// Study Tools routes (AI-powered features)
+// GET /api/materials/{id}/study-tools/summary
+if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/summary$#', $path, $matches)) {
+  $materialId = $matches[1];
+  if ($method === 'GET') {
+    $studyToolsController->getSummary($request, $materialId);
+  } else {
+    JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
+  }
+  exit;
+}
+
+// GET /api/materials/{id}/study-tools/keypoints
+if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/keypoints$#', $path, $matches)) {
+  $materialId = $matches[1];
+  if ($method === 'GET') {
+    $studyToolsController->getKeyPoints($request, $materialId);
+  } else {
+    JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
+  }
+  exit;
+}
+
+// POST /api/materials/{id}/study-tools/quiz
+if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/quiz$#', $path, $matches)) {
+  $materialId = $matches[1];
+  if ($method === 'POST') {
+    $studyToolsController->generateQuiz($request, $materialId);
+  } else {
+    JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
+  }
+  exit;
+}
+
+// GET /api/materials/{id}/study-tools/flashcards
+if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/flashcards$#', $path, $matches)) {
+  $materialId = $matches[1];
+  if ($method === 'GET') {
+    $studyToolsController->getFlashcards($request, $materialId);
+  } else {
+    JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
+  }
   exit;
 }
 

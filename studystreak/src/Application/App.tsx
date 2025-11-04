@@ -18,6 +18,7 @@ import RootLayout from './RouteLayout/RootLayout'
 import Dashboard from '../Features/Dashboard/Dashboard'
 import Profile from '../Features/Profile/Profile'
 import LearningMaterials from '../Features/LearningMaterials'
+import { StudyToolsPage } from '../Features/LearningMaterials/StudyTools'
 import FocusSession from '../Features/FocusSession/FocusSession'
 import MyStudyPlan from '../Features/MyStudyPlan/MyStudyPlan'
 import ProgressAnalytics from '../Features/ProgressAnalytics/ProgressAnalytics'
@@ -116,6 +117,16 @@ const router = createBrowserRouter([
           <ProtectedRoute>
             <PageTransition>        
                 <LearningMaterials />
+            </PageTransition>
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "materials/:id/study-tools",
+        element: (
+          <ProtectedRoute>
+            <PageTransition>
+              <StudyToolsPage />
             </PageTransition>
           </ProtectedRoute>
         )

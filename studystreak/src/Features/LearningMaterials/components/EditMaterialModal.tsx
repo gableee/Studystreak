@@ -134,12 +134,21 @@ export default function EditMaterialModal({ material, onClose, onSubmit }: EditM
           <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3.5 shadow-sm transition-all duration-200 hover:border-slate-300 hover:bg-white dark:border-slate-700 dark:bg-slate-800/50 dark:hover:border-slate-600 dark:hover:bg-slate-800">
             <div className="flex items-center gap-3">
               <Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Enable AI features</span>
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Enable AI features</span>
+                {Boolean(material.ai_toggle_enabled) && (
+                  <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1 mt-0.5">
+                    <Lock className="h-3 w-3" />
+                    Cannot disable once enabled
+                  </span>
+                )}
+              </div>
             </div>
             <Switch
               checked={aiToggleEnabled}
               onCheckedChange={setAiToggleEnabled}
-              className="transition-all duration-300"
+              disabled={Boolean(material.ai_toggle_enabled)}
+              className="transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
