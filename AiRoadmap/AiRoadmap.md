@@ -58,7 +58,7 @@ This document is a living roadmap and implementation checklist. It reflects the 
 - **Columns:**
   - `embedding_id` (uuid PK)
   - `ai_version_id` (uuid FK → material_ai_versions.ai_version_id, CASCADE delete)
-  - `vector` (vector(1536)) — pgvector type; dimension must match your embedding model
+  - `vector` (vector(384)) — pgvector type; dimension must match your embedding model (all-MiniLM-L6-v2)
   - `created_at` (timestamptz)
 - **Indexes:**
   - `idx_material_ai_embeddings_ai_version_id` (basic FK index)
@@ -430,10 +430,10 @@ WHERE ai_version_id IN (
 6. [x] Document schema and migration files
 
 ### 🔄 IN PROGRESS
-7. [ ] **Choose embedding model and update vector dimension** (IMMEDIATE — blocks AI service)
-   - Action: Decide on model (recommended: `sentence-transformers/all-MiniLM-L6-v2` = 384-dim)
-   - Update `2025_11_05_04_create_material_ai_embeddings.sql` vector dimension
-   - Re-run migration in staging if dimension changes
+7. [x] **Choose embedding model and update vector dimension** (IMMEDIATE — blocks AI service)
+  - Action: Chosen `sentence-transformers/all-MiniLM-L6-v2` (384-dim) — applied in staging
+  - Migration file `2025_11_05_04_create_material_ai_embeddings.sql` updated to use `vector(384)`
+  - Note: No re-run required for this environment (ALTER applied). For fresh environments, the migration now creates `vector(384)`.
 
 ### 📋 TODO (Priority Order)
 8. [ ] **Implement AI service endpoints** (`ai-service/`) — **NEXT PRIORITY**
@@ -498,7 +498,7 @@ Update (2025-11-05): Embeddings table & pointers created
 Given you are still developing (no production data or users yet), the recommended next step is to implement the AI service and ingestion pipeline. The DB schema is sufficiently prepared; only small, non-breaking changes may be needed later (e.g., vector dimension, pointer behaviors, retention rules).
 
 Recommended immediate tasks (developer checklist)
-- Choose embedding model and confirm vector dimension (e.g., 1536). I will update the migration if you want the exact dimension baked in.
+- Chosen embedding model and vector dimension: all-MiniLM-L6-v2 (384-dim). Migration updated accordingly.
 - Implement AI service endpoints in `ai-service/` for: summarization, keypoint extraction, quiz & flashcard generation, and embeddings generation.
 - Wire PHP backend (`StudyToolsController`) to call the AI service for generation. Pattern:
    1) Create `material_ai_versions` rows for generated artifacts.

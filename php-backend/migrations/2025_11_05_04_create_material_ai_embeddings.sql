@@ -12,7 +12,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 CREATE TABLE IF NOT EXISTS public.material_ai_embeddings (
   embedding_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   ai_version_id uuid NOT NULL REFERENCES public.material_ai_versions(ai_version_id) ON DELETE CASCADE,
-  vector vector(1536), -- <- CHANGE this dimension to match your embedding model
+  vector vector(384), -- <- CHANGE this dimension to match your embedding model
   created_at timestamptz DEFAULT now()
 );
 
