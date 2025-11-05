@@ -24,4 +24,8 @@ dist-ssr
 *.sw?
 
 
+# .md files and migration files
+AiRoadmap.md
+*.sql
+
 .env.local
