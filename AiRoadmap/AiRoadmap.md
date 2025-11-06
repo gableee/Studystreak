@@ -430,13 +430,72 @@ WHERE ai_version_id IN (
 6. [x] Document schema and migration files
 
 ### 🔄 IN PROGRESS
-7. [x] **Choose embedding model and update vector dimension** (IMMEDIATE — blocks AI service)
+7. [x] **Choose embedding model and update vector dimension** (COMPLETED)
   - Action: Chosen `sentence-transformers/all-MiniLM-L6-v2` (384-dim) — applied in staging
   - Migration file `2025_11_05_04_create_material_ai_embeddings.sql` updated to use `vector(384)`
   - Note: No re-run required for this environment (ALTER applied). For fresh environments, the migration now creates `vector(384)`.
 
+8. [x] **Create Repository Pattern for Clean DB Access** (COMPLETED — 2025-11-05)
+  - Created `LearningMaterialRepository`, `MaterialAiVersionRepository`, `MaterialAiEmbeddingRepository`
+  - Implemented full CRUD operations with RLS-safe service role key usage
+  - Created `AiConfig` for AI service settings, `AiService` for HTTP client wrapper
+  - Created `AiResponseParser` for parsing AI JSON responses into DB-ready format
+  - Implemented `StudyToolsController` using repository pattern (generate, getLatest, listVersions)
+  - Created AI service route scaffolds (extraction, generation, embeddings) with Pydantic models
+  - **Status:** Structure complete, ready for ML model integration
+
+9. [x] **Environment Configuration Complete** (COMPLETED — 2025-11-06)
+  - Added HF_API_TOKEN (read-only scope) to `ai-service/.env`
+  - Added AI_SERVICE_API_KEY (secure random token) to both `ai-service/.env` and `php-backend/.env`
+  - Set HF_INFERENCE_API_URL to `https://api-inference.huggingface.co`
+  - Set AI_SERVICE_URL to `http://ai-service:8000` in `php-backend/.env` for docker-compose networking
+  - Added API key enforcement middleware to `ai-service/main.py` (returns 401 if missing/invalid)
+  - Added `python-multipart` dependency for file upload endpoints
+  - **Status:** Environment ready; containers building
+
 ### 📋 TODO (Priority Order)
-8. [ ] **Implement AI service endpoints** (`ai-service/`) — **NEXT PRIORITY**
+10. [ ] **Test Docker Containers and Endpoints** (IMMEDIATE — next 30 minutes)
+   - Verify ai-service container starts without errors
+   - Test health endpoint: `curl http://localhost:8000/health`
+   - Test embedding endpoint with API key: `curl -X POST http://localhost:8000/embeddings/generate -H "x-api-key: YOUR_KEY" -H "Content-Type: application/json" -d '{"text":"test"}'`
+   - Verify API key enforcement (401 without key)
+   - Run `ai-service/test_service.py` to validate all endpoints
+
+11. [ ] **Implement Real HuggingFace Embedding Endpoint** (HIGH PRIORITY — 1-2 hours)
+   - Replace prototype deterministic embedding in `ai-service/routes/embeddings.py`
+   - Option A: Call HuggingFace Inference API (https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2)
+   - Option B: Load sentence-transformers model locally (slower first call, faster subsequent)
+   - Add retry logic and error handling
+   - Test with real text and verify 384-dimensional output
+
+12. [ ] **Implement AI Generation Endpoints** (HIGH PRIORITY — 2-3 hours)
+   - `/generate/summary` — Call BART/T5 for summarization
+   - `/generate/keypoints` — Extract key points (T5 + prompt or structured output)
+   - `/generate/quiz` — Generate MCQ questions (T5-QG or custom prompt)
+   - `/generate/flashcards` — Create flashcard pairs (prompt-based)
+   - All should return consistent JSON structure with `run_id`, `content`, `model_name`, `model_params`
+
+13. [ ] **Wire PHP Backend to AI Service** (HIGH PRIORITY — 1-2 hours)
+   - Update `StudyToolsController::callAiService()` with real HTTP calls using Guzzle
+   - Implement transactional flow:
+     1. Call AI service endpoint
+     2. Insert into `material_ai_versions` using `MaterialAiVersionRepository`
+     3. Generate embedding and insert into `material_ai_embeddings` using `MaterialAiEmbeddingRepository`
+   - Add proper error handling and rollback on failure
+   - Test with sample PDF upload
+
+14. [ ] **End-to-End Integration Test** (MEDIUM — 1 hour)
+   - Upload test PDF in staging
+   - Trigger AI generation via StudyTools endpoint
+   - Verify rows inserted into `material_ai_versions` and `material_ai_embeddings`
+   - Query latest artifacts using DISTINCT ON pattern
+   - Test RLS: owner can read, non-owner cannot (for private materials)
+
+15. [ ] **Refactor LearningMaterialsController to use Repository** (MEDIUM — 1-2 hours)
+   - Remove duplicate DB access methods (`fetchMaterial`, `send` for material queries)
+   - Replace with repository method calls (`findById`, `list`, `create`, `update`, `softDelete`)
+   - Keep controller-specific logic (authentication, file uploads, storage operations, business rules)
+   - **Why:** Centralize all DB logic in repositories for consistency, testability, and RLS safety
    - `/extract-text` (PDF/DOCX/PPT parsing)
    - `/generate-summary` (T5/BART)
    - `/generate-keypoints` (T5 + prompt)
@@ -444,49 +503,37 @@ WHERE ai_version_id IN (
    - `/generate-flashcards` (prompt-based)
    - `/generate-embedding` (sentence-transformers)
 
-9. [ ] **Wire PHP backend to AI service**
-   - Update `StudyToolsController::callAiService()` with real HTTP calls
-   - Implement transactional insert: AI response → `material_ai_versions` → `material_ai_embeddings`
-   - Handle retries and timeouts
-
-10. [ ] **Test end-to-end in staging**
-    - Upload test PDF
-    - Trigger generation
-    - Verify DB inserts
-    - Test RLS policies
-    - Test latest-artifact queries
-
-11. [ ] **Create ANN index on embeddings** (after loading sample vectors)
+16. [ ] **Create ANN index on embeddings** (after loading sample vectors)
     - Run ANALYZE on `material_ai_embeddings`
     - Create ivfflat or hnsw index
     - Measure recall and latency
 
-12. [ ] **Implement semantic search endpoint**
+17. [ ] **Implement semantic search endpoint**
     - Accept query text
     - Generate query embedding
     - Run nearest-neighbor SQL
     - Return top N materials
 
-13. [ ] **Implement user edit flow**
+18. [ ] **Implement user edit flow**
     - Edit endpoint: insert new version with `generated_by='user_edit'`
     - Version history UI
     - Restore/revert functionality
 
-14. [ ] **Add retention/cleanup job**
+19. [ ] **Add retention/cleanup job**
     - Prune old versions (keep latest N per material+type)
     - Prune orphaned embeddings
     - Schedule as cron job
 
-15. [ ] **Drop legacy AI columns from `learning_materials`**
+20. [ ] **Drop legacy AI columns from `learning_materials`**
     - Verify backend/frontend work with new schema
     - Uncomment DROP statements in migration
     - Run in production with DB snapshot
 
-16. [ ] **Implement recommendations** (dynamic or materialized)
-17. [ ] **Add OCR for image-heavy PDFs** (Tesseract or cloud API)
-18. [ ] **Add vision/captioning for images** (CLIP/BLIP)
-19. [ ] **Production deployment & monitoring**
-20. [ ] **Documentation & API specs**
+21. [ ] **Implement recommendations** (dynamic or materialized)
+22. [ ] **Add OCR for image-heavy PDFs** (Tesseract or cloud API)
+23. [ ] **Add vision/captioning for images** (CLIP/BLIP)
+24. [ ] **Production deployment & monitoring**
+25. [ ] **Documentation & API specs**
 
 ---
 

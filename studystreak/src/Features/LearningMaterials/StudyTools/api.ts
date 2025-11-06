@@ -8,11 +8,17 @@ import type {
   QuizDifficulty,
 } from './types';
 
-const BASE_PATH = '/materials';
+const BASE_PATH = '/api/materials';
 
-export async function fetchSummary(materialId: string): Promise<StudySummary> {
-  const response = await apiClient.get<StudySummary>(
-    `${BASE_PATH}/${materialId}/study-tools/summary`
+export async function fetchSummary(
+  materialId: string,
+  minWords?: number,
+  maxWords?: number,
+  regenerate?: boolean
+): Promise<StudySummary> {
+  const response = await apiClient.post<StudySummary>(
+    `${BASE_PATH}/${materialId}/study-tools/summary`,
+    { min_words: minWords, max_words: maxWords, regenerate }
   );
   return response;
 }
@@ -27,11 +33,12 @@ export async function fetchKeyPoints(materialId: string): Promise<StudyKeyPoints
 export async function fetchQuiz(
   materialId: string,
   type: QuizType,
-  difficulty: QuizDifficulty
+  difficulty: QuizDifficulty,
+  questionCount: number
 ): Promise<StudyQuiz> {
   const response = await apiClient.post<StudyQuiz>(
     `${BASE_PATH}/${materialId}/study-tools/quiz`,
-    { type, difficulty }
+    { question_type: type, difficulty, question_count: questionCount }
   );
   return response;
 }

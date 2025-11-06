@@ -1,0 +1,252 @@
+2025-11-06 04:42:38,951 - routes.embeddings - INFO - Generating embedding for text of length 16 chars
+2025-11-06 04:42:38,952 - routes.embeddings - INFO - Generated 384-dimensional embedding vector (prototype mode)
+2025-11-06 04:42:47,884 - routes.embeddings - INFO - Generating embedding for text of length 23 chars
+2025-11-06 04:42:47,885 - routes.embeddings - INFO - Generated 384-dimensional embedding vector (prototype mode)
+2025-11-06 04:50:19,581 - routes.embeddings - INFO - Generating embedding for text of length 26 chars
+2025-11-06 04:50:19,582 - routes.embeddings - INFO - Generated 384-dimensional embedding vector (prototype mode)
+2025-11-06 04:56:56,333 - routes.embeddings - INFO - Generating embedding for text of length 42 chars using sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 04:56:56,668 - httpx - INFO - HTTP Request: POST https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2 "HTTP/1.1 410 Gone"
+2025-11-06 04:56:56,669 - routes.embeddings - ERROR - HuggingFace API HTTP error: 410 - {"error":"https://api-inference.huggingface.co is no longer supported. Please use https://router.huggingface.co/hf-inference instead."}
+2025-11-06 04:59:35,254 - routes.embeddings - INFO - Generating embedding for text of length 55 chars using sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 04:59:35,602 - httpx - INFO - HTTP Request: POST https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2 "HTTP/1.1 410 Gone"
+2025-11-06 04:59:35,603 - routes.embeddings - ERROR - HuggingFace API HTTP error: 410 - {"error":"https://api-inference.huggingface.co is no longer supported. Please use https://router.huggingface.co/hf-inference instead."}
+2025-11-06 05:00:34,470 - routes.embeddings - INFO - Generating embedding for text of length 116 chars using sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 05:00:34,842 - httpx - INFO - HTTP Request: POST https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2 "HTTP/1.1 400 Bad Request"
+2025-11-06 05:00:34,843 - routes.embeddings - ERROR - HuggingFace API HTTP error: 400 - {"error":"SentenceSimilarityPipeline.__call__() missing 1 required positional argument: 'sentences'"}
+2025-11-06 05:01:19,511 - routes.embeddings - INFO - Generating embedding for text of length 44 chars using sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 05:01:19,817 - httpx - INFO - HTTP Request: POST https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2 "HTTP/1.1 400 Bad Request"
+2025-11-06 05:01:19,818 - routes.embeddings - ERROR - HuggingFace API HTTP error: 400 - {"error":"Body needs to provide a inputs key, received: b'{\"sentences\":[\"Artificial intelligence transforms education\"]}'"}
+2025-11-06 05:03:09,961 - routes.embeddings - INFO - Generating embedding for text of length 4 chars using sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 05:03:10,390 - httpx - INFO - HTTP Request: POST https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2 "HTTP/1.1 400 Bad Request"
+2025-11-06 05:03:10,391 - routes.embeddings - ERROR - HuggingFace API HTTP error: 400 - {"error":"SentenceSimilarityPipeline.__call__() missing 1 required positional argument: 'sentences'"}
+2025-11-06 05:04:59,290 - routes.embeddings - INFO - Generating embedding for text of length 16 chars using sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 05:04:59,688 - httpx - INFO - HTTP Request: POST https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2 "HTTP/1.1 400 Bad Request"
+2025-11-06 05:04:59,689 - routes.embeddings - ERROR - HuggingFace API HTTP error: 400 - {"error":"SentenceSimilarityPipeline.__call__() missing 1 required positional argument: 'sentences'"}
+2025-11-06 05:05:49,629 - routes.embeddings - INFO - Generating embedding for text of length 41 chars using local model
+2025-11-06 05:05:58,735 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 05:05:58,738 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-06 05:05:58,739 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 05:06:09,083 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 05:06:09,160 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 05:06:29,032 - routes.embeddings - INFO - Generating embedding for text of length 49 chars using local model
+2025-11-06 05:06:29,042 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 05:06:29,090 - routes.embeddings - INFO - Generating embedding for text of length 49 chars using local model
+2025-11-06 05:06:29,100 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 05:06:29,146 - routes.embeddings - INFO - Generating embedding for text of length 51 chars using local model
+2025-11-06 05:06:29,155 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 06:00:27,974 - routes.generation - INFO - Generating summary for text of length 167
+2025-11-06 06:00:27,975 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 06:00:27,994 - models.summarizer - ERROR - ❌ Summary generation failed: The following `model_kwargs` are not used by the model: ['cache_dir'] (note: typos in the generate arguments will also show up in this list)
+2025-11-06 06:00:27,997 - routes.generation - ERROR - Summary generation failed: The following `model_kwargs` are not used by the model: ['cache_dir'] (note: typos in the generate arguments will also show up in this list)
+2025-11-06 06:02:50,346 - routes.generation - INFO - Generating summary for text of length 123
+2025-11-06 06:02:50,346 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 06:02:58,152 - models.summarizer - INFO - ✅ Summary generated (50 words)
+2025-11-06 06:32:29,997 - routes.generation - INFO - Generating summary for text of length 97
+2025-11-06 06:32:29,997 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 06:32:37,518 - models.summarizer - INFO - ✅ Summary generated (52 words)
+2025-11-06 06:32:37,524 - routes.embeddings - INFO - Generating embedding for text of length 97 chars using local model
+2025-11-06 06:32:37,525 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 06:32:37,532 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-06 06:32:37,532 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 06:32:40,777 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 06:32:40,944 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 06:42:51,002 - routes.generation - INFO - Generating summary for text of length 17
+2025-11-06 06:42:51,002 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 06:42:58,901 - models.summarizer - INFO - ✅ Summary generated (38 words)
+2025-11-06 06:47:25,764 - routes.generation - INFO - Generating summary for text of length 90
+2025-11-06 06:47:25,764 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 06:47:33,397 - models.summarizer - INFO - ✅ Summary generated (52 words)
+2025-11-06 06:47:33,403 - routes.embeddings - INFO - Generating embedding for text of length 14 chars using local model
+2025-11-06 06:47:33,403 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 06:47:33,405 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-06 06:47:33,406 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 06:47:37,026 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 06:47:37,044 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 08:20:37,598 - routes.extraction - INFO - Extracting text from URL: https://puhxawljwuszjflusxve.supabase.co/storage/v1/object/sign/learning-materials-v2/20c43da0-a3a8-446f-9f19-4027fae844f5/2025/11/06/b60f8a74773e9492-activitysheet08a-sd3a-isidro-leegabriel.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9lZTdjMjUwYy0zNzlhLTRiYjYtOGM2Yi00ZDM0NTZjNjg4MjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsZWFybmluZy1tYXRlcmlhbHMtdjIvMjBjNDNkYTAtYTNhOC00NDZmLTlmMTktNDAyN2ZhZTg0NGY1LzIwMjUvMTEvMDYvYjYwZjhhNzQ3NzNlOTQ5Mi1hY3Rpdml0eXNoZWV0MDhhLXNkM2EtaXNpZHJvLWxlZWdhYnJpZWwucGRmIiwiaWF0IjoxNzYyNDE3MjM3LCJleHAiOjE3NjI0MTc4Mzd9.DFk5sxgA4ok2JD5xrRwPbiCBdRn0x0d23oz8XyKZBxw
+2025-11-06 08:20:39,252 - httpx - INFO - HTTP Request: GET https://puhxawljwuszjflusxve.supabase.co/storage/v1/object/sign/learning-materials-v2/20c43da0-a3a8-446f-9f19-4027fae844f5/2025/11/06/b60f8a74773e9492-activitysheet08a-sd3a-isidro-leegabriel.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9lZTdjMjUwYy0zNzlhLTRiYjYtOGM2Yi00ZDM0NTZjNjg4MjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsZWFybmluZy1tYXRlcmlhbHMtdjIvMjBjNDNkYTAtYTNhOC00NDZmLTlmMTktNDAyN2ZhZTg0NGY1LzIwMjUvMTEvMDYvYjYwZjhhNzQ3NzNlOTQ5Mi1hY3Rpdml0eXNoZWV0MDhhLXNkM2EtaXNpZHJvLWxlZWdhYnJpZWwucGRmIiwiaWF0IjoxNzYyNDE3MjM3LCJleHAiOjE3NjI0MTc4Mzd9.DFk5sxgA4ok2JD5xrRwPbiCBdRn0x0d23oz8XyKZBxw "HTTP/1.1 200 OK"
+2025-11-06 08:41:44,075 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 08:41:44,075 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 08:41:44,076 - models.summarizer - WARNING - Input text truncated to 1000 words
+2025-11-06 08:41:44,224 - models.summarizer - ERROR - ❌ Summary generation failed: index out of range in self
+2025-11-06 08:41:44,224 - routes.generation - ERROR - Summary generation failed: index out of range in self
+2025-11-06 08:41:45,058 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 08:41:45,058 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 08:41:45,059 - models.summarizer - WARNING - Input text truncated to 1000 words
+2025-11-06 08:41:45,067 - models.summarizer - ERROR - ❌ Summary generation failed: index out of range in self
+2025-11-06 08:41:45,067 - routes.generation - ERROR - Summary generation failed: index out of range in self
+2025-11-06 08:41:49,647 - routes.generation - INFO - Generating keypoints for text of length 7856
+2025-11-06 08:41:49,648 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 08:42:12,111 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 08:42:13,813 - routes.generation - INFO - Generating keypoints for text of length 7856
+2025-11-06 08:42:13,814 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 08:42:34,662 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 08:42:47,275 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 08:42:47,275 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 08:42:47,276 - models.summarizer - WARNING - Input text truncated to 1000 words
+2025-11-06 08:42:47,284 - models.summarizer - ERROR - ❌ Summary generation failed: index out of range in self
+2025-11-06 08:42:47,284 - routes.generation - ERROR - Summary generation failed: index out of range in self
+2025-11-06 08:42:48,247 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 08:42:48,247 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 08:42:48,247 - models.summarizer - WARNING - Input text truncated to 1000 words
+2025-11-06 08:42:48,254 - models.summarizer - ERROR - ❌ Summary generation failed: index out of range in self
+2025-11-06 08:42:48,255 - routes.generation - ERROR - Summary generation failed: index out of range in self
+2025-11-06 08:42:59,193 - routes.generation - INFO - Generating 5 quiz questions
+2025-11-06 08:42:59,194 - models.qa_generator - INFO - Generating 5 quiz questions
+2025-11-06 08:43:01,447 - models.qa_generator - INFO - ✅ Generated 5 quiz questions
+2025-11-06 08:43:12,143 - routes.generation - INFO - Generating 10 flashcards
+2025-11-06 08:43:12,144 - models.qa_generator - INFO - Generating 10 flashcards
+2025-11-06 08:43:12,144 - models.qa_generator - INFO - ✅ Generated 10 flashcards
+2025-11-06 08:43:13,323 - routes.generation - INFO - Generating 10 flashcards
+2025-11-06 08:43:13,323 - models.qa_generator - INFO - Generating 10 flashcards
+2025-11-06 08:43:13,324 - models.qa_generator - INFO - ✅ Generated 10 flashcards
+2025-11-06 08:48:05,466 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 08:48:05,467 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 08:48:05,467 - models.summarizer - WARNING - Input text truncated from 1100 to 700 words
+2025-11-06 08:48:05,467 - models.summarizer - INFO - Adjusted lengths: min=50, max=150
+2025-11-06 08:48:23,219 - models.summarizer - INFO - ✅ Summary generated (55 words)
+2025-11-06 08:48:24,390 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 08:48:24,391 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 08:48:24,391 - models.summarizer - WARNING - Input text truncated from 1100 to 700 words
+2025-11-06 08:48:24,391 - models.summarizer - INFO - Adjusted lengths: min=50, max=150
+2025-11-06 08:48:36,693 - models.summarizer - INFO - ✅ Summary generated (55 words)
+2025-11-06 08:49:09,360 - routes.generation - INFO - Generating keypoints for text of length 7856
+2025-11-06 08:49:09,360 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 08:49:29,511 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 08:49:30,989 - routes.generation - INFO - Generating keypoints for text of length 7856
+2025-11-06 08:49:30,989 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 08:49:49,574 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 09:02:12,155 - routes.generation - INFO - Generating keypoints for text of length 7856
+2025-11-06 09:02:12,156 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 09:02:32,753 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 09:02:34,552 - routes.generation - INFO - Generating keypoints for text of length 7856
+2025-11-06 09:02:34,552 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 09:02:55,256 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 09:02:59,999 - routes.generation - INFO - Generating 5 quiz questions
+2025-11-06 09:02:59,999 - models.qa_generator - INFO - Generating 5 quiz questions
+2025-11-06 09:03:02,501 - models.qa_generator - INFO - ✅ Generated 5 quiz questions
+2025-11-06 09:03:26,441 - routes.generation - INFO - Generating 10 flashcards
+2025-11-06 09:03:26,441 - models.qa_generator - INFO - Generating 10 flashcards
+2025-11-06 09:03:26,442 - models.qa_generator - INFO - ✅ Generated 10 flashcards
+2025-11-06 09:03:27,603 - routes.generation - INFO - Generating 10 flashcards
+2025-11-06 09:03:27,604 - models.qa_generator - INFO - Generating 10 flashcards
+2025-11-06 09:03:27,604 - models.qa_generator - INFO - ✅ Generated 10 flashcards
+2025-11-06 09:04:02,463 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 09:04:02,464 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 09:04:02,465 - models.summarizer - WARNING - Input text truncated from 1100 to 700 words
+2025-11-06 09:04:02,465 - models.summarizer - INFO - Adjusted lengths: min=50, max=150
+2025-11-06 09:04:17,033 - models.summarizer - INFO - ✅ Summary generated (55 words)
+2025-11-06 09:04:18,560 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 09:04:18,560 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 09:04:18,561 - models.summarizer - WARNING - Input text truncated from 1100 to 700 words
+2025-11-06 09:04:18,561 - models.summarizer - INFO - Adjusted lengths: min=50, max=150
+2025-11-06 09:04:32,307 - models.summarizer - INFO - ✅ Summary generated (55 words)
+2025-11-06 09:24:00,121 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 09:24:00,122 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 09:24:00,122 - models.summarizer - WARNING - Input text truncated from 1100 to 700 words
+2025-11-06 09:24:00,122 - models.summarizer - INFO - Adjusted lengths: min=50, max=150
+2025-11-06 09:24:13,387 - models.summarizer - INFO - ✅ Summary generated (55 words)
+2025-11-06 09:24:14,533 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 09:24:14,533 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 09:24:14,534 - models.summarizer - WARNING - Input text truncated from 1100 to 700 words
+2025-11-06 09:24:14,534 - models.summarizer - INFO - Adjusted lengths: min=50, max=150
+2025-11-06 09:24:26,808 - models.summarizer - INFO - ✅ Summary generated (55 words)
+2025-11-06 09:24:38,151 - routes.generation - INFO - Generating keypoints for text of length 7856
+2025-11-06 09:24:38,151 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 09:24:59,630 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 09:25:00,782 - routes.generation - INFO - Generating keypoints for text of length 7856
+2025-11-06 09:25:00,782 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 09:25:23,174 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 09:25:24,290 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 09:25:24,290 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 09:25:24,291 - models.summarizer - WARNING - Input text truncated from 1100 to 700 words
+2025-11-06 09:25:24,291 - models.summarizer - INFO - Adjusted lengths: min=50, max=150
+2025-11-06 09:25:38,060 - models.summarizer - INFO - ✅ Summary generated (55 words)
+2025-11-06 09:25:39,495 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 09:25:39,496 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 09:25:39,496 - models.summarizer - WARNING - Input text truncated from 1100 to 700 words
+2025-11-06 09:25:39,496 - models.summarizer - INFO - Adjusted lengths: min=50, max=150
+2025-11-06 09:25:54,085 - models.summarizer - INFO - ✅ Summary generated (55 words)
+2025-11-06 09:28:15,644 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 09:28:15,644 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 09:28:15,645 - models.summarizer - WARNING - Input text truncated from 1100 to 700 words
+2025-11-06 09:28:15,645 - models.summarizer - INFO - Adjusted lengths: min=50, max=150
+2025-11-06 09:28:28,163 - models.summarizer - INFO - ✅ Summary generated (55 words)
+2025-11-06 09:32:03,954 - routes.generation - INFO - Generating keypoints for text of length 7856
+2025-11-06 09:32:03,954 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 09:32:22,531 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 09:35:39,797 - routes.generation - INFO - Generating 10 flashcards
+2025-11-06 09:35:39,797 - models.qa_generator - INFO - Generating 10 flashcards
+2025-11-06 09:35:39,802 - models.qa_generator - INFO - ✅ Generated 10 flashcards
+2025-11-06 09:40:22,768 - routes.generation - INFO - Generating 5 quiz questions
+2025-11-06 09:40:22,769 - models.qa_generator - INFO - Generating 5 quiz questions
+2025-11-06 09:40:28,084 - models.qa_generator - INFO - ✅ Generated 5 quiz questions
+2025-11-06 09:52:12,580 - routes.extraction - INFO - Extracting text from URL: https://puhxawljwuszjflusxve.supabase.co/storage/v1/object/sign/learning-materials-v2/20c43da0-a3a8-446f-9f19-4027fae844f5/2025/11/06/8c08fbbc61aac32c-61b73b49716ad354-course-packet-1-introduction-to-database-concepts.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9lZTdjMjUwYy0zNzlhLTRiYjYtOGM2Yi00ZDM0NTZjNjg4MjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsZWFybmluZy1tYXRlcmlhbHMtdjIvMjBjNDNkYTAtYTNhOC00NDZmLTlmMTktNDAyN2ZhZTg0NGY1LzIwMjUvMTEvMDYvOGMwOGZiYmM2MWFhYzMyYy02MWI3M2I0OTcxNmFkMzU0LWNvdXJzZS1wYWNrZXQtMS1pbnRyb2R1Y3Rpb24tdG8tZGF0YWJhc2UtY29uY2VwdHMucGRmIiwiaWF0IjoxNzYyNDIyNzMyLCJleHAiOjE3NjI0MjMzMzJ9.4sRHiHTnjIc_EVxECEZM9TzuxwVCPSa1o54Y-m1MvIM
+2025-11-06 09:52:15,068 - httpx - INFO - HTTP Request: GET https://puhxawljwuszjflusxve.supabase.co/storage/v1/object/sign/learning-materials-v2/20c43da0-a3a8-446f-9f19-4027fae844f5/2025/11/06/8c08fbbc61aac32c-61b73b49716ad354-course-packet-1-introduction-to-database-concepts.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9lZTdjMjUwYy0zNzlhLTRiYjYtOGM2Yi00ZDM0NTZjNjg4MjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsZWFybmluZy1tYXRlcmlhbHMtdjIvMjBjNDNkYTAtYTNhOC00NDZmLTlmMTktNDAyN2ZhZTg0NGY1LzIwMjUvMTEvMDYvOGMwOGZiYmM2MWFhYzMyYy02MWI3M2I0OTcxNmFkMzU0LWNvdXJzZS1wYWNrZXQtMS1pbnRyb2R1Y3Rpb24tdG8tZGF0YWJhc2UtY29uY2VwdHMucGRmIiwiaWF0IjoxNzYyNDIyNzMyLCJleHAiOjE3NjI0MjMzMzJ9.4sRHiHTnjIc_EVxECEZM9TzuxwVCPSa1o54Y-m1MvIM "HTTP/1.1 200 OK"
+2025-11-06 09:52:23,662 - routes.generation - INFO - Generating summary for text of length 4171
+2025-11-06 09:52:23,663 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 09:52:23,663 - models.summarizer - INFO - Adjusted lengths: min=50, max=150
+2025-11-06 09:52:35,357 - models.summarizer - INFO - ✅ Summary generated (45 words)
+2025-11-06 09:52:35,621 - routes.embeddings - INFO - Generating embedding for text of length 4172 chars using local model
+2025-11-06 09:52:35,621 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 09:52:35,645 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-06 09:52:35,646 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 09:52:39,236 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 09:52:39,611 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 09:52:49,387 - routes.generation - INFO - Generating keypoints for text of length 4171
+2025-11-06 09:52:49,388 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 09:53:08,649 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 09:53:08,926 - routes.embeddings - INFO - Generating embedding for text of length 4172 chars using local model
+2025-11-06 09:53:08,963 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 10:25:24,614 - routes.generation - INFO - Generating 5 quiz questions
+2025-11-06 10:25:24,614 - models.qa_generator - INFO - Generating 5 quiz questions
+2025-11-06 10:25:32,771 - models.qa_generator - INFO - ✅ Generated 4 quiz questions
+2025-11-06 10:25:33,054 - routes.embeddings - INFO - Generating embedding for text of length 4172 chars using local model
+2025-11-06 10:25:33,054 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 10:25:33,058 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-06 10:25:33,059 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 10:25:36,297 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 10:25:36,595 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 10:25:47,611 - routes.generation - INFO - Generating 10 flashcards
+2025-11-06 10:25:47,611 - models.qa_generator - INFO - Generating 10 flashcards
+2025-11-06 10:25:47,611 - models.qa_generator - INFO - ✅ Generated 10 flashcards
+2025-11-06 10:25:47,918 - routes.embeddings - INFO - Generating embedding for text of length 4172 chars using local model
+2025-11-06 10:25:47,950 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 11:13:44,139 - routes.extraction - INFO - Extracting text from URL: https://puhxawljwuszjflusxve.supabase.co/storage/v1/object/sign/learning-materials-v2/20c43da0-a3a8-446f-9f19-4027fae844f5/2025/11/06/07e171124402ab3e-61b73b49716ad354-course-packet-1-introduction-to-database-concepts.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9lZTdjMjUwYy0zNzlhLTRiYjYtOGM2Yi00ZDM0NTZjNjg4MjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsZWFybmluZy1tYXRlcmlhbHMtdjIvMjBjNDNkYTAtYTNhOC00NDZmLTlmMTktNDAyN2ZhZTg0NGY1LzIwMjUvMTEvMDYvMDdlMTcxMTI0NDAyYWIzZS02MWI3M2I0OTcxNmFkMzU0LWNvdXJzZS1wYWNrZXQtMS1pbnRyb2R1Y3Rpb24tdG8tZGF0YWJhc2UtY29uY2VwdHMucGRmIiwiaWF0IjoxNzYyNDI3NjIzLCJleHAiOjE3NjI0MjgyMjN9.mz7t55cGv-TM9TaVJdwPpg7-a6lobVUOPUEYBod7q3o
+2025-11-06 11:13:46,745 - httpx - INFO - HTTP Request: GET https://puhxawljwuszjflusxve.supabase.co/storage/v1/object/sign/learning-materials-v2/20c43da0-a3a8-446f-9f19-4027fae844f5/2025/11/06/07e171124402ab3e-61b73b49716ad354-course-packet-1-introduction-to-database-concepts.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9lZTdjMjUwYy0zNzlhLTRiYjYtOGM2Yi00ZDM0NTZjNjg4MjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsZWFybmluZy1tYXRlcmlhbHMtdjIvMjBjNDNkYTAtYTNhOC00NDZmLTlmMTktNDAyN2ZhZTg0NGY1LzIwMjUvMTEvMDYvMDdlMTcxMTI0NDAyYWIzZS02MWI3M2I0OTcxNmFkMzU0LWNvdXJzZS1wYWNrZXQtMS1pbnRyb2R1Y3Rpb24tdG8tZGF0YWJhc2UtY29uY2VwdHMucGRmIiwiaWF0IjoxNzYyNDI3NjIzLCJleHAiOjE3NjI0MjgyMjN9.mz7t55cGv-TM9TaVJdwPpg7-a6lobVUOPUEYBod7q3o "HTTP/1.1 200 OK"
+2025-11-06 11:13:54,087 - routes.generation - INFO - Generating summary for text of length 4171
+2025-11-06 11:13:54,087 - models.summarizer - INFO - Generating summary (target_max_words=400)
+2025-11-06 11:14:22,306 - models.summarizer - INFO - ✅ Summary generated (45 words)
+2025-11-06 11:14:22,715 - routes.embeddings - INFO - Generating embedding for text of length 4172 chars using local model
+2025-11-06 11:14:22,716 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 11:14:22,741 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-06 11:14:22,742 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 11:14:26,719 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 11:14:27,074 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 11:16:10,126 - routes.generation - INFO - Generating keypoints for text of length 4171
+2025-11-06 11:16:10,126 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 11:16:10,127 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 11:16:27,909 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-06 11:16:28,199 - routes.embeddings - INFO - Generating embedding for text of length 4172 chars using local model
+2025-11-06 11:16:28,200 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 11:16:28,202 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-06 11:16:28,202 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 11:16:31,916 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 11:16:31,985 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 11:18:12,910 - routes.generation - INFO - Generating 20 quiz questions
+2025-11-06 11:18:12,910 - models.qa_generator - INFO - Generating 20 quiz questions
+2025-11-06 11:18:28,179 - models.qa_generator - INFO - ✅ Generated 17 quiz questions
+2025-11-06 11:21:01,527 - routes.generation - INFO - Generating 15 quiz questions
+2025-11-06 11:21:01,527 - models.qa_generator - INFO - Generating 15 quiz questions
+2025-11-06 11:21:09,340 - models.qa_generator - INFO - ✅ Generated 13 quiz questions
+2025-11-06 11:21:09,643 - routes.embeddings - INFO - Generating embedding for text of length 4172 chars using local model
+2025-11-06 11:21:09,678 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 12:02:33,574 - routes.generation - INFO - Generating 15 quiz questions
+2025-11-06 12:02:33,576 - models.qa_generator - INFO - Generating 15 quiz questions
+2025-11-06 12:02:41,759 - models.qa_generator - INFO - ✅ Generated 12 quiz questions
+2025-11-06 12:02:42,075 - routes.embeddings - INFO - Generating embedding for text of length 4172 chars using local model
+2025-11-06 12:02:42,217 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 12:04:23,115 - routes.generation - INFO - Generating 10 flashcards
+2025-11-06 12:04:23,117 - models.qa_generator - INFO - Generating 10 flashcards
+2025-11-06 12:04:23,119 - models.qa_generator - INFO - ✅ Generated 10 flashcards
+2025-11-06 12:04:23,379 - routes.embeddings - INFO - Generating embedding for text of length 4172 chars using local model
+2025-11-06 12:04:23,430 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding

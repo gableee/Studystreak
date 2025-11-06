@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Sparkles, Loader2, AlertCircle, ChevronDown } from 'lucide-react';
 import { fetchKeyPoints } from './api';
+import { apiClient } from '@/lib/apiClient';
+import { supabase } from '@/lib/supabaseClient';
 import type { StudyKeyPoints } from './types';
 
 interface KeyPointsTabProps {
@@ -90,14 +92,38 @@ export function KeyPointsTab({ materialId }: KeyPointsTabProps) {
   return (
     <div className="space-y-4 animate-fade-in">
       {/* AI Generated Badge */}
-      <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 text-sm font-medium">
-        <Sparkles className="w-4 h-4" />
-        <span>AI Generated</span>
-        {keypoints.generatedAt && (
-          <span className="text-slate-400 dark:text-slate-500">
-            • {new Date(keypoints.generatedAt).toLocaleDateString()}
-          </span>
-        )}
+      <div className="flex items-center justify-between gap-2 text-purple-600 dark:text-purple-400 text-sm font-medium">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4" />
+          <span>AI Generated</span>
+          {keypoints.generatedAt && (
+            <span className="text-slate-400 dark:text-slate-500">
+              • {new Date(keypoints.generatedAt).toLocaleDateString()}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={async () => {
+            const { data } = await supabase.auth.getSession();
+            const token = data.session?.access_token;
+            const url = `${apiClient.baseUrl}/api/materials/${materialId}/study-tools/keypoints.pdf`;
+            const res = await fetch(url, {
+              headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+            });
+            const blob = await res.blob();
+            const dlUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = dlUrl;
+            a.download = 'keypoints.pdf';
+            document.body.appendChild(a);
+            a.click();
+            URL.revokeObjectURL(dlUrl);
+            a.remove();
+          }}
+          className="px-3 py-1.5 rounded-xl bg-slate-900 text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white transition"
+        >
+          Download PDF
+        </button>
       </div>
 
       {/* Key Points List */}

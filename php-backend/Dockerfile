@@ -1,6 +1,6 @@
 FROM php:8.2-cli
 
-# Install system dependencies and PHP extensions required by Composer, Guzzle, and database drivers
+# Install system dependencies and PHP extensions required by Composer, Guzzle, database drivers, and mPDF
 RUN apt-get update \
 	&& apt-get install -y \
 		git \
@@ -8,8 +8,12 @@ RUN apt-get update \
 		libzip-dev \
 		libonig-dev \
 		libpq-dev \
+		libfreetype6-dev \
+		libjpeg62-turbo-dev \
+		libpng-dev \
+	&& docker-php-ext-configure gd --with-freetype --with-jpeg \
 	&& docker-php-ext-configure zip \
-	&& docker-php-ext-install zip mbstring pdo_pgsql \
+	&& docker-php-ext-install zip mbstring pdo_pgsql gd \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Install Composer from the official image

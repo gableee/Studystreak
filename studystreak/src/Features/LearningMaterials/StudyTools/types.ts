@@ -26,7 +26,7 @@ export interface QuizQuestion {
   question: string;
   type: QuizType;
   options?: string[]; // For multiple-choice
-  correctAnswer: string | boolean;
+  correctAnswer: string | string[]; // Support multiple correct answers
   explanation?: string;
 }
 
