@@ -1,6 +1,6 @@
 FROM php:8.2-cli
 
-# Install system dependencies and PHP extensions required by Composer, Guzzle, and database drivers
+# Install system dependencies and PHP extensions required by Composer, Guzzle, database drivers, and mPDF
 RUN apt-get update \
 	&& apt-get install -y \
 		git \
@@ -8,8 +8,12 @@ RUN apt-get update \
 		libzip-dev \
 		libonig-dev \
 		libpq-dev \
+		libfreetype6-dev \
+		libjpeg62-turbo-dev \
+		libpng-dev \
+	&& docker-php-ext-configure gd --with-freetype --with-jpeg \
 	&& docker-php-ext-configure zip \
-	&& docker-php-ext-install zip mbstring pdo_pgsql \
+	&& docker-php-ext-install zip mbstring pdo_pgsql gd \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Install Composer from the official image
@@ -30,4 +34,4 @@ RUN composer dump-autoload --optimize
 
 EXPOSE 8181
 
-CMD ["php", "-d", "variables_order=EGPCS", "-d", "auto_prepend_file=", "-d", "auto_append_file=", "-d", "upload_max_filesize=150M", "-d", "post_max_size=160M", "-d", "memory_limit=512M", "-d", "max_execution_time=180", "-d", "max_input_time=180", "-S", "0.0.0.0:8181", "-t", "public"]
+CMD ["php", "-d", "variables_order=EGPCS", "-d", "auto_prepend_file=", "-d", "auto_append_file=", "-d", "upload_max_filesize=150M", "-d", "post_max_size=160M", "-d", "memory_limit=512M", "-d", "max_execution_time=180", "-d", "max_input_time=180", "-S", "0.0.0.0:8181", "-t", "public", "public/router.php"]

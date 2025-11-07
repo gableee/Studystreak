@@ -32,6 +32,7 @@ if ($probePath === '/health' || $probePath === '/') {
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use App\Config\SupabaseConfig;
+use App\Config\AiConfig;
 use App\Http\Request;
 use App\Http\JsonResponder;
 use App\Auth\SupabaseAuth;
@@ -41,6 +42,8 @@ use App\Middleware\AuthMiddleware;
 use App\Controllers\GamificationController;
 use App\Controllers\LearningMaterialsController;
 use App\Controllers\StudyToolsController;
+use App\Repositories\LearningMaterialRepository;
+use GuzzleHttp\Client;
 
 
 // Load env
@@ -49,13 +52,16 @@ $dotenv = $dotenvClass::createImmutable(__DIR__ . '/..');
 $dotenv->safeLoad();
 
 $config = new SupabaseConfig();
+$aiConfig = new AiConfig();
 $supabaseAuth = new SupabaseAuth($config->getUrl(), $config->getAnonKey(), $config->getServiceRoleKey());
 $authMiddleware = new AuthMiddleware($supabaseAuth);
 $todoController = new TodoController($config);
 $authController = new AuthController($supabaseAuth);
 $gamificationController = new GamificationController($config);
-$learningMaterialsController = new LearningMaterialsController($config, $supabaseAuth);
-$studyToolsController = new StudyToolsController($config, $supabaseAuth);
+$guzzleClient = new Client(['base_uri' => $config->getUrl()]);
+$learningMaterialRepository = new LearningMaterialRepository($guzzleClient, $config->getAnonKey(), $config->getServiceRoleKey());
+$learningMaterialsController = new LearningMaterialsController($config, $supabaseAuth, $learningMaterialRepository);
+$studyToolsController = new StudyToolsController($config, $aiConfig);
 
 // Basic CORS (dev) - adjust origin in production
 // Allow the health endpoint to be checked by probes that do not send an Origin header.
@@ -146,7 +152,7 @@ if ($requestPath === '/health' || $requestPath === '/' || str_starts_with($reque
       $allowedOrigin = $origin ?? $normalizedAllowedMap[$normalizedOrigin];
     } elseif (isset($normalizedFallbackMap[$normalizedOrigin])) {
       $allowedOrigin = $origin ?? $normalizedFallbackMap[$normalizedOrigin];
-    } elseif ($normalizedAllowedMap === []) {
+    } elseif (count($normalizedAllowedMap) === 0) {
       $hostedFallbacks = [
         'https://studystreak-peach.vercel.app',
         'https://studystreak-backend.onrender.com',
@@ -166,15 +172,26 @@ if ($requestPath === '/health' || $requestPath === '/' || str_starts_with($reque
     }
   }
 
-  if ($allowedOrigin === null && $origin !== null && !$allowAnyConfiguredOrigin) {
-    header('Content-Type: application/json');
-    http_response_code(403);
-    echo json_encode(['error' => 'Origin not allowed']);
-    exit;
+  // If no allowed origin found but we have configured origins, check if empty means allow all
+  if ($allowedOrigin === null && $origin !== null) {
+    // Log for debugging
+    error_log(sprintf('[CORS] Origin not in allowed list: %s (normalized: %s)', $origin, $normalizedOrigin ?? 'null'));
+    error_log(sprintf('[CORS] Allowed origins: %s', json_encode(array_keys($normalizedAllowedMap))));
+    error_log(sprintf('[CORS] Fallback origins: %s', json_encode(array_keys($normalizedFallbackMap))));
+    
+    // Allow origin anyway if it's in fallback (dev mode)
+    if (isset($normalizedFallbackMap[$normalizedOrigin])) {
+      $allowedOrigin = $origin;
+    }
   }
 
   if ($allowedOrigin !== null) {
     header('Access-Control-Allow-Origin: ' . $allowedOrigin);
+  } else {
+    // If no origin matched and origin is present, still allow CORS for OPTIONS
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS' && $origin !== null) {
+      header('Access-Control-Allow-Origin: ' . $origin);
+    }
   }
 
   header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
@@ -381,11 +398,13 @@ if (preg_match('#^/api/learning-materials/([0-9a-fA-F\-]{36})$#', $path, $matche
 }
 
 // Study Tools routes (AI-powered features)
-// GET /api/materials/{id}/study-tools/summary
+// GET|POST /api/materials/{id}/study-tools/summary
 if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/summary$#', $path, $matches)) {
   $materialId = $matches[1];
-  if ($method === 'GET') {
-    $studyToolsController->getSummary($request, $materialId);
+  if ($method === 'GET' || $method === 'POST') {
+    $authMiddleware->handle($request, function(Request $authedRequest) use ($studyToolsController, $materialId): void {
+      $studyToolsController->getSummary($authedRequest, $materialId);
+    });
   } else {
     JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
   }
@@ -396,7 +415,22 @@ if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/summary$#', $pa
 if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/keypoints$#', $path, $matches)) {
   $materialId = $matches[1];
   if ($method === 'GET') {
-    $studyToolsController->getKeyPoints($request, $materialId);
+    $authMiddleware->handle($request, function(Request $authedRequest) use ($studyToolsController, $materialId): void {
+      $studyToolsController->getKeyPoints($authedRequest, $materialId);
+    });
+  } else {
+    JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
+  }
+  exit;
+}
+
+// GET /api/materials/{id}/study-tools/keypoints-v2
+if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/keypoints-v2$#', $path, $matches)) {
+  $materialId = $matches[1];
+  if ($method === 'GET') {
+    $authMiddleware->handle($request, function(Request $authedRequest) use ($studyToolsController, $materialId): void {
+      $studyToolsController->getKeyPointsV2($authedRequest, $materialId);
+    });
   } else {
     JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
   }
@@ -407,7 +441,9 @@ if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/keypoints$#', $
 if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/quiz$#', $path, $matches)) {
   $materialId = $matches[1];
   if ($method === 'POST') {
-    $studyToolsController->generateQuiz($request, $materialId);
+    $authMiddleware->handle($request, function(Request $authedRequest) use ($studyToolsController, $materialId): void {
+      $studyToolsController->generateQuiz($authedRequest, $materialId);
+    });
   } else {
     JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
   }
@@ -418,7 +454,67 @@ if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/quiz$#', $path,
 if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/flashcards$#', $path, $matches)) {
   $materialId = $matches[1];
   if ($method === 'GET') {
-    $studyToolsController->getFlashcards($request, $materialId);
+    $authMiddleware->handle($request, function(Request $authedRequest) use ($studyToolsController, $materialId): void {
+      $studyToolsController->getFlashcards($authedRequest, $materialId);
+    });
+  } else {
+    JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
+  }
+  exit;
+}
+
+// POST /api/materials/{id}/study-tools/study-note
+if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/study-note$#', $path, $matches)) {
+  $materialId = $matches[1];
+  if ($method === 'POST') {
+    $authMiddleware->handle($request, function(Request $authedRequest) use ($studyToolsController, $materialId): void {
+      $studyToolsController->getStudyNote($authedRequest, $materialId);
+    });
+  } else {
+    JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
+  }
+  exit;
+}
+
+// GET /api/materials/{id}/study-tools/{type}.pdf
+if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/(summary|keypoints|quiz)\.pdf$#', $path, $matches)) {
+  $materialId = $matches[1];
+  $type = $matches[2];
+  if ($method === 'OPTIONS') {
+    // CORS preflight already handled at top of file
+    http_response_code(204);
+    exit;
+  }
+  if ($method === 'GET') {
+    $authMiddleware->handle($request, function(Request $authedRequest) use ($studyToolsController, $materialId, $type): void {
+      $studyToolsController->downloadPdf($authedRequest, $materialId, $type);
+    });
+  } else {
+    JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
+  }
+  exit;
+}
+
+// POST /api/materials/{id}/quiz-attempts
+if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/quiz-attempts$#', $path, $matches)) {
+  $materialId = $matches[1];
+  if ($method === 'POST') {
+    $authMiddleware->handle($request, function(Request $authedRequest) use ($studyToolsController, $materialId): void {
+      $studyToolsController->createQuizAttempt($authedRequest, $materialId);
+    });
+  } else {
+    JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
+  }
+  exit;
+}
+
+// GET /api/materials/{id}/quiz-attempts/history
+if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/quiz-attempts/history$#', $path, $matches)) {
+  $materialId = $matches[1];
+  if ($method === 'GET') {
+    $authMiddleware->handle($request, function(Request $authedRequest) use ($studyToolsController, $materialId): void {
+      $studyToolsController->getQuizAttemptHistory($authedRequest, $materialId);
+    });
   } else {
     JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
   }

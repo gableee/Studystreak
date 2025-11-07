@@ -8,12 +8,14 @@ use App\Auth\SupabaseAuth;
 use App\Config\SupabaseConfig;
 use App\Http\JsonResponder;
 use App\Http\Request;
+use App\Repositories\LearningMaterialRepository;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
 final class LearningMaterialsController
 {
     private SupabaseAuth $supabaseAuth;
+    private LearningMaterialRepository $repository;
     private Client $client;
     private string $supabaseUrl;
     private string $anonKey;
@@ -21,9 +23,10 @@ final class LearningMaterialsController
     private string $bucket;
     private const ALLOWED_CONTENT_TYPES = ['pdf', 'video', 'ppt', 'article'];
 
-    public function __construct(SupabaseConfig $config, SupabaseAuth $supabaseAuth)
+    public function __construct(SupabaseConfig $config, SupabaseAuth $supabaseAuth, LearningMaterialRepository $repository)
     {
         $this->supabaseAuth = $supabaseAuth;
+        $this->repository = $repository;
         $this->supabaseUrl = rtrim($config->getUrl(), '/');
         $this->anonKey = $config->getAnonKey();
         $this->serviceRoleKey = $config->getServiceRoleKey();
@@ -72,17 +75,7 @@ final class LearningMaterialsController
         }
 
         $query = $this->buildListQuery($params, $user, $likedMaterialIds);
-        $headers = [
-            'apikey' => $this->anonKey,
-            'Authorization' => 'Bearer ' . ($token ?? $this->anonKey),
-            'Accept' => 'application/json',
-            'Prefer' => 'count=exact',
-        ];
-
-        $result = $this->send('GET', '/rest/v1/learning_materials', [
-            'headers' => $headers,
-            'query' => $query,
-        ]);
+        $result = $this->repository->list($query, $token ?? $this->anonKey);
 
         if ($result['status'] !== 200 && $result['status'] !== 206) {
             // Log upstream (PostgREST) response for debugging
@@ -137,7 +130,7 @@ final class LearningMaterialsController
     public function show(Request $request, string $id): void
     {
         [$user, $token] = $this->resolveOptionalUser($request);
-        $material = $this->fetchMaterial($id, $token ?? $this->anonKey);
+        $material = $this->repository->findById($id, $token ?? $this->anonKey);
 
         if ($material === null) {
             JsonResponder::withStatus(404, ['error' => 'Learning material not found']);
@@ -245,15 +238,7 @@ final class LearningMaterialsController
         @mkdir(__DIR__ . '/../../../tmp', 0755, true);
         @file_put_contents(__DIR__ . '/../../../tmp/create_payload.log', json_encode($payload, JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
 
-        $result = $this->send('POST', '/rest/v1/learning_materials', [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $token,
-                'apikey' => $this->anonKey,
-                'Prefer' => 'return=representation',
-                'Content-Type' => 'application/json',
-            ],
-            'json' => $payload,
-        ]);
+        $result = $this->repository->create($payload, $token);
 
         if ($result['status'] >= 400 || !is_array($result['payload'])) {
             JsonResponder::withStatus($result['status'], [
@@ -279,7 +264,7 @@ final class LearningMaterialsController
                 return;
             }
 
-            $existing = $this->fetchMaterial($id, $token);
+            $existing = $this->repository->findById($id, $token);
             if ($existing === null) {
                 JsonResponder::withStatus(404, ['error' => 'Learning material not found']);
                 return;
@@ -340,16 +325,7 @@ final class LearningMaterialsController
                 return;
             }
 
-            $result = $this->send('PATCH', '/rest/v1/learning_materials', [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $token,
-                    'apikey' => $this->anonKey,
-                    'Prefer' => 'return=representation',
-                    'Content-Type' => 'application/json',
-                ],
-                'query' => ['material_id' => 'eq.' . $id],
-                'json' => $payload,
-            ]);
+            $result = $this->repository->update($id, $payload, $token);
 
             if ($result['status'] >= 400 || !is_array($result['payload'])) {
                 JsonResponder::withStatus($result['status'], [
@@ -384,7 +360,7 @@ final class LearningMaterialsController
             return;
         }
 
-        $material = $this->fetchMaterial($id, $token);
+        $material = $this->repository->findById($id, $token);
         if ($material === null) {
             JsonResponder::withStatus(404, ['error' => 'Learning material not found']);
             return;
@@ -399,19 +375,7 @@ final class LearningMaterialsController
             $this->deleteObject($material['storage_path'], $token, (bool)($material['is_public'] ?? false));
         }
 
-        $result = $this->send('PATCH', '/rest/v1/learning_materials', [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $token,
-                'apikey' => $this->anonKey,
-                'Prefer' => 'return=minimal',
-                'Content-Type' => 'application/json',
-            ],
-            'query' => ['material_id' => 'eq.' . $id],
-            'json' => [
-                'deleted_at' => gmdate('c'),
-                'storage_path' => null,
-            ],
-        ]);
+        $result = $this->repository->softDelete($id, $token);
 
         if ($result['status'] >= 400) {
             JsonResponder::withStatus($result['status'], [
@@ -430,7 +394,7 @@ final class LearningMaterialsController
         [$user, $maybeToken] = $this->resolveOptionalUser($request);
         $tokenForSelect = $maybeToken ?? $this->anonKey;
 
-        $material = $this->fetchMaterial($id, $tokenForSelect);
+        $material = $this->repository->findById($id, $tokenForSelect);
         if ($material === null) {
             JsonResponder::withStatus(404, ['error' => 'Learning material not found']);
             return;
@@ -613,25 +577,8 @@ final class LearningMaterialsController
 
     private function incrementDownloadCount(string $materialId, array $material, ?string $maybeToken): void
     {
-        // Prefer service role for anonymous/public downloads; fall back to authed token if available and owner.
-        $authToken = $this->serviceRoleKey ?? $maybeToken;
-        if (!is_string($authToken) || $authToken === '') {
-            return;
-        }
-
         $current = (int)($material['download_count'] ?? 0);
-        $next = $current + 1;
-
-        $this->send('PATCH', '/rest/v1/learning_materials', [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $authToken,
-                'apikey' => $authToken === $this->serviceRoleKey ? $this->serviceRoleKey : $this->anonKey,
-                'Prefer' => 'return=minimal',
-                'Content-Type' => 'application/json',
-            ],
-            'query' => ['material_id' => 'eq.' . $materialId],
-            'json' => ['download_count' => $next],
-        ]);
+        $this->repository->incrementDownloadCount($materialId, $current);
     }
 
     public function like(Request $request, string $id): void
@@ -641,7 +588,7 @@ final class LearningMaterialsController
             return;
         }
 
-        $material = $this->fetchMaterial($id, $token);
+        $material = $this->repository->findById($id, $token);
         if ($material === null) {
             JsonResponder::withStatus(404, ['error' => 'Learning material not found']);
             return;
@@ -733,7 +680,7 @@ final class LearningMaterialsController
             return;
         }
 
-        $material = $this->fetchMaterial($id, $token);
+        $material = $this->repository->findById($id, $token);
         if ($material === null) {
             JsonResponder::withStatus(404, ['error' => 'Learning material not found']);
             return;
@@ -810,7 +757,7 @@ final class LearningMaterialsController
         $search = trim((string)($params['q'] ?? ''));
 
         $query = [
-            'select' => 'material_id,title,description,content_type,file_url,file_name,mime,size,is_public,user_id,storage_path,tags_jsonb,likes_count,download_count,ai_toggle_enabled,created_at,updated_at,deleted_at',
+            'select' => 'material_id,title,description,content_type,file_url,file_name,mime,size,is_public,user_id,storage_path,tags_jsonb,likes_count,download_count,ai_toggle_enabled,created_at,updated_at,deleted_at,extracted_content',
             'order' => $sort,
             'limit' => $perPage,
             'offset' => ($page - 1) * $perPage,
@@ -1935,33 +1882,7 @@ final class LearningMaterialsController
         return false;
     }
 
-    private function fetchMaterial(string $id, string $token): ?array
-    {
-        $result = $this->send('GET', '/rest/v1/learning_materials', [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $token,
-                'apikey' => $this->anonKey,
-                'Accept' => 'application/json',
-            ],
-            'query' => [
-                'select' => 'material_id,title,description,content_type,file_url,file_name,mime,size,is_public,user_id,storage_path,tags_jsonb,likes_count,download_count,created_at,updated_at,deleted_at',
-                'material_id' => 'eq.' . $id,
-                'deleted_at' => 'is.null',
-                'limit' => 1,
-            ],
-        ]);
 
-        if ($result['status'] >= 400 || ($result['status'] !== 200 && $result['status'] !== 206) || !is_array($result['payload'])) {
-            return null;
-        }
-
-        $material = $result['payload'][0] ?? null;
-        if (!is_array($material)) {
-            return null;
-        }
-
-        return $material;
-    }
 
     /**
      * @param array<string,mixed>|null $body

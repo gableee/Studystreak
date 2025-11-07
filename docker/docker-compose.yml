@@ -6,10 +6,30 @@ services:
       - "8181:8181"
     env_file:
       - ../php-backend/.env
-    command: php -d variables_order=EGPCS -d upload_max_filesize=100M -d post_max_size=100M -d memory_limit=128M -d max_execution_time=180 -d max_input_time=180 -S 0.0.0.0:8181 -t public
+    command: php -d variables_order=EGPCS -d upload_max_filesize=100M -d post_max_size=100M -d memory_limit=128M -d max_execution_time=180 -d max_input_time=180 -S 0.0.0.0:8181 -t public public/router.php
+    depends_on:
+      - ai-service
+
+  ai-service:
+    build:
+      context: ../ai-service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../ai-service/.env
+    volumes:
+      # Mount code for development (hot reload)
+      - ../ai-service:/app
+      # Persistent model cache (avoid re-downloading models)
+      - ai-models-cache:/app/model_cache
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
   context7-mcp:
     build:
       context: ./
     ports:
       - "8090:8080"
+
+volumes:
+  ai-models-cache:

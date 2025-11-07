@@ -1,0 +1,1441 @@
+2025-11-06 04:42:38,951 - routes.embeddings - INFO - Generating embedding for text of length 16 chars
+2025-11-06 04:42:38,952 - routes.embeddings - INFO - Generated 384-dimensional embedding vector (prototype mode)
+2025-11-06 04:42:47,884 - routes.embeddings - INFO - Generating embedding for text of length 23 chars
+2025-11-06 04:42:47,885 - routes.embeddings - INFO - Generated 384-dimensional embedding vector (prototype mode)
+2025-11-06 04:50:19,581 - routes.embeddings - INFO - Generating embedding for text of length 26 chars
+2025-11-06 04:50:19,582 - routes.embeddings - INFO - Generated 384-dimensional embedding vector (prototype mode)
+2025-11-06 04:56:56,333 - routes.embeddings - INFO - Generating embedding for text of length 42 chars using sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 04:56:56,668 - httpx - INFO - HTTP Request: POST https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2 "HTTP/1.1 410 Gone"
+2025-11-06 04:56:56,669 - routes.embeddings - ERROR - HuggingFace API HTTP error: 410 - {"error":"https://api-inference.huggingface.co is no longer supported. Please use https://router.huggingface.co/hf-inference instead."}
+2025-11-06 04:59:35,254 - routes.embeddings - INFO - Generating embedding for text of length 55 chars using sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 04:59:35,602 - httpx - INFO - HTTP Request: POST https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2 "HTTP/1.1 410 Gone"
+2025-11-06 04:59:35,603 - routes.embeddings - ERROR - HuggingFace API HTTP error: 410 - {"error":"https://api-inference.huggingface.co is no longer supported. Please use https://router.huggingface.co/hf-inference instead."}
+2025-11-06 05:00:34,470 - routes.embeddings - INFO - Generating embedding for text of length 116 chars using sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 05:00:34,842 - httpx - INFO - HTTP Request: POST https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2 "HTTP/1.1 400 Bad Request"
+2025-11-06 05:00:34,843 - routes.embeddings - ERROR - HuggingFace API HTTP error: 400 - {"error":"SentenceSimilarityPipeline.__call__() missing 1 required positional argument: 'sentences'"}
+2025-11-06 05:01:19,511 - routes.embeddings - INFO - Generating embedding for text of length 44 chars using sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 05:01:19,817 - httpx - INFO - HTTP Request: POST https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2 "HTTP/1.1 400 Bad Request"
+2025-11-06 05:01:19,818 - routes.embeddings - ERROR - HuggingFace API HTTP error: 400 - {"error":"Body needs to provide a inputs key, received: b'{\"sentences\":[\"Artificial intelligence transforms education\"]}'"}
+2025-11-06 05:03:09,961 - routes.embeddings - INFO - Generating embedding for text of length 4 chars using sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 05:03:10,390 - httpx - INFO - HTTP Request: POST https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2 "HTTP/1.1 400 Bad Request"
+2025-11-06 05:03:10,391 - routes.embeddings - ERROR - HuggingFace API HTTP error: 400 - {"error":"SentenceSimilarityPipeline.__call__() missing 1 required positional argument: 'sentences'"}
+2025-11-06 05:04:59,290 - routes.embeddings - INFO - Generating embedding for text of length 16 chars using sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 05:04:59,688 - httpx - INFO - HTTP Request: POST https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2 "HTTP/1.1 400 Bad Request"
+2025-11-06 05:04:59,689 - routes.embeddings - ERROR - HuggingFace API HTTP error: 400 - {"error":"SentenceSimilarityPipeline.__call__() missing 1 required positional argument: 'sentences'"}
+2025-11-06 05:05:49,629 - routes.embeddings - INFO - Generating embedding for text of length 41 chars using local model
+2025-11-06 05:05:58,735 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 05:05:58,738 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-06 05:05:58,739 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 05:06:09,083 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 05:06:09,160 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 05:06:29,032 - routes.embeddings - INFO - Generating embedding for text of length 49 chars using local model
+2025-11-06 05:06:29,042 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 05:06:29,090 - routes.embeddings - INFO - Generating embedding for text of length 49 chars using local model
+2025-11-06 05:06:29,100 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 05:06:29,146 - routes.embeddings - INFO - Generating embedding for text of length 51 chars using local model
+2025-11-06 05:06:29,155 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 06:00:27,974 - routes.generation - INFO - Generating summary for text of length 167
+2025-11-06 06:00:27,975 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 06:00:27,994 - models.summarizer - ERROR - ❌ Summary generation failed: The following `model_kwargs` are not used by the model: ['cache_dir'] (note: typos in the generate arguments will also show up in this list)
+2025-11-06 06:00:27,997 - routes.generation - ERROR - Summary generation failed: The following `model_kwargs` are not used by the model: ['cache_dir'] (note: typos in the generate arguments will also show up in this list)
+2025-11-06 06:02:50,346 - routes.generation - INFO - Generating summary for text of length 123
+2025-11-06 06:02:50,346 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 06:02:58,152 - models.summarizer - INFO - ✅ Summary generated (50 words)
+2025-11-06 06:32:29,997 - routes.generation - INFO - Generating summary for text of length 97
+2025-11-06 06:32:29,997 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 06:32:37,518 - models.summarizer - INFO - ✅ Summary generated (52 words)
+2025-11-06 06:32:37,524 - routes.embeddings - INFO - Generating embedding for text of length 97 chars using local model
+2025-11-06 06:32:37,525 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 06:32:37,532 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-06 06:32:37,532 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 06:32:40,777 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 06:32:40,944 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 06:42:51,002 - routes.generation - INFO - Generating summary for text of length 17
+2025-11-06 06:42:51,002 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 06:42:58,901 - models.summarizer - INFO - ✅ Summary generated (38 words)
+2025-11-06 06:47:25,764 - routes.generation - INFO - Generating summary for text of length 90
+2025-11-06 06:47:25,764 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 06:47:33,397 - models.summarizer - INFO - ✅ Summary generated (52 words)
+2025-11-06 06:47:33,403 - routes.embeddings - INFO - Generating embedding for text of length 14 chars using local model
+2025-11-06 06:47:33,403 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 06:47:33,405 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-06 06:47:33,406 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 06:47:37,026 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 06:47:37,044 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 08:20:37,598 - routes.extraction - INFO - Extracting text from URL: https://puhxawljwuszjflusxve.supabase.co/storage/v1/object/sign/learning-materials-v2/20c43da0-a3a8-446f-9f19-4027fae844f5/2025/11/06/b60f8a74773e9492-activitysheet08a-sd3a-isidro-leegabriel.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9lZTdjMjUwYy0zNzlhLTRiYjYtOGM2Yi00ZDM0NTZjNjg4MjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsZWFybmluZy1tYXRlcmlhbHMtdjIvMjBjNDNkYTAtYTNhOC00NDZmLTlmMTktNDAyN2ZhZTg0NGY1LzIwMjUvMTEvMDYvYjYwZjhhNzQ3NzNlOTQ5Mi1hY3Rpdml0eXNoZWV0MDhhLXNkM2EtaXNpZHJvLWxlZWdhYnJpZWwucGRmIiwiaWF0IjoxNzYyNDE3MjM3LCJleHAiOjE3NjI0MTc4Mzd9.DFk5sxgA4ok2JD5xrRwPbiCBdRn0x0d23oz8XyKZBxw
+2025-11-06 08:20:39,252 - httpx - INFO - HTTP Request: GET https://puhxawljwuszjflusxve.supabase.co/storage/v1/object/sign/learning-materials-v2/20c43da0-a3a8-446f-9f19-4027fae844f5/2025/11/06/b60f8a74773e9492-activitysheet08a-sd3a-isidro-leegabriel.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9lZTdjMjUwYy0zNzlhLTRiYjYtOGM2Yi00ZDM0NTZjNjg4MjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsZWFybmluZy1tYXRlcmlhbHMtdjIvMjBjNDNkYTAtYTNhOC00NDZmLTlmMTktNDAyN2ZhZTg0NGY1LzIwMjUvMTEvMDYvYjYwZjhhNzQ3NzNlOTQ5Mi1hY3Rpdml0eXNoZWV0MDhhLXNkM2EtaXNpZHJvLWxlZWdhYnJpZWwucGRmIiwiaWF0IjoxNzYyNDE3MjM3LCJleHAiOjE3NjI0MTc4Mzd9.DFk5sxgA4ok2JD5xrRwPbiCBdRn0x0d23oz8XyKZBxw "HTTP/1.1 200 OK"
+2025-11-06 08:41:44,075 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 08:41:44,075 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 08:41:44,076 - models.summarizer - WARNING - Input text truncated to 1000 words
+2025-11-06 08:41:44,224 - models.summarizer - ERROR - ❌ Summary generation failed: index out of range in self
+2025-11-06 08:41:44,224 - routes.generation - ERROR - Summary generation failed: index out of range in self
+2025-11-06 08:41:45,058 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 08:41:45,058 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 08:41:45,059 - models.summarizer - WARNING - Input text truncated to 1000 words
+2025-11-06 08:41:45,067 - models.summarizer - ERROR - ❌ Summary generation failed: index out of range in self
+2025-11-06 08:41:45,067 - routes.generation - ERROR - Summary generation failed: index out of range in self
+2025-11-06 08:41:49,647 - routes.generation - INFO - Generating keypoints for text of length 7856
+2025-11-06 08:41:49,648 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 08:42:12,111 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 08:42:13,813 - routes.generation - INFO - Generating keypoints for text of length 7856
+2025-11-06 08:42:13,814 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 08:42:34,662 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 08:42:47,275 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 08:42:47,275 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 08:42:47,276 - models.summarizer - WARNING - Input text truncated to 1000 words
+2025-11-06 08:42:47,284 - models.summarizer - ERROR - ❌ Summary generation failed: index out of range in self
+2025-11-06 08:42:47,284 - routes.generation - ERROR - Summary generation failed: index out of range in self
+2025-11-06 08:42:48,247 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 08:42:48,247 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 08:42:48,247 - models.summarizer - WARNING - Input text truncated to 1000 words
+2025-11-06 08:42:48,254 - models.summarizer - ERROR - ❌ Summary generation failed: index out of range in self
+2025-11-06 08:42:48,255 - routes.generation - ERROR - Summary generation failed: index out of range in self
+2025-11-06 08:42:59,193 - routes.generation - INFO - Generating 5 quiz questions
+2025-11-06 08:42:59,194 - models.qa_generator - INFO - Generating 5 quiz questions
+2025-11-06 08:43:01,447 - models.qa_generator - INFO - ✅ Generated 5 quiz questions
+2025-11-06 08:43:12,143 - routes.generation - INFO - Generating 10 flashcards
+2025-11-06 08:43:12,144 - models.qa_generator - INFO - Generating 10 flashcards
+2025-11-06 08:43:12,144 - models.qa_generator - INFO - ✅ Generated 10 flashcards
+2025-11-06 08:43:13,323 - routes.generation - INFO - Generating 10 flashcards
+2025-11-06 08:43:13,323 - models.qa_generator - INFO - Generating 10 flashcards
+2025-11-06 08:43:13,324 - models.qa_generator - INFO - ✅ Generated 10 flashcards
+2025-11-06 08:48:05,466 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 08:48:05,467 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 08:48:05,467 - models.summarizer - WARNING - Input text truncated from 1100 to 700 words
+2025-11-06 08:48:05,467 - models.summarizer - INFO - Adjusted lengths: min=50, max=150
+2025-11-06 08:48:23,219 - models.summarizer - INFO - ✅ Summary generated (55 words)
+2025-11-06 08:48:24,390 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 08:48:24,391 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 08:48:24,391 - models.summarizer - WARNING - Input text truncated from 1100 to 700 words
+2025-11-06 08:48:24,391 - models.summarizer - INFO - Adjusted lengths: min=50, max=150
+2025-11-06 08:48:36,693 - models.summarizer - INFO - ✅ Summary generated (55 words)
+2025-11-06 08:49:09,360 - routes.generation - INFO - Generating keypoints for text of length 7856
+2025-11-06 08:49:09,360 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 08:49:29,511 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 08:49:30,989 - routes.generation - INFO - Generating keypoints for text of length 7856
+2025-11-06 08:49:30,989 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 08:49:49,574 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 09:02:12,155 - routes.generation - INFO - Generating keypoints for text of length 7856
+2025-11-06 09:02:12,156 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 09:02:32,753 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 09:02:34,552 - routes.generation - INFO - Generating keypoints for text of length 7856
+2025-11-06 09:02:34,552 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 09:02:55,256 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 09:02:59,999 - routes.generation - INFO - Generating 5 quiz questions
+2025-11-06 09:02:59,999 - models.qa_generator - INFO - Generating 5 quiz questions
+2025-11-06 09:03:02,501 - models.qa_generator - INFO - ✅ Generated 5 quiz questions
+2025-11-06 09:03:26,441 - routes.generation - INFO - Generating 10 flashcards
+2025-11-06 09:03:26,441 - models.qa_generator - INFO - Generating 10 flashcards
+2025-11-06 09:03:26,442 - models.qa_generator - INFO - ✅ Generated 10 flashcards
+2025-11-06 09:03:27,603 - routes.generation - INFO - Generating 10 flashcards
+2025-11-06 09:03:27,604 - models.qa_generator - INFO - Generating 10 flashcards
+2025-11-06 09:03:27,604 - models.qa_generator - INFO - ✅ Generated 10 flashcards
+2025-11-06 09:04:02,463 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 09:04:02,464 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 09:04:02,465 - models.summarizer - WARNING - Input text truncated from 1100 to 700 words
+2025-11-06 09:04:02,465 - models.summarizer - INFO - Adjusted lengths: min=50, max=150
+2025-11-06 09:04:17,033 - models.summarizer - INFO - ✅ Summary generated (55 words)
+2025-11-06 09:04:18,560 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 09:04:18,560 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 09:04:18,561 - models.summarizer - WARNING - Input text truncated from 1100 to 700 words
+2025-11-06 09:04:18,561 - models.summarizer - INFO - Adjusted lengths: min=50, max=150
+2025-11-06 09:04:32,307 - models.summarizer - INFO - ✅ Summary generated (55 words)
+2025-11-06 09:24:00,121 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 09:24:00,122 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 09:24:00,122 - models.summarizer - WARNING - Input text truncated from 1100 to 700 words
+2025-11-06 09:24:00,122 - models.summarizer - INFO - Adjusted lengths: min=50, max=150
+2025-11-06 09:24:13,387 - models.summarizer - INFO - ✅ Summary generated (55 words)
+2025-11-06 09:24:14,533 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 09:24:14,533 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 09:24:14,534 - models.summarizer - WARNING - Input text truncated from 1100 to 700 words
+2025-11-06 09:24:14,534 - models.summarizer - INFO - Adjusted lengths: min=50, max=150
+2025-11-06 09:24:26,808 - models.summarizer - INFO - ✅ Summary generated (55 words)
+2025-11-06 09:24:38,151 - routes.generation - INFO - Generating keypoints for text of length 7856
+2025-11-06 09:24:38,151 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 09:24:59,630 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 09:25:00,782 - routes.generation - INFO - Generating keypoints for text of length 7856
+2025-11-06 09:25:00,782 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 09:25:23,174 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 09:25:24,290 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 09:25:24,290 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 09:25:24,291 - models.summarizer - WARNING - Input text truncated from 1100 to 700 words
+2025-11-06 09:25:24,291 - models.summarizer - INFO - Adjusted lengths: min=50, max=150
+2025-11-06 09:25:38,060 - models.summarizer - INFO - ✅ Summary generated (55 words)
+2025-11-06 09:25:39,495 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 09:25:39,496 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 09:25:39,496 - models.summarizer - WARNING - Input text truncated from 1100 to 700 words
+2025-11-06 09:25:39,496 - models.summarizer - INFO - Adjusted lengths: min=50, max=150
+2025-11-06 09:25:54,085 - models.summarizer - INFO - ✅ Summary generated (55 words)
+2025-11-06 09:28:15,644 - routes.generation - INFO - Generating summary for text of length 7856
+2025-11-06 09:28:15,644 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 09:28:15,645 - models.summarizer - WARNING - Input text truncated from 1100 to 700 words
+2025-11-06 09:28:15,645 - models.summarizer - INFO - Adjusted lengths: min=50, max=150
+2025-11-06 09:28:28,163 - models.summarizer - INFO - ✅ Summary generated (55 words)
+2025-11-06 09:32:03,954 - routes.generation - INFO - Generating keypoints for text of length 7856
+2025-11-06 09:32:03,954 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 09:32:22,531 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 09:35:39,797 - routes.generation - INFO - Generating 10 flashcards
+2025-11-06 09:35:39,797 - models.qa_generator - INFO - Generating 10 flashcards
+2025-11-06 09:35:39,802 - models.qa_generator - INFO - ✅ Generated 10 flashcards
+2025-11-06 09:40:22,768 - routes.generation - INFO - Generating 5 quiz questions
+2025-11-06 09:40:22,769 - models.qa_generator - INFO - Generating 5 quiz questions
+2025-11-06 09:40:28,084 - models.qa_generator - INFO - ✅ Generated 5 quiz questions
+2025-11-06 09:52:12,580 - routes.extraction - INFO - Extracting text from URL: https://puhxawljwuszjflusxve.supabase.co/storage/v1/object/sign/learning-materials-v2/20c43da0-a3a8-446f-9f19-4027fae844f5/2025/11/06/8c08fbbc61aac32c-61b73b49716ad354-course-packet-1-introduction-to-database-concepts.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9lZTdjMjUwYy0zNzlhLTRiYjYtOGM2Yi00ZDM0NTZjNjg4MjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsZWFybmluZy1tYXRlcmlhbHMtdjIvMjBjNDNkYTAtYTNhOC00NDZmLTlmMTktNDAyN2ZhZTg0NGY1LzIwMjUvMTEvMDYvOGMwOGZiYmM2MWFhYzMyYy02MWI3M2I0OTcxNmFkMzU0LWNvdXJzZS1wYWNrZXQtMS1pbnRyb2R1Y3Rpb24tdG8tZGF0YWJhc2UtY29uY2VwdHMucGRmIiwiaWF0IjoxNzYyNDIyNzMyLCJleHAiOjE3NjI0MjMzMzJ9.4sRHiHTnjIc_EVxECEZM9TzuxwVCPSa1o54Y-m1MvIM
+2025-11-06 09:52:15,068 - httpx - INFO - HTTP Request: GET https://puhxawljwuszjflusxve.supabase.co/storage/v1/object/sign/learning-materials-v2/20c43da0-a3a8-446f-9f19-4027fae844f5/2025/11/06/8c08fbbc61aac32c-61b73b49716ad354-course-packet-1-introduction-to-database-concepts.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9lZTdjMjUwYy0zNzlhLTRiYjYtOGM2Yi00ZDM0NTZjNjg4MjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsZWFybmluZy1tYXRlcmlhbHMtdjIvMjBjNDNkYTAtYTNhOC00NDZmLTlmMTktNDAyN2ZhZTg0NGY1LzIwMjUvMTEvMDYvOGMwOGZiYmM2MWFhYzMyYy02MWI3M2I0OTcxNmFkMzU0LWNvdXJzZS1wYWNrZXQtMS1pbnRyb2R1Y3Rpb24tdG8tZGF0YWJhc2UtY29uY2VwdHMucGRmIiwiaWF0IjoxNzYyNDIyNzMyLCJleHAiOjE3NjI0MjMzMzJ9.4sRHiHTnjIc_EVxECEZM9TzuxwVCPSa1o54Y-m1MvIM "HTTP/1.1 200 OK"
+2025-11-06 09:52:23,662 - routes.generation - INFO - Generating summary for text of length 4171
+2025-11-06 09:52:23,663 - models.summarizer - INFO - Generating summary (max=150, min=50)
+2025-11-06 09:52:23,663 - models.summarizer - INFO - Adjusted lengths: min=50, max=150
+2025-11-06 09:52:35,357 - models.summarizer - INFO - ✅ Summary generated (45 words)
+2025-11-06 09:52:35,621 - routes.embeddings - INFO - Generating embedding for text of length 4172 chars using local model
+2025-11-06 09:52:35,621 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 09:52:35,645 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-06 09:52:35,646 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 09:52:39,236 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 09:52:39,611 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 09:52:49,387 - routes.generation - INFO - Generating keypoints for text of length 4171
+2025-11-06 09:52:49,388 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 09:53:08,649 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 09:53:08,926 - routes.embeddings - INFO - Generating embedding for text of length 4172 chars using local model
+2025-11-06 09:53:08,963 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 10:25:24,614 - routes.generation - INFO - Generating 5 quiz questions
+2025-11-06 10:25:24,614 - models.qa_generator - INFO - Generating 5 quiz questions
+2025-11-06 10:25:32,771 - models.qa_generator - INFO - ✅ Generated 4 quiz questions
+2025-11-06 10:25:33,054 - routes.embeddings - INFO - Generating embedding for text of length 4172 chars using local model
+2025-11-06 10:25:33,054 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 10:25:33,058 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-06 10:25:33,059 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 10:25:36,297 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 10:25:36,595 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 10:25:47,611 - routes.generation - INFO - Generating 10 flashcards
+2025-11-06 10:25:47,611 - models.qa_generator - INFO - Generating 10 flashcards
+2025-11-06 10:25:47,611 - models.qa_generator - INFO - ✅ Generated 10 flashcards
+2025-11-06 10:25:47,918 - routes.embeddings - INFO - Generating embedding for text of length 4172 chars using local model
+2025-11-06 10:25:47,950 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 11:13:44,139 - routes.extraction - INFO - Extracting text from URL: https://puhxawljwuszjflusxve.supabase.co/storage/v1/object/sign/learning-materials-v2/20c43da0-a3a8-446f-9f19-4027fae844f5/2025/11/06/07e171124402ab3e-61b73b49716ad354-course-packet-1-introduction-to-database-concepts.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9lZTdjMjUwYy0zNzlhLTRiYjYtOGM2Yi00ZDM0NTZjNjg4MjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsZWFybmluZy1tYXRlcmlhbHMtdjIvMjBjNDNkYTAtYTNhOC00NDZmLTlmMTktNDAyN2ZhZTg0NGY1LzIwMjUvMTEvMDYvMDdlMTcxMTI0NDAyYWIzZS02MWI3M2I0OTcxNmFkMzU0LWNvdXJzZS1wYWNrZXQtMS1pbnRyb2R1Y3Rpb24tdG8tZGF0YWJhc2UtY29uY2VwdHMucGRmIiwiaWF0IjoxNzYyNDI3NjIzLCJleHAiOjE3NjI0MjgyMjN9.mz7t55cGv-TM9TaVJdwPpg7-a6lobVUOPUEYBod7q3o
+2025-11-06 11:13:46,745 - httpx - INFO - HTTP Request: GET https://puhxawljwuszjflusxve.supabase.co/storage/v1/object/sign/learning-materials-v2/20c43da0-a3a8-446f-9f19-4027fae844f5/2025/11/06/07e171124402ab3e-61b73b49716ad354-course-packet-1-introduction-to-database-concepts.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9lZTdjMjUwYy0zNzlhLTRiYjYtOGM2Yi00ZDM0NTZjNjg4MjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsZWFybmluZy1tYXRlcmlhbHMtdjIvMjBjNDNkYTAtYTNhOC00NDZmLTlmMTktNDAyN2ZhZTg0NGY1LzIwMjUvMTEvMDYvMDdlMTcxMTI0NDAyYWIzZS02MWI3M2I0OTcxNmFkMzU0LWNvdXJzZS1wYWNrZXQtMS1pbnRyb2R1Y3Rpb24tdG8tZGF0YWJhc2UtY29uY2VwdHMucGRmIiwiaWF0IjoxNzYyNDI3NjIzLCJleHAiOjE3NjI0MjgyMjN9.mz7t55cGv-TM9TaVJdwPpg7-a6lobVUOPUEYBod7q3o "HTTP/1.1 200 OK"
+2025-11-06 11:13:54,087 - routes.generation - INFO - Generating summary for text of length 4171
+2025-11-06 11:13:54,087 - models.summarizer - INFO - Generating summary (target_max_words=400)
+2025-11-06 11:14:22,306 - models.summarizer - INFO - ✅ Summary generated (45 words)
+2025-11-06 11:14:22,715 - routes.embeddings - INFO - Generating embedding for text of length 4172 chars using local model
+2025-11-06 11:14:22,716 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 11:14:22,741 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-06 11:14:22,742 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 11:14:26,719 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 11:14:27,074 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 11:16:10,126 - routes.generation - INFO - Generating keypoints for text of length 4171
+2025-11-06 11:16:10,126 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 11:16:10,127 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 11:16:27,909 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-06 11:16:28,199 - routes.embeddings - INFO - Generating embedding for text of length 4172 chars using local model
+2025-11-06 11:16:28,200 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 11:16:28,202 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-06 11:16:28,202 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 11:16:31,916 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 11:16:31,985 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 11:18:12,910 - routes.generation - INFO - Generating 20 quiz questions
+2025-11-06 11:18:12,910 - models.qa_generator - INFO - Generating 20 quiz questions
+2025-11-06 11:18:28,179 - models.qa_generator - INFO - ✅ Generated 17 quiz questions
+2025-11-06 11:21:01,527 - routes.generation - INFO - Generating 15 quiz questions
+2025-11-06 11:21:01,527 - models.qa_generator - INFO - Generating 15 quiz questions
+2025-11-06 11:21:09,340 - models.qa_generator - INFO - ✅ Generated 13 quiz questions
+2025-11-06 11:21:09,643 - routes.embeddings - INFO - Generating embedding for text of length 4172 chars using local model
+2025-11-06 11:21:09,678 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 12:02:33,574 - routes.generation - INFO - Generating 15 quiz questions
+2025-11-06 12:02:33,576 - models.qa_generator - INFO - Generating 15 quiz questions
+2025-11-06 12:02:41,759 - models.qa_generator - INFO - ✅ Generated 12 quiz questions
+2025-11-06 12:02:42,075 - routes.embeddings - INFO - Generating embedding for text of length 4172 chars using local model
+2025-11-06 12:02:42,217 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 12:04:23,115 - routes.generation - INFO - Generating 10 flashcards
+2025-11-06 12:04:23,117 - models.qa_generator - INFO - Generating 10 flashcards
+2025-11-06 12:04:23,119 - models.qa_generator - INFO - ✅ Generated 10 flashcards
+2025-11-06 12:04:23,379 - routes.embeddings - INFO - Generating embedding for text of length 4172 chars using local model
+2025-11-06 12:04:23,430 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 14:13:52,176 - routes.extraction - INFO - Extracting text from URL: https://puhxawljwuszjflusxve.supabase.co/storage/v1/object/sign/learning-materials-v2/20c43da0-a3a8-446f-9f19-4027fae844f5/2025/11/06/7498b9653b08061d-cerebellum.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9lZTdjMjUwYy0zNzlhLTRiYjYtOGM2Yi00ZDM0NTZjNjg4MjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsZWFybmluZy1tYXRlcmlhbHMtdjIvMjBjNDNkYTAtYTNhOC00NDZmLTlmMTktNDAyN2ZhZTg0NGY1LzIwMjUvMTEvMDYvNzQ5OGI5NjUzYjA4MDYxZC1jZXJlYmVsbHVtLnBkZiIsImlhdCI6MTc2MjQzODQzMSwiZXhwIjoxNzYyNDM5MDMxfQ.ebkveEDvq7ywcNDDU2eSdyczXtDRatl4L5odjV5ntQ4
+2025-11-06 14:13:55,479 - httpx - INFO - HTTP Request: GET https://puhxawljwuszjflusxve.supabase.co/storage/v1/object/sign/learning-materials-v2/20c43da0-a3a8-446f-9f19-4027fae844f5/2025/11/06/7498b9653b08061d-cerebellum.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9lZTdjMjUwYy0zNzlhLTRiYjYtOGM2Yi00ZDM0NTZjNjg4MjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsZWFybmluZy1tYXRlcmlhbHMtdjIvMjBjNDNkYTAtYTNhOC00NDZmLTlmMTktNDAyN2ZhZTg0NGY1LzIwMjUvMTEvMDYvNzQ5OGI5NjUzYjA4MDYxZC1jZXJlYmVsbHVtLnBkZiIsImlhdCI6MTc2MjQzODQzMSwiZXhwIjoxNzYyNDM5MDMxfQ.ebkveEDvq7ywcNDDU2eSdyczXtDRatl4L5odjV5ntQ4 "HTTP/1.1 200 OK"
+2025-11-06 14:14:02,175 - routes.generation - INFO - Generating summary for text of length 18906
+2025-11-06 14:14:02,175 - models.summarizer - INFO - Generating summary (target_max_words=400)
+2025-11-06 14:14:02,824 - models.summarizer - WARNING - Chunk 1 summarization failed: index out of range in self
+2025-11-06 14:14:02,915 - models.summarizer - WARNING - Chunk 2 summarization failed: index out of range in self
+2025-11-06 14:14:02,996 - models.summarizer - WARNING - Chunk 3 summarization failed: index out of range in self
+2025-11-06 14:14:03,061 - models.summarizer - WARNING - Chunk 4 summarization failed: index out of range in self
+2025-11-06 14:14:26,499 - models.summarizer - INFO - ✅ Summary generated (38 words)
+2025-11-06 14:15:40,730 - routes.generation - INFO - Generating keypoints for text of length 18906
+2025-11-06 14:15:40,731 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 14:15:40,732 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 14:15:40,987 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 14:15:40,988 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 14:17:25,712 - routes.generation - INFO - Generating 10 enhanced flashcards
+2025-11-06 14:17:25,718 - models.flashcard_generator - INFO - Loading embedding model (all-MiniLM-L6-v2) for flashcards...
+2025-11-06 14:17:25,833 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-06 14:17:25,834 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 14:17:31,322 - models.flashcard_generator - INFO - ✅ Flashcard embedding model loaded successfully
+2025-11-06 14:17:31,324 - models.flashcard_generator - INFO - Loading T5 model for flashcard generation...
+2025-11-06 14:17:33,648 - models.flashcard_generator - INFO - ✅ T5 model loaded successfully
+2025-11-06 14:17:33,648 - models.flashcard_generator - INFO - Generating 10 enhanced flashcards
+2025-11-06 14:17:33,668 - models.flashcard_generator - INFO - Parsed structure: DocumentStructure(headings=0, definitions=0, lists=0, sentences=10)
+2025-11-06 14:18:32,339 - models.flashcard_generator - INFO - Removed 1 duplicate flashcards
+2025-11-06 14:18:32,340 - models.flashcard_generator - INFO - Quality filter: 9 -> 0 flashcards
+2025-11-06 14:18:32,341 - models.flashcard_generator - WARNING - Insufficient high-quality flashcards, using fallback generation
+2025-11-06 14:18:32,342 - models.flashcard_generator - INFO - ✅ Generated 10 high-quality flashcards
+2025-11-06 14:39:27,422 - routes.generation - INFO - Generating 5 normal multiple-choice quiz questions
+2025-11-06 14:39:27,436 - models.qa_generator - INFO - Generating 5 normal multiple-choice quiz questions
+2025-11-06 14:39:50,157 - models.qa_generator - INFO - ✅ Generated 5 normal multiple-choice quiz questions
+2025-11-06 15:14:50,565 - routes.extraction - INFO - Extracting text from URL: https://puhxawljwuszjflusxve.supabase.co/storage/v1/object/sign/learning-materials-v2/20c43da0-a3a8-446f-9f19-4027fae844f5/2025/11/06/46920f2c9d9623d4-cerebellum.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9lZTdjMjUwYy0zNzlhLTRiYjYtOGM2Yi00ZDM0NTZjNjg4MjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsZWFybmluZy1tYXRlcmlhbHMtdjIvMjBjNDNkYTAtYTNhOC00NDZmLTlmMTktNDAyN2ZhZTg0NGY1LzIwMjUvMTEvMDYvNDY5MjBmMmM5ZDk2MjNkNC1jZXJlYmVsbHVtLnBkZiIsImlhdCI6MTc2MjQ0MjA5MCwiZXhwIjoxNzYyNDQyNjkwfQ.WF-TY_jZtFaBIMOpUSHyrAhkYfwHZqMTXh4R7Yt9F0E
+2025-11-06 15:14:52,868 - httpx - INFO - HTTP Request: GET https://puhxawljwuszjflusxve.supabase.co/storage/v1/object/sign/learning-materials-v2/20c43da0-a3a8-446f-9f19-4027fae844f5/2025/11/06/46920f2c9d9623d4-cerebellum.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9lZTdjMjUwYy0zNzlhLTRiYjYtOGM2Yi00ZDM0NTZjNjg4MjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsZWFybmluZy1tYXRlcmlhbHMtdjIvMjBjNDNkYTAtYTNhOC00NDZmLTlmMTktNDAyN2ZhZTg0NGY1LzIwMjUvMTEvMDYvNDY5MjBmMmM5ZDk2MjNkNC1jZXJlYmVsbHVtLnBkZiIsImlhdCI6MTc2MjQ0MjA5MCwiZXhwIjoxNzYyNDQyNjkwfQ.WF-TY_jZtFaBIMOpUSHyrAhkYfwHZqMTXh4R7Yt9F0E "HTTP/1.1 200 OK"
+2025-11-06 15:14:54,927 - routes.generation - INFO - Generating summary for text of length 18906
+2025-11-06 15:14:54,928 - models.summarizer - INFO - Generating visual summary (max_words=400)
+2025-11-06 15:14:55,126 - models.summarizer - WARNING - Chunk 1 summarization failed: index out of range in self
+2025-11-06 15:14:55,164 - models.summarizer - WARNING - Chunk 2 summarization failed: index out of range in self
+2025-11-06 15:14:55,236 - models.summarizer - WARNING - Chunk 3 summarization failed: index out of range in self
+2025-11-06 15:14:55,507 - models.summarizer - WARNING - Chunk 4 summarization failed: index out of range in self
+2025-11-06 15:15:38,711 - models.summarizer - INFO - ✅ Summary generated (43 words)
+2025-11-06 15:16:12,029 - routes.generation - INFO - Generating keypoints for text of length 18906
+2025-11-06 15:16:12,030 - models.summarizer - INFO - Extracting 6 structured keypoints
+2025-11-06 15:16:12,431 - models.summarizer - ERROR - ❌ Keypoint extraction failed: index out of range in self
+Traceback (most recent call last):
+  File "/app/models/summarizer.py", line 168, in extract_keypoints
+    result = self.pipeline(
+  File "/usr/local/lib/python3.10/site-packages/transformers/pipelines/text2text_generation.py", line 303, in __call__
+    return super().__call__(*args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/transformers/pipelines/text2text_generation.py", line 191, in __call__
+    result = super().__call__(*args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/transformers/pipelines/base.py", line 1467, in __call__
+    return self.run_single(inputs, preprocess_params, forward_params, postprocess_params)
+  File "/usr/local/lib/python3.10/site-packages/transformers/pipelines/base.py", line 1474, in run_single
+    model_outputs = self.forward(model_inputs, **forward_params)
+  File "/usr/local/lib/python3.10/site-packages/transformers/pipelines/base.py", line 1374, in forward
+    model_outputs = self._forward(model_inputs, **forward_params)
+  File "/usr/local/lib/python3.10/site-packages/transformers/pipelines/text2text_generation.py", line 220, in _forward
+    output_ids = self.model.generate(**model_inputs, **generate_kwargs)
+  File "/usr/local/lib/python3.10/site-packages/torch/utils/_contextlib.py", line 120, in decorate_context
+    return func(*args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/transformers/generation/utils.py", line 2465, in generate
+    model_kwargs = self._prepare_encoder_decoder_kwargs_for_generation(
+  File "/usr/local/lib/python3.10/site-packages/transformers/generation/utils.py", line 861, in _prepare_encoder_decoder_kwargs_for_generation
+    model_kwargs["encoder_outputs"]: ModelOutput = encoder(**encoder_kwargs)  # type: ignore
+  File "/usr/local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/transformers/models/bart/modeling_bart.py", line 838, in forward
+    embed_pos = self.embed_positions(input)
+  File "/usr/local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/transformers/models/bart/modeling_bart.py", line 103, in forward
+    return super().forward(position_ids + self.offset)
+  File "/usr/local/lib/python3.10/site-packages/torch/nn/modules/sparse.py", line 192, in forward
+    return F.embedding(
+  File "/usr/local/lib/python3.10/site-packages/torch/nn/functional.py", line 2542, in embedding
+    return torch.embedding(weight, input, padding_idx, scale_grad_by_freq, sparse)
+IndexError: index out of range in self
+2025-11-06 15:16:12,516 - routes.generation - ERROR - Keypoints generation failed: index out of range in self
+2025-11-06 15:16:13,446 - routes.generation - INFO - Generating keypoints for text of length 18906
+2025-11-06 15:16:13,446 - models.summarizer - INFO - Extracting 6 structured keypoints
+2025-11-06 15:16:13,468 - models.summarizer - ERROR - ❌ Keypoint extraction failed: index out of range in self
+Traceback (most recent call last):
+  File "/app/models/summarizer.py", line 168, in extract_keypoints
+    result = self.pipeline(
+  File "/usr/local/lib/python3.10/site-packages/transformers/pipelines/text2text_generation.py", line 303, in __call__
+    return super().__call__(*args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/transformers/pipelines/text2text_generation.py", line 191, in __call__
+    result = super().__call__(*args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/transformers/pipelines/base.py", line 1467, in __call__
+    return self.run_single(inputs, preprocess_params, forward_params, postprocess_params)
+  File "/usr/local/lib/python3.10/site-packages/transformers/pipelines/base.py", line 1474, in run_single
+    model_outputs = self.forward(model_inputs, **forward_params)
+  File "/usr/local/lib/python3.10/site-packages/transformers/pipelines/base.py", line 1374, in forward
+    model_outputs = self._forward(model_inputs, **forward_params)
+  File "/usr/local/lib/python3.10/site-packages/transformers/pipelines/text2text_generation.py", line 220, in _forward
+    output_ids = self.model.generate(**model_inputs, **generate_kwargs)
+  File "/usr/local/lib/python3.10/site-packages/torch/utils/_contextlib.py", line 120, in decorate_context
+    return func(*args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/transformers/generation/utils.py", line 2465, in generate
+    model_kwargs = self._prepare_encoder_decoder_kwargs_for_generation(
+  File "/usr/local/lib/python3.10/site-packages/transformers/generation/utils.py", line 861, in _prepare_encoder_decoder_kwargs_for_generation
+    model_kwargs["encoder_outputs"]: ModelOutput = encoder(**encoder_kwargs)  # type: ignore
+  File "/usr/local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/transformers/models/bart/modeling_bart.py", line 838, in forward
+    embed_pos = self.embed_positions(input)
+  File "/usr/local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/transformers/models/bart/modeling_bart.py", line 103, in forward
+    return super().forward(position_ids + self.offset)
+  File "/usr/local/lib/python3.10/site-packages/torch/nn/modules/sparse.py", line 192, in forward
+    return F.embedding(
+  File "/usr/local/lib/python3.10/site-packages/torch/nn/functional.py", line 2542, in embedding
+    return torch.embedding(weight, input, padding_idx, scale_grad_by_freq, sparse)
+IndexError: index out of range in self
+2025-11-06 15:16:13,470 - routes.generation - ERROR - Keypoints generation failed: index out of range in self
+2025-11-06 15:31:35,540 - routes.generation - INFO - Generating keypoints for text of length 18906
+2025-11-06 15:31:35,540 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 15:31:35,541 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 15:31:35,796 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 15:31:35,800 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 15:31:36,166 - routes.embeddings - INFO - Generating embedding for text of length 25546 chars using local model
+2025-11-06 15:31:36,166 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 15:31:36,168 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-06 15:31:36,168 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 15:31:39,388 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 15:31:39,388 - routes.embeddings - WARNING - Text truncated from 25546 to 10000 chars for embedding
+2025-11-06 15:31:39,687 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 15:52:23,580 - routes.generation - INFO - Generating 30 normal multiple-choice quiz questions
+2025-11-06 15:52:23,581 - models.qa_generator - INFO - Generating 30 normal multiple-choice quiz questions
+2025-11-06 15:52:23,582 - models.qa_generator - WARNING - Only 10 sentences available, adjusting question count
+2025-11-06 15:52:50,365 - models.qa_generator - INFO - ✅ Generated 10 normal multiple-choice quiz questions
+2025-11-06 15:52:50,722 - routes.embeddings - INFO - Generating embedding for text of length 25546 chars using local model
+2025-11-06 15:52:50,722 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 15:52:50,724 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-06 15:52:50,724 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 15:52:54,543 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 15:52:54,543 - routes.embeddings - WARNING - Text truncated from 25546 to 10000 chars for embedding
+2025-11-06 15:52:54,755 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 16:07:39,178 - routes.generation - INFO - Generating 10 enhanced flashcards
+2025-11-06 16:07:39,178 - models.flashcard_generator - INFO - Loading embedding model (all-MiniLM-L6-v2) for flashcards...
+2025-11-06 16:07:39,180 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-06 16:07:39,180 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 16:07:42,920 - models.flashcard_generator - INFO - ✅ Flashcard embedding model loaded successfully
+2025-11-06 16:07:42,921 - models.flashcard_generator - INFO - Loading T5 model for flashcard generation...
+2025-11-06 16:07:44,350 - models.flashcard_generator - INFO - ✅ T5 model loaded successfully
+2025-11-06 16:07:44,351 - models.flashcard_generator - INFO - Generating 10 enhanced flashcards
+2025-11-06 16:07:44,352 - models.flashcard_generator - INFO - Parsed structure: DocumentStructure(headings=0, definitions=0, lists=0, sentences=10)
+2025-11-06 16:08:29,164 - models.flashcard_generator - INFO - Removed 1 duplicate flashcards
+2025-11-06 16:08:29,164 - models.flashcard_generator - INFO - Quality filter: 9 -> 0 flashcards
+2025-11-06 16:08:29,165 - models.flashcard_generator - WARNING - Insufficient high-quality flashcards, using fallback generation
+2025-11-06 16:08:29,166 - models.flashcard_generator - INFO - ✅ Generated 10 high-quality flashcards
+2025-11-06 16:08:29,576 - routes.embeddings - INFO - Generating embedding for text of length 25546 chars using local model
+2025-11-06 16:08:29,577 - routes.embeddings - WARNING - Text truncated from 25546 to 10000 chars for embedding
+2025-11-06 16:08:29,657 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 16:23:09,154 - routes.generation - INFO - Generating summary for text of length 71
+2025-11-06 16:23:09,155 - models.summarizer - INFO - Generating summary (target_max_words=400)
+2025-11-06 16:23:42,815 - models.summarizer - INFO - ✅ Summary generated (38 words)
+2025-11-06 16:23:42,816 - routes.generation - ERROR - Summary generation failed: incomplete escape \u at position 1
+2025-11-06 16:23:43,657 - routes.generation - INFO - Generating summary for text of length 71
+2025-11-06 16:23:43,658 - models.summarizer - INFO - Generating summary (target_max_words=400)
+2025-11-06 16:23:50,897 - models.summarizer - INFO - ✅ Summary generated (38 words)
+2025-11-06 16:23:50,898 - routes.generation - ERROR - Summary generation failed: incomplete escape \u at position 1
+2025-11-06 16:35:31,268 - routes.extraction - INFO - Extracting text from URL: https://puhxawljwuszjflusxve.supabase.co/storage/v1/object/sign/learning-materials-v2/20c43da0-a3a8-446f-9f19-4027fae844f5/2025/11/06/40105bbd9b0dffb2-cerebellum.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9lZTdjMjUwYy0zNzlhLTRiYjYtOGM2Yi00ZDM0NTZjNjg4MjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsZWFybmluZy1tYXRlcmlhbHMtdjIvMjBjNDNkYTAtYTNhOC00NDZmLTlmMTktNDAyN2ZhZTg0NGY1LzIwMjUvMTEvMDYvNDAxMDViYmQ5YjBkZmZiMi1jZXJlYmVsbHVtLnBkZiIsImlhdCI6MTc2MjQ0NjkzMCwiZXhwIjoxNzYyNDQ3NTMwfQ.T3EyDFyctrbl8saKb1T2gOeQOLfEFw_RicCQ_scTOU0
+2025-11-06 16:35:33,573 - httpx - INFO - HTTP Request: GET https://puhxawljwuszjflusxve.supabase.co/storage/v1/object/sign/learning-materials-v2/20c43da0-a3a8-446f-9f19-4027fae844f5/2025/11/06/40105bbd9b0dffb2-cerebellum.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9lZTdjMjUwYy0zNzlhLTRiYjYtOGM2Yi00ZDM0NTZjNjg4MjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsZWFybmluZy1tYXRlcmlhbHMtdjIvMjBjNDNkYTAtYTNhOC00NDZmLTlmMTktNDAyN2ZhZTg0NGY1LzIwMjUvMTEvMDYvNDAxMDViYmQ5YjBkZmZiMi1jZXJlYmVsbHVtLnBkZiIsImlhdCI6MTc2MjQ0NjkzMCwiZXhwIjoxNzYyNDQ3NTMwfQ.T3EyDFyctrbl8saKb1T2gOeQOLfEFw_RicCQ_scTOU0 "HTTP/1.1 200 OK"
+2025-11-06 16:35:35,559 - routes.generation - INFO - Generating summary for text of length 18906
+2025-11-06 16:35:35,559 - models.summarizer - INFO - Generating summary (target_max_words=400)
+2025-11-06 16:35:35,653 - models.summarizer - WARNING - Chunk 1 summarization failed: index out of range in self
+2025-11-06 16:35:35,663 - models.summarizer - WARNING - Chunk 2 summarization failed: index out of range in self
+2025-11-06 16:35:35,678 - models.summarizer - WARNING - Chunk 3 summarization failed: index out of range in self
+2025-11-06 16:35:35,694 - models.summarizer - WARNING - Chunk 4 summarization failed: index out of range in self
+2025-11-06 16:35:54,828 - models.summarizer - INFO - ✅ Summary generated (38 words)
+2025-11-06 16:35:54,829 - routes.generation - ERROR - Summary generation failed: incomplete escape \u at position 1
+2025-11-06 16:35:55,662 - routes.generation - INFO - Generating summary for text of length 18906
+2025-11-06 16:35:55,663 - models.summarizer - INFO - Generating summary (target_max_words=400)
+2025-11-06 16:35:55,671 - models.summarizer - WARNING - Chunk 1 summarization failed: index out of range in self
+2025-11-06 16:35:55,677 - models.summarizer - WARNING - Chunk 2 summarization failed: index out of range in self
+2025-11-06 16:35:55,682 - models.summarizer - WARNING - Chunk 3 summarization failed: index out of range in self
+2025-11-06 16:35:55,686 - models.summarizer - WARNING - Chunk 4 summarization failed: index out of range in self
+2025-11-06 16:36:05,276 - models.summarizer - INFO - ✅ Summary generated (38 words)
+2025-11-06 16:36:05,277 - routes.generation - ERROR - Summary generation failed: incomplete escape \u at position 1
+2025-11-06 16:36:31,577 - routes.generation - INFO - Generating keypoints for text of length 18906
+2025-11-06 16:36:31,577 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 16:36:31,577 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 16:36:31,594 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 16:36:31,595 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 16:36:31,596 - utils.markdown_formatter - WARNING - Failed to structure keypoint 0: incomplete escape \u at position 1
+2025-11-06 16:36:31,597 - utils.markdown_formatter - WARNING - Failed to structure keypoint 1: incomplete escape \u at position 1
+2025-11-06 16:36:31,597 - utils.markdown_formatter - WARNING - Failed to structure keypoint 2: incomplete escape \u at position 1
+2025-11-06 16:36:31,597 - utils.markdown_formatter - WARNING - Failed to structure keypoint 3: incomplete escape \u at position 1
+2025-11-06 16:36:31,597 - utils.markdown_formatter - WARNING - Failed to structure keypoint 4: incomplete escape \u at position 1
+2025-11-06 16:36:31,599 - routes.generation - ERROR - Keypoints generation failed: incomplete escape \u at position 1
+2025-11-06 16:36:32,657 - routes.generation - INFO - Generating keypoints for text of length 18906
+2025-11-06 16:36:32,657 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 16:36:32,657 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 16:36:32,672 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 16:36:32,673 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 16:36:32,674 - utils.markdown_formatter - WARNING - Failed to structure keypoint 0: incomplete escape \u at position 1
+2025-11-06 16:36:32,674 - utils.markdown_formatter - WARNING - Failed to structure keypoint 1: incomplete escape \u at position 1
+2025-11-06 16:36:32,675 - utils.markdown_formatter - WARNING - Failed to structure keypoint 2: incomplete escape \u at position 1
+2025-11-06 16:36:32,675 - utils.markdown_formatter - WARNING - Failed to structure keypoint 3: incomplete escape \u at position 1
+2025-11-06 16:36:32,676 - utils.markdown_formatter - WARNING - Failed to structure keypoint 4: incomplete escape \u at position 1
+2025-11-06 16:36:32,676 - routes.generation - ERROR - Keypoints generation failed: incomplete escape \u at position 1
+2025-11-06 16:39:13,798 - routes.generation - INFO - Generating summary for text of length 18906
+2025-11-06 16:39:13,798 - models.summarizer - INFO - Generating summary (target_max_words=400)
+2025-11-06 16:39:13,810 - models.summarizer - WARNING - Chunk 1 summarization failed: index out of range in self
+2025-11-06 16:39:13,818 - models.summarizer - WARNING - Chunk 2 summarization failed: index out of range in self
+2025-11-06 16:39:13,828 - models.summarizer - WARNING - Chunk 3 summarization failed: index out of range in self
+2025-11-06 16:39:13,834 - models.summarizer - WARNING - Chunk 4 summarization failed: index out of range in self
+2025-11-06 16:39:25,297 - models.summarizer - INFO - ✅ Summary generated (38 words)
+2025-11-06 16:39:25,299 - utils.quality_validator - INFO - Summary validation: valid=False, score=0.66
+2025-11-06 16:39:25,299 - routes.generation - INFO - Summary quality score: 0.66
+2025-11-06 16:39:25,590 - routes.embeddings - INFO - Generating embedding for text of length 25546 chars using local model
+2025-11-06 16:39:25,591 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 16:39:25,594 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-06 16:39:25,595 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 16:39:28,841 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 16:39:28,841 - routes.embeddings - WARNING - Text truncated from 25546 to 10000 chars for embedding
+2025-11-06 16:39:29,467 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 16:39:35,757 - routes.generation - INFO - Generating keypoints for text of length 18906
+2025-11-06 16:39:35,757 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-06 16:39:35,758 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 16:39:35,774 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 16:39:35,775 - models.summarizer - INFO - ✅ Extracted 5 keypoints
+2025-11-06 16:39:35,777 - utils.quality_validator - INFO - Keypoints validation: valid=True, score=0.90
+2025-11-06 16:39:35,777 - routes.generation - INFO - Keypoints quality score: 0.90
+2025-11-06 16:39:36,135 - routes.embeddings - INFO - Generating embedding for text of length 25546 chars using local model
+2025-11-06 16:39:36,136 - routes.embeddings - WARNING - Text truncated from 25546 to 10000 chars for embedding
+2025-11-06 16:39:36,172 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 17:13:14,790 - routes.generation - INFO - Generating 10 enhanced flashcards
+2025-11-06 17:13:14,792 - models.flashcard_generator - INFO - Loading embedding model (all-MiniLM-L6-v2) for flashcards...
+2025-11-06 17:13:14,796 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-06 17:13:14,796 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 17:13:18,044 - models.flashcard_generator - INFO - ✅ Flashcard embedding model loaded successfully
+2025-11-06 17:13:18,044 - models.flashcard_generator - INFO - Loading T5 model for flashcard generation...
+2025-11-06 17:13:19,569 - models.flashcard_generator - INFO - ✅ T5 model loaded successfully
+2025-11-06 17:13:19,570 - models.flashcard_generator - INFO - Generating 10 enhanced flashcards
+2025-11-06 17:13:19,572 - models.flashcard_generator - INFO - Parsed structure: DocumentStructure(headings=0, definitions=0, lists=0, sentences=10)
+2025-11-06 17:24:01,699 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=3)
+2025-11-06 17:24:01,700 - models.summarizer - INFO - Extracting 3 keypoints
+2025-11-06 17:24:01,700 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 17:24:15,942 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-06 17:24:15,944 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-06 17:25:43,516 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-06 17:25:43,517 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 17:25:43,517 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 17:25:43,579 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 17:25:43,583 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-06 17:25:43,586 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.92
+2025-11-06 17:25:44,532 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-06 17:25:44,533 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 17:25:44,533 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 17:25:44,549 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 17:25:44,557 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-06 17:25:44,560 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.92
+2025-11-06 17:25:54,301 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-06 17:25:54,302 - models.summarizer - INFO - Generating summary (target_max_words=500)
+2025-11-06 17:25:54,308 - models.summarizer - WARNING - Chunk 1 summarization failed: index out of range in self
+2025-11-06 17:25:54,315 - models.summarizer - WARNING - Chunk 2 summarization failed: index out of range in self
+2025-11-06 17:25:54,321 - models.summarizer - WARNING - Chunk 3 summarization failed: index out of range in self
+2025-11-06 17:25:54,328 - models.summarizer - WARNING - Chunk 4 summarization failed: index out of range in self
+2025-11-06 17:26:05,745 - models.summarizer - INFO - ✅ Summary generated (38 words)
+2025-11-06 17:26:05,745 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 17:26:05,746 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 17:26:05,763 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 17:26:05,764 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-06 17:26:05,767 - utils.quality_validator - INFO - Summary validation: valid=False, score=1.00
+2025-11-06 17:26:27,385 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-06 17:26:27,385 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 17:26:27,386 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 17:26:27,402 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 17:26:27,404 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-06 17:26:27,407 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.92
+2025-11-06 18:28:35,783 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-06 18:28:35,784 - models.summarizer - INFO - Generating summary (target_max_words=500)
+2025-11-06 18:29:09,235 - models.summarizer - INFO - ✅ Summary generated (42 words)
+2025-11-06 18:29:09,242 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 18:29:09,243 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 18:29:21,944 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-06 18:29:21,954 - utils.quality_validator - INFO - Summary validation: valid=True, score=1.20
+2025-11-06 18:43:41,035 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-06 18:43:41,036 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 18:43:41,036 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 18:43:41,368 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 18:43:41,372 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-06 18:43:41,377 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.92
+2025-11-06 18:43:42,429 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-06 18:43:42,430 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 18:43:42,430 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 18:43:42,453 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 18:43:42,463 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-06 18:43:42,465 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.92
+2025-11-06 18:43:54,005 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-06 18:43:54,006 - models.summarizer - INFO - Generating summary (target_max_words=500)
+2025-11-06 18:43:54,016 - models.summarizer - WARNING - Chunk 1 summarization failed: index out of range in self
+2025-11-06 18:43:54,026 - models.summarizer - WARNING - Chunk 2 summarization failed: index out of range in self
+2025-11-06 18:43:54,035 - models.summarizer - WARNING - Chunk 3 summarization failed: index out of range in self
+2025-11-06 18:43:54,043 - models.summarizer - WARNING - Chunk 4 summarization failed: index out of range in self
+2025-11-06 18:44:26,783 - models.summarizer - INFO - ✅ Summary generated (38 words)
+2025-11-06 18:44:26,785 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 18:44:26,786 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 18:44:26,813 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 18:44:26,814 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-06 18:44:26,821 - utils.quality_validator - INFO - Summary validation: valid=True, score=1.20
+2025-11-06 18:44:47,939 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-06 18:44:47,940 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 18:44:47,940 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 18:44:47,967 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 18:44:47,969 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-06 18:44:47,972 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.92
+2025-11-06 18:44:48,555 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-06 18:44:48,556 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 18:44:48,556 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 18:44:48,585 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 18:44:48,587 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-06 18:44:48,590 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.92
+2025-11-06 18:47:15,367 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-06 18:47:15,367 - models.summarizer - INFO - Generating summary (target_max_words=500)
+2025-11-06 18:47:15,380 - models.summarizer - WARNING - Chunk 1 summarization failed: index out of range in self
+2025-11-06 18:47:15,387 - models.summarizer - WARNING - Chunk 2 summarization failed: index out of range in self
+2025-11-06 18:47:15,396 - models.summarizer - WARNING - Chunk 3 summarization failed: index out of range in self
+2025-11-06 18:47:15,401 - models.summarizer - WARNING - Chunk 4 summarization failed: index out of range in self
+2025-11-06 18:47:25,415 - models.summarizer - INFO - ✅ Summary generated (38 words)
+2025-11-06 18:47:25,416 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 18:47:25,416 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 18:47:25,434 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 18:47:25,436 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-06 18:47:25,438 - utils.quality_validator - INFO - Summary validation: valid=True, score=1.20
+2025-11-06 18:50:30,210 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-06 18:50:30,211 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 18:50:30,211 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 18:50:30,267 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 18:50:30,271 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-06 18:50:30,274 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.92
+2025-11-06 18:50:32,490 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-06 18:50:32,491 - models.summarizer - INFO - Generating summary (target_max_words=500)
+2025-11-06 18:50:32,497 - models.summarizer - WARNING - Chunk 1 summarization failed: index out of range in self
+2025-11-06 18:50:32,502 - models.summarizer - WARNING - Chunk 2 summarization failed: index out of range in self
+2025-11-06 18:50:32,507 - models.summarizer - WARNING - Chunk 3 summarization failed: index out of range in self
+2025-11-06 18:50:32,511 - models.summarizer - WARNING - Chunk 4 summarization failed: index out of range in self
+2025-11-06 18:50:42,603 - models.summarizer - INFO - ✅ Summary generated (38 words)
+2025-11-06 18:50:42,603 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 18:50:42,604 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 18:50:42,617 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 18:50:42,618 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-06 18:50:42,621 - utils.quality_validator - INFO - Summary validation: valid=True, score=1.20
+2025-11-06 19:02:15,350 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-06 19:02:15,351 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 19:02:15,351 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 19:02:15,546 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 19:02:15,550 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-06 19:02:15,553 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-06 19:03:12,712 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-06 19:03:12,712 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 19:03:12,712 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 19:03:12,730 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 19:03:12,739 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-06 19:03:12,741 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-06 19:12:39,618 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-06 19:12:39,619 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 19:12:39,619 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 19:12:40,139 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 19:12:40,146 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-06 19:12:40,150 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-06 19:12:40,743 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-06 19:12:40,743 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 19:12:40,744 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 19:12:40,767 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 19:12:40,776 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-06 19:12:40,779 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-06 19:12:43,413 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-06 19:12:43,413 - models.summarizer - INFO - Generating summary (target_max_words=500)
+2025-11-06 19:12:43,420 - models.summarizer - WARNING - Chunk 1 summarization failed: index out of range in self
+2025-11-06 19:12:43,426 - models.summarizer - WARNING - Chunk 2 summarization failed: index out of range in self
+2025-11-06 19:12:43,432 - models.summarizer - WARNING - Chunk 3 summarization failed: index out of range in self
+2025-11-06 19:12:43,438 - models.summarizer - WARNING - Chunk 4 summarization failed: index out of range in self
+2025-11-06 19:13:09,559 - models.summarizer - INFO - ✅ Summary generated (38 words)
+2025-11-06 19:13:09,559 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 19:13:09,560 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 19:13:09,584 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 19:13:09,585 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-06 19:13:09,588 - utils.quality_validator - INFO - Summary validation: valid=True, score=1.20
+2025-11-06 19:13:10,236 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=50)
+2025-11-06 19:13:10,236 - models.summarizer - INFO - Extracting 50 keypoints
+2025-11-06 19:13:10,237 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 19:13:10,252 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 19:13:10,253 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-06 19:13:10,256 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-06 19:17:32,831 - routes.generation - INFO - Generating 20 normal multiple-choice quiz questions
+2025-11-06 19:17:32,832 - models.qa_generator - INFO - Generating 20 normal multiple-choice quiz questions
+2025-11-06 19:17:32,832 - models.qa_generator - WARNING - Only 10 sentences available, adjusting question count
+2025-11-06 19:18:05,559 - models.qa_generator - INFO - ✅ Generated 10 normal multiple-choice quiz questions
+2025-11-06 19:18:05,559 - utils.quality_validator - INFO - Quiz validation: valid=True, score=0.74, valid_q=10/10
+2025-11-06 19:18:05,560 - routes.generation - INFO - Quiz quality score: 0.74
+2025-11-06 19:18:05,989 - routes.embeddings - INFO - Generating embedding for text of length 25546 chars using local model
+2025-11-06 19:18:05,989 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 19:18:05,991 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-06 19:18:05,991 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 19:18:09,210 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-06 19:18:09,210 - routes.embeddings - WARNING - Text truncated from 25546 to 10000 chars for embedding
+2025-11-06 19:18:09,743 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-06 19:19:37,955 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-06 19:19:37,956 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 19:19:37,956 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 19:19:38,024 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 19:19:38,025 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-06 19:19:38,029 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-06 19:19:38,680 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-06 19:19:38,681 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 19:19:38,681 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 19:19:38,695 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 19:19:38,696 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-06 19:19:38,699 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-06 19:19:40,259 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-06 19:19:40,260 - models.summarizer - INFO - Generating summary (target_max_words=500)
+2025-11-06 19:19:40,267 - models.summarizer - WARNING - Chunk 1 summarization failed: index out of range in self
+2025-11-06 19:19:40,275 - models.summarizer - WARNING - Chunk 2 summarization failed: index out of range in self
+2025-11-06 19:19:40,284 - models.summarizer - WARNING - Chunk 3 summarization failed: index out of range in self
+2025-11-06 19:19:40,292 - models.summarizer - WARNING - Chunk 4 summarization failed: index out of range in self
+2025-11-06 19:19:55,604 - models.summarizer - INFO - ✅ Summary generated (38 words)
+2025-11-06 19:19:55,605 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 19:19:55,605 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 19:19:55,638 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 19:19:55,642 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-06 19:19:55,645 - utils.quality_validator - INFO - Summary validation: valid=True, score=1.20
+2025-11-06 19:19:56,380 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=50)
+2025-11-06 19:19:56,381 - models.summarizer - INFO - Extracting 50 keypoints
+2025-11-06 19:19:56,381 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 19:19:56,398 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-06 19:19:56,406 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-06 19:19:56,409 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-06 19:28:14,084 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-06 19:28:14,085 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 19:28:14,085 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 19:28:36,023 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-06 19:28:36,026 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-06 19:28:36,653 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-06 19:28:36,653 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 19:28:36,653 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 19:28:52,676 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-06 19:28:52,677 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-06 19:28:53,301 - routes.generation - INFO - Generating structured keypoints v2 (page=2, size=24)
+2025-11-06 19:28:53,301 - models.summarizer - INFO - Extracting 48 keypoints
+2025-11-06 19:28:53,301 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 19:29:07,846 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-06 19:29:07,847 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.00
+2025-11-06 19:29:08,556 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-06 19:29:08,557 - models.summarizer - INFO - Generating summary (target_max_words=500)
+2025-11-06 19:29:22,603 - models.summarizer - INFO - ✅ Summary generated (45 words)
+2025-11-06 19:29:22,605 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 19:29:22,606 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 19:29:36,309 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-06 19:29:36,314 - utils.quality_validator - INFO - Summary validation: valid=True, score=1.20
+2025-11-06 19:29:36,955 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=50)
+2025-11-06 19:29:36,955 - models.summarizer - INFO - Extracting 50 keypoints
+2025-11-06 19:29:36,956 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 19:29:51,912 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-06 19:29:51,913 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-06 19:59:22,615 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-06 19:59:22,615 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 19:59:22,615 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 19:59:57,329 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-06 19:59:57,349 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-06 19:59:58,273 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-06 19:59:58,273 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 19:59:58,273 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 20:00:14,086 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-06 20:00:14,086 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-06 20:00:14,715 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-06 20:00:14,715 - models.summarizer - INFO - Generating summary (target_max_words=500)
+2025-11-06 20:00:27,043 - models.summarizer - INFO - ✅ Summary generated (45 words)
+2025-11-06 20:00:27,044 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 20:00:27,044 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 20:00:42,057 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-06 20:00:42,060 - utils.quality_validator - INFO - Summary validation: valid=True, score=1.20
+2025-11-06 20:00:42,660 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=50)
+2025-11-06 20:00:42,660 - models.summarizer - INFO - Extracting 50 keypoints
+2025-11-06 20:00:42,661 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 20:00:56,629 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-06 20:00:56,630 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-06 20:01:07,411 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-06 20:01:07,412 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 20:01:07,412 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 20:01:22,733 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-06 20:01:22,734 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-06 20:01:23,386 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-06 20:01:23,387 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-06 20:01:23,387 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente...
+2025-11-06 20:01:37,017 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-06 20:01:37,017 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 04:17:02,733 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 04:17:02,734 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 04:17:02,742 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 04:17:02,948 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 04:17:02,952 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 04:17:02,957 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 04:17:03,643 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 04:17:03,644 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 04:17:03,644 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 04:17:03,665 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 04:17:03,671 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 04:17:03,674 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 04:17:24,114 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-07 04:17:24,115 - models.summarizer - INFO - Generating summary (target_max_words=500)
+2025-11-07 04:17:24,121 - models.summarizer - WARNING - Chunk 1 summarization failed: index out of range in self
+2025-11-07 04:17:24,129 - models.summarizer - WARNING - Chunk 2 summarization failed: index out of range in self
+2025-11-07 04:17:24,134 - models.summarizer - WARNING - Chunk 3 summarization failed: index out of range in self
+2025-11-07 04:17:24,138 - models.summarizer - WARNING - Chunk 4 summarization failed: index out of range in self
+2025-11-07 04:17:36,799 - models.summarizer - INFO - ✅ Summary generated (38 words)
+2025-11-07 04:17:36,800 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 04:17:36,801 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 04:17:36,825 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 04:17:36,826 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 04:17:36,829 - utils.quality_validator - INFO - Summary validation: valid=True, score=1.20
+2025-11-07 04:17:37,542 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=50)
+2025-11-07 04:17:37,542 - models.summarizer - INFO - Extracting 50 keypoints
+2025-11-07 04:17:37,543 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 04:17:37,559 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 04:17:37,560 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 04:17:37,564 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 05:08:50,088 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 05:08:50,089 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 05:08:50,107 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 05:09:34,513 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 05:09:34,513 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 05:09:34,522 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 05:09:49,136 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 05:09:49,137 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 05:09:49,768 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 05:09:49,769 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 05:09:49,769 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 05:10:02,389 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 05:10:02,389 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 05:10:03,122 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-07 05:10:03,123 - models.summarizer - INFO - Generating summary (target_max_words=500)
+2025-11-07 05:10:14,566 - models.summarizer - INFO - ✅ Summary generated (45 words)
+2025-11-07 05:10:14,567 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 05:10:14,567 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 05:10:29,366 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 05:10:29,367 - utils.quality_validator - INFO - Summary validation: valid=True, score=1.20
+2025-11-07 05:10:30,277 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=50)
+2025-11-07 05:10:30,277 - models.summarizer - INFO - Extracting 50 keypoints
+2025-11-07 05:10:30,278 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 05:10:43,027 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 05:10:43,028 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 06:49:54,400 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 06:49:54,401 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 06:49:54,415 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 06:50:09,295 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 06:50:09,297 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 06:54:51,090 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 06:54:51,091 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 06:54:51,098 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 06:55:07,296 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 06:55:07,297 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 06:55:07,936 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 06:55:07,936 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 06:55:07,936 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 06:55:20,553 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 06:55:20,555 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 06:55:21,525 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-07 06:55:21,525 - models.summarizer - INFO - Generating summary (target_max_words=500)
+2025-11-07 06:55:34,213 - models.summarizer - INFO - ✅ Summary generated (45 words)
+2025-11-07 06:55:34,214 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 06:55:34,214 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 06:55:47,367 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 06:55:47,369 - utils.quality_validator - INFO - Summary validation: valid=True, score=1.20
+2025-11-07 06:55:48,019 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=50)
+2025-11-07 06:55:48,019 - models.summarizer - INFO - Extracting 50 keypoints
+2025-11-07 06:55:48,019 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 06:56:00,817 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 06:56:00,817 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 06:56:52,103 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 06:56:52,104 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 06:56:52,104 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 06:57:05,178 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 06:57:05,179 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 06:57:05,893 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 06:57:05,893 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 06:57:05,894 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 06:57:18,640 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 06:57:18,641 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 06:57:19,339 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-07 06:57:19,339 - models.summarizer - INFO - Generating summary (target_max_words=500)
+2025-11-07 06:57:31,652 - models.summarizer - INFO - ✅ Summary generated (45 words)
+2025-11-07 06:57:31,653 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 06:57:31,653 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 06:57:44,588 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 06:57:44,589 - utils.quality_validator - INFO - Summary validation: valid=True, score=1.20
+2025-11-07 06:57:45,243 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=50)
+2025-11-07 06:57:45,243 - models.summarizer - INFO - Extracting 50 keypoints
+2025-11-07 06:57:45,244 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 06:57:57,836 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 06:57:57,836 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 07:10:45,273 - routes.generation - INFO - Generating 10 enhanced flashcards
+2025-11-07 07:10:45,285 - models.flashcard_generator - INFO - Loading embedding model (all-MiniLM-L6-v2) for flashcards...
+2025-11-07 07:10:45,406 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-07 07:10:45,407 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 07:10:51,691 - models.flashcard_generator - INFO - ✅ Flashcard embedding model loaded successfully
+2025-11-07 07:10:51,692 - models.flashcard_generator - INFO - Loading T5 model for flashcard generation...
+2025-11-07 07:10:54,842 - models.flashcard_generator - INFO - ✅ T5 model loaded successfully
+2025-11-07 07:10:54,843 - models.flashcard_generator - INFO - Generating 10 enhanced flashcards
+2025-11-07 07:10:54,859 - models.flashcard_generator - INFO - Parsed structure: DocumentStructure(headings=0, definitions=0, lists=0, sentences=10)
+2025-11-07 07:11:40,488 - models.flashcard_generator - INFO - Removed 1 duplicate flashcards
+2025-11-07 07:11:40,489 - models.flashcard_generator - INFO - Quality filter: 9 -> 0 flashcards
+2025-11-07 07:11:40,489 - models.flashcard_generator - WARNING - Insufficient high-quality flashcards, using fallback generation
+2025-11-07 07:11:40,490 - models.flashcard_generator - INFO - ✅ Generated 10 high-quality flashcards
+2025-11-07 07:11:40,497 - utils.quality_validator - INFO - Flashcards validation: valid=True, score=0.79, valid=10/10
+2025-11-07 07:11:40,498 - routes.generation - INFO - Flashcards quality score: 0.79
+2025-11-07 07:11:41,173 - routes.embeddings - INFO - Generating embedding for text of length 25546 chars using local model
+2025-11-07 07:11:41,174 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 07:11:41,176 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-07 07:11:41,176 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 07:11:44,455 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 07:11:44,456 - routes.embeddings - WARNING - Text truncated from 25546 to 10000 chars for embedding
+2025-11-07 07:11:44,680 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-07 07:11:47,212 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 07:11:47,214 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 07:11:47,215 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 07:11:48,075 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 07:11:48,075 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 07:11:48,083 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 07:11:48,738 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 07:11:48,738 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 07:11:48,738 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 07:11:48,753 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 07:11:48,754 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 07:11:48,758 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 07:11:49,542 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 07:11:49,543 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 07:11:49,543 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 07:11:49,563 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 07:11:49,564 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 07:11:49,566 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 07:32:31,840 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 07:32:31,856 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 07:32:31,863 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 07:32:33,381 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 07:32:33,384 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 07:32:33,404 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 07:32:34,025 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 07:32:34,025 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 07:32:34,026 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 07:32:34,056 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 07:32:34,057 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 07:32:34,060 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 07:32:36,900 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-07 07:32:36,901 - models.summarizer - INFO - Generating summary (target_max_words=500)
+2025-11-07 07:32:36,983 - models.summarizer - WARNING - Chunk 1 summarization failed: index out of range in self
+2025-11-07 07:32:36,993 - models.summarizer - WARNING - Chunk 2 summarization failed: index out of range in self
+2025-11-07 07:32:37,018 - models.summarizer - WARNING - Chunk 3 summarization failed: index out of range in self
+2025-11-07 07:32:37,044 - models.summarizer - WARNING - Chunk 4 summarization failed: index out of range in self
+2025-11-07 07:33:10,173 - models.summarizer - INFO - ✅ Summary generated (38 words)
+2025-11-07 07:33:10,187 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 07:33:10,189 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 07:33:10,713 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 07:33:10,716 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 07:33:10,732 - utils.quality_validator - INFO - Summary validation: valid=True, score=1.20
+2025-11-07 07:33:12,199 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=50)
+2025-11-07 07:33:12,199 - models.summarizer - INFO - Extracting 50 keypoints
+2025-11-07 07:33:12,199 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 07:33:12,229 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 07:33:12,230 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 07:33:12,234 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 07:47:55,126 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 07:47:55,133 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 07:47:55,135 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 07:48:26,914 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 07:48:26,931 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 07:48:28,019 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 07:48:28,019 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 07:48:28,019 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 07:48:42,142 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 07:48:42,143 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 07:49:03,024 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-07 07:49:03,024 - models.summarizer - INFO - Generating summary (target_max_words=500)
+2025-11-07 07:49:15,736 - models.summarizer - INFO - ✅ Summary generated (45 words)
+2025-11-07 07:49:15,737 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 07:49:15,739 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 07:49:29,610 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 07:49:29,612 - utils.quality_validator - INFO - Summary validation: valid=True, score=1.20
+2025-11-07 07:49:30,377 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=50)
+2025-11-07 07:49:30,378 - models.summarizer - INFO - Extracting 50 keypoints
+2025-11-07 07:49:30,378 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 07:49:44,072 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 07:49:44,073 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 08:48:00,787 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 08:48:00,788 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 08:48:00,809 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 08:48:01,258 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 08:48:01,262 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 08:48:01,267 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 08:48:01,908 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 08:48:01,908 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 08:48:01,909 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 08:48:01,933 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 08:48:01,939 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 08:48:01,942 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 08:48:03,748 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-07 08:48:03,748 - models.summarizer - INFO - Generating summary (target_max_words=500)
+2025-11-07 08:48:03,758 - models.summarizer - WARNING - Chunk 1 summarization failed: index out of range in self
+2025-11-07 08:48:03,764 - models.summarizer - WARNING - Chunk 2 summarization failed: index out of range in self
+2025-11-07 08:48:03,774 - models.summarizer - WARNING - Chunk 3 summarization failed: index out of range in self
+2025-11-07 08:48:03,781 - models.summarizer - WARNING - Chunk 4 summarization failed: index out of range in self
+2025-11-07 08:48:38,822 - models.summarizer - INFO - ✅ Summary generated (38 words)
+2025-11-07 08:48:38,823 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 08:48:38,823 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 08:48:38,845 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 08:48:38,854 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 08:48:38,858 - utils.quality_validator - INFO - Summary validation: valid=True, score=1.20
+2025-11-07 08:48:39,522 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=50)
+2025-11-07 08:48:39,522 - models.summarizer - INFO - Extracting 50 keypoints
+2025-11-07 08:48:39,522 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 08:48:39,543 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 08:48:39,551 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 08:48:39,554 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 08:49:22,455 - routes.generation - INFO - Generating 10 normal multiple-choice quiz questions
+2025-11-07 08:49:22,457 - models.qa_generator - INFO - Generating 10 normal multiple-choice quiz questions
+2025-11-07 08:50:01,324 - models.qa_generator - INFO - ✅ Generated 10 normal multiple-choice quiz questions
+2025-11-07 08:50:01,324 - utils.quality_validator - INFO - Quiz validation: valid=True, score=0.74, valid_q=10/10
+2025-11-07 08:50:01,325 - routes.generation - INFO - Quiz quality score: 0.74
+2025-11-07 08:50:30,596 - routes.embeddings - INFO - Generating embedding for text of length 25546 chars using local model
+2025-11-07 08:50:30,596 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 08:50:30,598 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-07 08:50:30,598 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 08:50:34,343 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 08:50:34,343 - routes.embeddings - WARNING - Text truncated from 25546 to 10000 chars for embedding
+2025-11-07 08:50:34,803 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-07 09:04:41,136 - routes.embeddings - INFO - Generating embedding for text of length 49 chars using local model
+2025-11-07 09:04:41,136 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 09:04:41,138 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-07 09:04:41,138 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 09:04:44,853 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 09:04:44,991 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-07 09:04:44,999 - routes.embeddings - INFO - Generating embedding for text of length 49 chars using local model
+2025-11-07 09:04:45,011 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-07 09:05:48,505 - routes.embeddings - INFO - Generating embedding for text of length 49 chars using local model
+2025-11-07 09:05:48,515 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-07 09:05:48,521 - routes.embeddings - INFO - Generating embedding for text of length 49 chars using local model
+2025-11-07 09:05:48,530 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-07 09:07:43,219 - routes.embeddings - INFO - Generating embedding for text of length 49 chars using local model
+2025-11-07 09:07:43,219 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 09:07:43,220 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-07 09:07:43,221 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 09:07:46,846 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 09:07:46,866 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-07 09:07:46,871 - routes.embeddings - INFO - Generating embedding for text of length 49 chars using local model
+2025-11-07 09:07:46,881 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-07 09:07:46,889 - routes.generation - INFO - Generating summary for text of length 41
+2025-11-07 09:07:46,890 - models.summarizer - INFO - Generating summary (target_max_words=400)
+2025-11-07 09:08:08,641 - models.summarizer - INFO - ✅ Summary generated (46 words)
+2025-11-07 09:08:08,642 - utils.quality_validator - INFO - Summary validation: valid=False, score=0.62
+2025-11-07 09:08:08,643 - routes.generation - INFO - Summary quality score: 0.62
+2025-11-07 09:09:08,788 - routes.embeddings - INFO - Generating embedding for text of length 49 chars using local model
+2025-11-07 09:09:08,789 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 09:09:08,790 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-07 09:09:08,790 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 09:09:13,058 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 09:09:13,081 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-07 09:09:13,092 - routes.embeddings - INFO - Generating embedding for text of length 49 chars using local model
+2025-11-07 09:09:13,104 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-07 09:09:13,115 - routes.generation - INFO - Generating summary for text of length 41
+2025-11-07 09:09:13,115 - models.summarizer - INFO - Generating summary (target_max_words=400)
+2025-11-07 09:09:21,223 - models.summarizer - INFO - ✅ Summary generated (46 words)
+2025-11-07 09:09:21,225 - utils.quality_validator - INFO - Summary validation: valid=False, score=0.62
+2025-11-07 09:09:21,225 - routes.generation - INFO - Summary quality score: 0.62
+2025-11-07 09:09:21,230 - routes.generation - INFO - Generating keypoints for text of length 41
+2025-11-07 09:09:21,230 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-07 09:09:21,238 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 09:09:29,350 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 09:09:29,351 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 09:09:29,351 - routes.generation - INFO - Keypoints quality score: 0.70
+2025-11-07 09:09:29,359 - routes.generation - INFO - Generating 5 normal multiple-choice quiz questions
+2025-11-07 09:09:29,360 - models.qa_generator - INFO - Generating 5 normal multiple-choice quiz questions
+2025-11-07 09:09:29,360 - models.qa_generator - WARNING - Only 1 sentences available, adjusting question count
+2025-11-07 09:09:39,297 - models.qa_generator - INFO - ✅ Generated 1 normal multiple-choice quiz questions
+2025-11-07 09:09:39,297 - utils.quality_validator - INFO - Quiz validation: valid=False, score=0.54, valid_q=1/1
+2025-11-07 09:09:39,297 - routes.generation - INFO - Quiz quality score: 0.54
+2025-11-07 09:09:39,304 - routes.generation - INFO - Generating 10 enhanced flashcards
+2025-11-07 09:09:39,304 - models.flashcard_generator - INFO - Loading embedding model (all-MiniLM-L6-v2) for flashcards...
+2025-11-07 09:09:39,305 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-07 09:09:39,305 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 09:09:43,894 - models.flashcard_generator - INFO - ✅ Flashcard embedding model loaded successfully
+2025-11-07 09:09:43,894 - models.flashcard_generator - INFO - Loading T5 model for flashcard generation...
+2025-11-07 09:09:45,322 - models.flashcard_generator - INFO - ✅ T5 model loaded successfully
+2025-11-07 09:09:45,322 - models.flashcard_generator - INFO - Generating 10 enhanced flashcards
+2025-11-07 09:09:45,323 - models.flashcard_generator - INFO - Parsed structure: DocumentStructure(headings=0, definitions=0, lists=0, sentences=1)
+2025-11-07 09:09:45,702 - models.flashcard_generator - INFO - Quality filter: 1 -> 0 flashcards
+2025-11-07 09:09:45,702 - models.flashcard_generator - WARNING - Insufficient high-quality flashcards, using fallback generation
+2025-11-07 09:09:45,703 - models.flashcard_generator - INFO - ✅ Generated 1 high-quality flashcards
+2025-11-07 09:09:45,703 - utils.quality_validator - INFO - Flashcards validation: valid=False, score=0.51, valid=1/1
+2025-11-07 09:09:45,703 - routes.generation - INFO - Flashcards quality score: 0.51
+2025-11-07 09:11:03,450 - routes.embeddings - INFO - Generating embedding for text of length 49 chars using local model
+2025-11-07 09:11:03,451 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 09:11:03,452 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-07 09:11:03,452 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 09:11:06,694 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 09:11:06,733 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-07 09:11:06,741 - routes.embeddings - INFO - Generating embedding for text of length 49 chars using local model
+2025-11-07 09:11:06,752 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-07 09:11:06,761 - routes.generation - INFO - Generating summary for text of length 41
+2025-11-07 09:11:06,761 - models.summarizer - INFO - Generating summary (target_max_words=400)
+2025-11-07 09:11:15,803 - models.summarizer - INFO - ✅ Summary generated (46 words)
+2025-11-07 09:11:15,804 - utils.quality_validator - INFO - Summary validation: valid=False, score=0.62
+2025-11-07 09:11:15,805 - routes.generation - INFO - Summary quality score: 0.62
+2025-11-07 09:11:15,811 - routes.generation - INFO - Generating keypoints for text of length 41
+2025-11-07 09:11:15,811 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-07 09:11:15,820 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 09:11:25,553 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 09:11:25,554 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 09:11:25,554 - routes.generation - INFO - Keypoints quality score: 0.70
+2025-11-07 09:11:25,562 - routes.generation - INFO - Generating 5 normal multiple-choice quiz questions
+2025-11-07 09:11:25,562 - models.qa_generator - INFO - Generating 5 normal multiple-choice quiz questions
+2025-11-07 09:11:25,562 - models.qa_generator - WARNING - Only 1 sentences available, adjusting question count
+2025-11-07 09:11:26,802 - models.qa_generator - INFO - ✅ Generated 1 normal multiple-choice quiz questions
+2025-11-07 09:11:26,803 - utils.quality_validator - INFO - Quiz validation: valid=False, score=0.54, valid_q=1/1
+2025-11-07 09:11:26,803 - routes.generation - INFO - Quiz quality score: 0.54
+2025-11-07 09:11:26,808 - routes.generation - INFO - Generating 10 enhanced flashcards
+2025-11-07 09:11:26,808 - models.flashcard_generator - INFO - Loading embedding model (all-MiniLM-L6-v2) for flashcards...
+2025-11-07 09:11:26,809 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-07 09:11:26,810 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 09:11:30,025 - models.flashcard_generator - INFO - ✅ Flashcard embedding model loaded successfully
+2025-11-07 09:11:30,025 - models.flashcard_generator - INFO - Loading T5 model for flashcard generation...
+2025-11-07 09:11:31,474 - models.flashcard_generator - INFO - ✅ T5 model loaded successfully
+2025-11-07 09:11:31,474 - models.flashcard_generator - INFO - Generating 10 enhanced flashcards
+2025-11-07 09:11:31,475 - models.flashcard_generator - INFO - Parsed structure: DocumentStructure(headings=0, definitions=0, lists=0, sentences=1)
+2025-11-07 09:11:31,825 - models.flashcard_generator - INFO - Quality filter: 1 -> 0 flashcards
+2025-11-07 09:11:31,825 - models.flashcard_generator - WARNING - Insufficient high-quality flashcards, using fallback generation
+2025-11-07 09:11:31,825 - models.flashcard_generator - INFO - ✅ Generated 1 high-quality flashcards
+2025-11-07 09:11:31,826 - utils.quality_validator - INFO - Flashcards validation: valid=False, score=0.51, valid=1/1
+2025-11-07 09:11:31,826 - routes.generation - INFO - Flashcards quality score: 0.51
+2025-11-07 09:36:25,407 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 09:36:25,408 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 09:36:25,417 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 09:36:25,817 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 09:36:25,821 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 09:36:25,826 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 09:36:26,482 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 09:36:26,482 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 09:36:26,483 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 09:36:26,499 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 09:36:26,507 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 09:36:26,509 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 09:36:28,452 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-07 09:36:28,452 - models.summarizer - INFO - Generating summary (target_max_words=500)
+2025-11-07 09:36:28,458 - models.summarizer - WARNING - Chunk 1 summarization failed: index out of range in self
+2025-11-07 09:36:28,463 - models.summarizer - WARNING - Chunk 2 summarization failed: index out of range in self
+2025-11-07 09:36:28,469 - models.summarizer - WARNING - Chunk 3 summarization failed: index out of range in self
+2025-11-07 09:36:28,475 - models.summarizer - WARNING - Chunk 4 summarization failed: index out of range in self
+2025-11-07 09:37:02,172 - models.summarizer - INFO - ✅ Summary generated (38 words)
+2025-11-07 09:37:02,176 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 09:37:02,176 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 09:37:02,241 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 09:37:02,242 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 09:37:02,247 - utils.quality_validator - INFO - Summary validation: valid=True, score=1.20
+2025-11-07 09:37:02,990 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=50)
+2025-11-07 09:37:02,991 - models.summarizer - INFO - Extracting 50 keypoints
+2025-11-07 09:37:02,991 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 09:37:03,015 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 09:37:03,016 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 09:37:03,020 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 09:47:59,274 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 09:47:59,275 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 09:47:59,283 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 09:47:59,320 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 09:47:59,324 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 09:47:59,329 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 09:47:59,953 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 09:47:59,953 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 09:47:59,953 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 09:47:59,972 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 09:47:59,980 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 09:47:59,982 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 09:48:01,983 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-07 09:48:01,983 - models.summarizer - INFO - Generating summary (target_max_words=500)
+2025-11-07 09:48:01,990 - models.summarizer - WARNING - Chunk 1 summarization failed: index out of range in self
+2025-11-07 09:48:01,996 - models.summarizer - WARNING - Chunk 2 summarization failed: index out of range in self
+2025-11-07 09:48:02,001 - models.summarizer - WARNING - Chunk 3 summarization failed: index out of range in self
+2025-11-07 09:48:02,006 - models.summarizer - WARNING - Chunk 4 summarization failed: index out of range in self
+2025-11-07 09:48:14,316 - models.summarizer - INFO - ✅ Summary generated (38 words)
+2025-11-07 09:48:14,317 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 09:48:14,317 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 09:48:14,332 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 09:48:14,333 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 09:48:14,336 - utils.quality_validator - INFO - Summary validation: valid=True, score=1.20
+2025-11-07 09:48:15,050 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=50)
+2025-11-07 09:48:15,051 - models.summarizer - INFO - Extracting 50 keypoints
+2025-11-07 09:48:15,051 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 09:48:15,065 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 09:48:15,066 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 09:48:15,069 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 09:48:36,043 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 09:48:36,043 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 09:48:36,044 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 09:48:52,181 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 09:48:52,181 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 09:48:52,810 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 09:48:52,810 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 09:48:52,811 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 09:49:06,948 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 09:49:06,948 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 09:49:07,613 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-07 09:49:07,613 - models.summarizer - INFO - Generating summary (target_max_words=500)
+2025-11-07 09:49:20,655 - models.summarizer - INFO - ✅ Summary generated (45 words)
+2025-11-07 09:49:20,656 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 09:49:20,656 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 09:49:34,998 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 09:49:34,999 - utils.quality_validator - INFO - Summary validation: valid=True, score=1.20
+2025-11-07 09:49:35,889 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=50)
+2025-11-07 09:49:35,889 - models.summarizer - INFO - Extracting 50 keypoints
+2025-11-07 09:49:35,889 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 09:49:54,187 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 09:49:54,188 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 17:54:29,089 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-11-07 17:55:27,557 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-11-07 17:55:27,565 - routes.embeddings - INFO - Generating embedding for text of length 44 chars using local model
+2025-11-07 17:55:27,566 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 17:55:27,568 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-07 17:55:27,568 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 17:55:30,921 - huggingface_hub.file_download - WARNING - Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+2025-11-07 17:55:35,560 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 17:55:35,682 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-07 17:55:35,687 - httpx - INFO - HTTP Request: POST http://testserver/embeddings/generate "HTTP/1.1 200 OK"
+2025-11-07 17:55:35,691 - routes.generation - INFO - Generating summary for text of length 867
+2025-11-07 17:55:35,692 - models.summarizer - INFO - Generating summary (target_max_words=100)
+2025-11-07 17:55:49,875 - utils.quality_validator - INFO - Summary validation: valid=False, score=0.86
+2025-11-07 17:55:49,876 - routes.generation - INFO - Summary quality score: 0.86
+2025-11-07 17:55:49,908 - httpx - INFO - HTTP Request: POST http://testserver/generate/summary "HTTP/1.1 200 OK"
+2025-11-07 17:55:50,056 - routes.generation - INFO - Generating keypoints for text of length 867
+2025-11-07 17:55:50,057 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-07 17:55:50,067 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente�
+2025-11-07 17:55:57,183 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 17:55:57,183 - routes.generation - INFO - Keypoints quality score: 0.70
+2025-11-07 17:55:57,186 - httpx - INFO - HTTP Request: POST http://testserver/generate/keypoints "HTTP/1.1 200 OK"
+2025-11-07 17:55:57,193 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=5)
+2025-11-07 17:55:57,194 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-07 17:55:57,194 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente�
+2025-11-07 17:56:04,124 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 17:56:04,125 - httpx - INFO - HTTP Request: POST http://testserver/generate/keypoints/v2?page=1&page_size=5 "HTTP/1.1 200 OK"
+2025-11-07 17:56:04,145 - routes.generation - INFO - Generating 3 normal multiple-choice quiz questions
+2025-11-07 17:56:04,147 - models.qa_generator - INFO - Generating 3 normal multiple-choice quiz questions
+2025-11-07 17:56:11,364 - utils.quality_validator - INFO - Quiz validation: valid=True, score=0.74, valid_q=3/3
+2025-11-07 17:56:11,364 - routes.generation - INFO - Quiz quality score: 0.74
+2025-11-07 17:56:11,398 - httpx - INFO - HTTP Request: POST http://testserver/generate/quiz?num_questions=3 "HTTP/1.1 200 OK"
+2025-11-07 17:56:11,538 - routes.generation - INFO - Generating 5 enhanced flashcards
+2025-11-07 17:56:11,540 - models.flashcard_generator - INFO - Loading embedding model (all-MiniLM-L6-v2) for flashcards...
+2025-11-07 17:56:11,558 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-07 17:56:11,558 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 17:56:16,289 - models.flashcard_generator - INFO - Loading T5 model for flashcard generation...
+2025-11-07 17:56:17,776 - models.flashcard_generator - INFO - Generating 5 enhanced flashcards
+2025-11-07 17:56:17,780 - models.flashcard_generator - INFO - Parsed structure: DocumentStructure(headings=0, definitions=3, lists=0, sentences=12)
+2025-11-07 17:56:22,020 - models.flashcard_generator - INFO - Removed 6 duplicate flashcards
+2025-11-07 17:56:22,020 - models.flashcard_generator - INFO - Quality filter: 4 -> 2 flashcards
+2025-11-07 17:56:22,030 - utils.quality_validator - INFO - Flashcards validation: valid=False, score=0.60, valid=2/2
+2025-11-07 17:56:22,030 - routes.generation - INFO - Flashcards quality score: 0.60
+2025-11-07 17:56:22,033 - httpx - INFO - HTTP Request: POST http://testserver/generate/flashcards?num_cards=5 "HTTP/1.1 200 OK"
+2025-11-07 17:56:22,039 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-07 17:56:22,039 - models.summarizer - INFO - Generating summary (target_max_words=300)
+2025-11-07 17:56:34,937 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 17:56:34,939 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente�
+2025-11-07 17:56:43,470 - utils.quality_validator - INFO - Summary validation: valid=True, score=1.20
+2025-11-07 17:56:43,492 - httpx - INFO - HTTP Request: POST http://testserver/generate/study-note "HTTP/1.1 200 OK"
+2025-11-07 10:24:44,363 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 10:24:44,376 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 10:24:44,461 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 10:25:19,938 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 10:25:19,962 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 10:25:20,787 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 10:25:20,788 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 10:25:20,788 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 10:25:38,368 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 10:25:38,370 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 10:39:38,368 - routes.embeddings - INFO - Generating embedding for text of length 49 chars using local model
+2025-11-07 10:39:38,374 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 10:39:38,426 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-07 10:39:38,427 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 10:39:44,003 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 10:39:45,006 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-07 10:39:45,025 - routes.embeddings - INFO - Generating embedding for text of length 49 chars using local model
+2025-11-07 10:39:45,036 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-07 10:39:45,077 - routes.generation - INFO - Generating summary for text of length 41
+2025-11-07 10:39:45,078 - models.summarizer - INFO - Generating summary (target_max_words=400)
+2025-11-07 10:40:06,405 - models.summarizer - INFO - ✅ Summary generated (46 words)
+2025-11-07 10:40:06,432 - utils.quality_validator - INFO - Summary validation: valid=False, score=0.62
+2025-11-07 10:40:06,433 - routes.generation - INFO - Summary quality score: 0.62
+2025-11-07 10:40:06,454 - routes.generation - INFO - Generating keypoints for text of length 41
+2025-11-07 10:40:06,455 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-07 10:40:06,477 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 10:40:16,921 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 10:40:16,923 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 10:40:16,924 - routes.generation - INFO - Keypoints quality score: 0.70
+2025-11-07 10:40:16,971 - routes.generation - INFO - Generating 5 normal multiple-choice quiz questions
+2025-11-07 10:40:16,972 - routes.generation - ERROR - Quiz generation failed: 'QuizRequest' object has no attribute 'material_id'
+2025-11-07 10:41:20,316 - routes.generation - INFO - Generating summary for text of length 41
+2025-11-07 10:41:20,316 - models.summarizer - INFO - Generating summary (target_max_words=400)
+2025-11-07 10:41:27,488 - models.summarizer - INFO - ✅ Summary generated (46 words)
+2025-11-07 10:41:27,489 - utils.quality_validator - INFO - Summary validation: valid=False, score=0.62
+2025-11-07 10:41:27,490 - routes.generation - INFO - Summary quality score: 0.62
+2025-11-07 10:41:27,497 - routes.generation - INFO - Generating keypoints for text of length 41
+2025-11-07 10:41:27,497 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-07 10:41:27,504 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 10:41:35,732 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 10:41:35,733 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 10:41:35,733 - routes.generation - INFO - Keypoints quality score: 0.70
+2025-11-07 10:41:35,741 - routes.generation - INFO - Generating 5 normal multiple-choice quiz questions
+2025-11-07 10:41:35,741 - models.qa_generator - INFO - Generating 5 normal multiple-choice quiz questions
+2025-11-07 10:41:35,742 - models.qa_generator - WARNING - Only 1 sentences available, adjusting question count
+2025-11-07 10:41:40,406 - models.qa_generator - INFO - ✅ Generated 1 normal multiple-choice quiz questions
+2025-11-07 10:41:40,406 - utils.quality_validator - INFO - Quiz validation: valid=False, score=0.54, valid_q=1/1
+2025-11-07 10:41:40,406 - routes.generation - INFO - Quiz quality score: 0.54
+2025-11-07 10:41:40,414 - routes.generation - INFO - Generating 10 enhanced flashcards
+2025-11-07 10:41:40,415 - models.flashcard_generator - INFO - Loading embedding model (all-MiniLM-L6-v2) for flashcards...
+2025-11-07 10:41:40,416 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 10:41:44,494 - models.flashcard_generator - INFO - ✅ Flashcard embedding model loaded successfully on cpu
+2025-11-07 10:41:44,495 - models.flashcard_generator - INFO - Loading T5 model for flashcard generation...
+2025-11-07 10:41:46,463 - models.flashcard_generator - INFO - ✅ T5 model loaded successfully on cpu
+2025-11-07 10:41:46,464 - models.flashcard_generator - INFO - Generating 10 enhanced flashcards
+2025-11-07 10:41:46,465 - models.flashcard_generator - INFO - Parsed structure: DocumentStructure(headings=0, definitions=0, lists=0, sentences=1)
+2025-11-07 10:41:46,771 - models.flashcard_generator - INFO - Quality filter: 1 -> 0 flashcards
+2025-11-07 10:41:46,772 - models.flashcard_generator - WARNING - Insufficient high-quality flashcards, using fallback generation
+2025-11-07 10:41:46,772 - models.flashcard_generator - INFO - ✅ Generated 1 high-quality flashcards
+2025-11-07 10:41:46,773 - utils.quality_validator - INFO - Flashcards validation: valid=False, score=0.51, valid=1/1
+2025-11-07 10:41:46,773 - routes.generation - INFO - Flashcards quality score: 0.51
+2025-11-07 10:44:39,741 - routes.embeddings - INFO - Generating embedding for text of length 49 chars using local model
+2025-11-07 10:44:39,743 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 10:44:39,761 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-07 10:44:39,761 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 10:44:43,740 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 10:44:44,099 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-07 10:44:44,111 - routes.embeddings - INFO - Generating embedding for text of length 49 chars using local model
+2025-11-07 10:44:44,122 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-07 10:44:44,132 - routes.generation - INFO - Generating summary for text of length 41
+2025-11-07 10:44:44,133 - models.summarizer - INFO - Generating summary (target_max_words=400)
+2025-11-07 10:44:54,217 - models.summarizer - INFO - ✅ Summary generated (46 words)
+2025-11-07 10:44:54,218 - utils.quality_validator - INFO - Summary validation: valid=False, score=0.62
+2025-11-07 10:44:54,219 - routes.generation - INFO - Summary quality score: 0.62
+2025-11-07 10:44:54,224 - routes.generation - INFO - Generating keypoints for text of length 41
+2025-11-07 10:44:54,225 - models.summarizer - INFO - Extracting 5 keypoints
+2025-11-07 10:44:54,225 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 10:45:02,110 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 10:45:02,111 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 10:45:02,112 - routes.generation - INFO - Keypoints quality score: 0.70
+2025-11-07 10:45:02,119 - routes.generation - INFO - Generating 5 normal multiple-choice quiz questions
+2025-11-07 10:45:02,120 - models.qa_generator - INFO - Generating 5 normal multiple-choice quiz questions
+2025-11-07 10:45:02,120 - models.qa_generator - WARNING - Only 1 sentences available, adjusting question count
+2025-11-07 10:45:04,399 - models.qa_generator - INFO - ✅ Generated 1 normal multiple-choice quiz questions
+2025-11-07 10:45:04,399 - utils.quality_validator - INFO - Quiz validation: valid=False, score=0.54, valid_q=1/1
+2025-11-07 10:45:04,400 - routes.generation - INFO - Quiz quality score: 0.54
+2025-11-07 10:45:04,409 - routes.generation - INFO - Generating 10 enhanced flashcards
+2025-11-07 10:45:04,409 - models.flashcard_generator - INFO - Generating 10 enhanced flashcards
+2025-11-07 10:45:04,410 - models.flashcard_generator - INFO - Parsed structure: DocumentStructure(headings=0, definitions=0, lists=0, sentences=1)
+2025-11-07 10:45:04,759 - models.flashcard_generator - INFO - Quality filter: 1 -> 0 flashcards
+2025-11-07 10:45:04,759 - models.flashcard_generator - WARNING - Insufficient high-quality flashcards, using fallback generation
+2025-11-07 10:45:04,759 - models.flashcard_generator - INFO - ✅ Generated 1 high-quality flashcards
+2025-11-07 10:45:04,772 - utils.quality_validator - INFO - Flashcards validation: valid=False, score=0.51, valid=1/1
+2025-11-07 10:45:04,772 - routes.generation - INFO - Flashcards quality score: 0.51
+2025-11-07 11:48:48,204 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 11:48:48,208 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 11:48:48,231 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 11:49:18,404 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 11:49:18,414 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 11:49:19,179 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 11:49:19,180 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 11:49:19,180 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 11:49:34,302 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 11:49:34,303 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 11:49:41,181 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-07 11:49:41,182 - models.summarizer - INFO - Generating summary (target_max_words=500)
+2025-11-07 11:49:54,620 - models.summarizer - INFO - ✅ Summary generated (45 words)
+2025-11-07 11:49:54,623 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 11:49:54,623 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 11:50:09,846 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 11:50:09,853 - utils.quality_validator - INFO - Summary validation: valid=True, score=1.20
+2025-11-07 11:50:10,835 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=50)
+2025-11-07 11:50:10,835 - models.summarizer - INFO - Extracting 50 keypoints
+2025-11-07 11:50:10,836 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 11:50:27,065 - models.summarizer - INFO - ✅ Extracted 1 keypoints
+2025-11-07 11:50:27,066 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.70
+2025-11-07 11:51:05,507 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 11:51:05,507 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 11:51:05,508 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 11:51:05,626 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 11:51:05,627 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 11:51:05,631 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 11:51:06,289 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 11:51:06,290 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 11:51:06,290 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 11:51:06,306 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 11:51:06,307 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 11:51:06,311 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 11:51:09,313 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 11:51:09,313 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 11:51:09,313 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 11:51:09,331 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 11:51:09,332 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 11:51:09,337 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 11:51:09,965 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 11:51:09,965 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 11:51:09,965 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 11:51:09,981 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 11:51:09,982 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 11:51:09,986 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 11:51:19,607 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-07 11:51:19,607 - models.summarizer - INFO - Generating summary (target_max_words=500)
+2025-11-07 11:51:19,615 - models.summarizer - WARNING - Chunk 1 summarization failed: index out of range in self
+2025-11-07 11:51:19,623 - models.summarizer - WARNING - Chunk 2 summarization failed: index out of range in self
+2025-11-07 11:51:19,630 - models.summarizer - WARNING - Chunk 3 summarization failed: index out of range in self
+2025-11-07 11:51:19,637 - models.summarizer - WARNING - Chunk 4 summarization failed: index out of range in self
+2025-11-07 11:51:30,648 - models.summarizer - INFO - ✅ Summary generated (38 words)
+2025-11-07 11:51:30,649 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 11:51:30,649 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 11:51:30,671 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 11:51:30,673 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 11:51:30,678 - utils.quality_validator - INFO - Summary validation: valid=True, score=1.20
+2025-11-07 11:51:31,473 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=50)
+2025-11-07 11:51:31,473 - models.summarizer - INFO - Extracting 50 keypoints
+2025-11-07 11:51:31,474 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 11:51:31,491 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 11:51:31,493 - models.summarizer - INFO - ✅ Extracted 11 keypoints
+2025-11-07 11:51:31,497 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.93
+2025-11-07 12:08:25,598 - routes.extraction - INFO - Extracting text from URL: https://puhxawljwuszjflusxve.supabase.co/storage/v1/object/sign/learning-materials-v2/20c43da0-a3a8-446f-9f19-4027fae844f5/2025/11/07/1d51b0f3e2839889-course-packet1.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9lZTdjMjUwYy0zNzlhLTRiYjYtOGM2Yi00ZDM0NTZjNjg4MjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsZWFybmluZy1tYXRlcmlhbHMtdjIvMjBjNDNkYTAtYTNhOC00NDZmLTlmMTktNDAyN2ZhZTg0NGY1LzIwMjUvMTEvMDcvMWQ1MWIwZjNlMjgzOTg4OS1jb3Vyc2UtcGFja2V0MS5wZGYiLCJpYXQiOjE3NjI1MTczMDQsImV4cCI6MTc2MjUxNzkwNH0.hmdSzX6il5BQ6DeZSAonw-PZgqtJ9JVLhM6d0_7Ht2I
+2025-11-07 12:08:27,990 - httpx - INFO - HTTP Request: GET https://puhxawljwuszjflusxve.supabase.co/storage/v1/object/sign/learning-materials-v2/20c43da0-a3a8-446f-9f19-4027fae844f5/2025/11/07/1d51b0f3e2839889-course-packet1.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9lZTdjMjUwYy0zNzlhLTRiYjYtOGM2Yi00ZDM0NTZjNjg4MjIiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsZWFybmluZy1tYXRlcmlhbHMtdjIvMjBjNDNkYTAtYTNhOC00NDZmLTlmMTktNDAyN2ZhZTg0NGY1LzIwMjUvMTEvMDcvMWQ1MWIwZjNlMjgzOTg4OS1jb3Vyc2UtcGFja2V0MS5wZGYiLCJpYXQiOjE3NjI1MTczMDQsImV4cCI6MTc2MjUxNzkwNH0.hmdSzX6il5BQ6DeZSAonw-PZgqtJ9JVLhM6d0_7Ht2I "HTTP/1.1 200 OK"
+2025-11-07 12:08:35,559 - pdfminer.pdffont - WARNING - Could get FontBBox from font descriptor because None cannot be parsed as 4 floats
+2025-11-07 12:08:37,860 - pdfminer.pdffont - WARNING - Could get FontBBox from font descriptor because None cannot be parsed as 4 floats
+2025-11-07 12:08:40,542 - pdfminer.pdffont - WARNING - Could get FontBBox from font descriptor because None cannot be parsed as 4 floats
+2025-11-07 12:08:43,095 - pdfminer.pdffont - WARNING - Could get FontBBox from font descriptor because None cannot be parsed as 4 floats
+2025-11-07 12:08:50,834 - routes.generation - INFO - Generating summary for text of length 7762
+2025-11-07 12:08:50,834 - models.summarizer - INFO - Generating summary (target_max_words=400)
+2025-11-07 12:09:22,094 - models.summarizer - INFO - ✅ Summary generated (97 words)
+2025-11-07 12:09:22,097 - utils.quality_validator - INFO - Summary validation: valid=False, score=0.86
+2025-11-07 12:09:22,097 - routes.generation - INFO - Summary quality score: 0.86
+2025-11-07 12:09:22,695 - routes.embeddings - INFO - Generating embedding for text of length 7771 chars using local model
+2025-11-07 12:09:22,695 - routes.embeddings - INFO - Loading embedding model: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 12:09:22,703 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-07 12:09:22,703 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 12:09:28,550 - routes.embeddings - INFO - Model loaded successfully: sentence-transformers/all-MiniLM-L6-v2
+2025-11-07 12:09:29,169 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-07 12:09:47,035 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 12:09:47,036 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 12:09:47,036 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 12:09:47,059 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 12:09:47,060 - models.summarizer - INFO - ✅ Extracted 24 keypoints
+2025-11-07 12:09:47,061 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.75
+2025-11-07 12:09:49,380 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 12:09:49,380 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 12:09:49,381 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 12:09:49,389 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 12:09:49,390 - models.summarizer - INFO - ✅ Extracted 24 keypoints
+2025-11-07 12:09:49,392 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.75
+2025-11-07 12:10:04,343 - routes.generation - INFO - Generating study note (summary + key concepts)
+2025-11-07 12:10:04,343 - models.summarizer - INFO - Generating summary (target_max_words=500)
+2025-11-07 12:10:31,018 - models.summarizer - INFO - ✅ Summary generated (97 words)
+2025-11-07 12:10:31,019 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 12:10:31,019 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 12:10:31,030 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 12:10:31,031 - models.summarizer - INFO - ✅ Extracted 24 keypoints
+2025-11-07 12:10:31,032 - utils.quality_validator - INFO - Summary validation: valid=True, score=1.20
+2025-11-07 12:10:31,737 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=50)
+2025-11-07 12:10:31,737 - models.summarizer - INFO - Extracting 50 keypoints
+2025-11-07 12:10:31,737 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 12:10:31,745 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 12:10:31,746 - models.summarizer - INFO - ✅ Extracted 40 keypoints
+2025-11-07 12:10:31,749 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.85
+2025-11-07 12:11:08,340 - routes.generation - INFO - Generating 10 normal multiple-choice quiz questions
+2025-11-07 12:11:08,340 - models.qa_generator - INFO - Generating 10 normal multiple-choice quiz questions
+2025-11-07 12:11:28,285 - models.qa_generator - INFO - ✅ Generated 10 normal multiple-choice quiz questions
+2025-11-07 12:11:28,285 - utils.quality_validator - INFO - Quiz validation: valid=True, score=0.74, valid_q=10/10
+2025-11-07 12:11:28,286 - routes.generation - INFO - Quiz quality score: 0.74
+2025-11-07 12:11:29,255 - routes.embeddings - INFO - Generating embedding for text of length 7771 chars using local model
+2025-11-07 12:11:29,354 - routes.embeddings - INFO - Successfully generated 384-dimensional embedding
+2025-11-07 12:11:40,038 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 12:11:40,038 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 12:11:40,039 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 12:11:40,056 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 12:11:40,057 - models.summarizer - INFO - ✅ Extracted 24 keypoints
+2025-11-07 12:11:40,059 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.75
+2025-11-07 12:11:40,710 - routes.generation - INFO - Generating structured keypoints v2 (page=1, size=24)
+2025-11-07 12:11:40,711 - models.summarizer - INFO - Extracting 24 keypoints
+2025-11-07 12:11:40,711 - models.summarizer - INFO - Keypoints prompt: Extract the most important key points from the following text. For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sente…
+2025-11-07 12:11:40,720 - models.summarizer - WARNING - Prompt-based keypoint extraction failed, falling back: index out of range in self
+2025-11-07 12:11:40,721 - models.summarizer - INFO - ✅ Extracted 24 keypoints
+2025-11-07 12:11:40,723 - utils.quality_validator - INFO - Keypoints validation: valid=False, score=0.75
