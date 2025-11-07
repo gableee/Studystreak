@@ -1,13 +1,77 @@
-vendor
+# Python
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.egg-info
+*.egg
+.pytest_cache/
+
+# Node.js
 node_modules
-.git
-.gitignore
-Dockerfile
-Dockerfile.dockerfile
-docker-compose.yml
+dist
+dist-ssr
+build
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Logs
+logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor/IDE
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Misc
+coverage
+.coverage/
+tmp
+temp
+.cache
+*.bak
+*.orig
+*.swp
+
+# Environment
 .env
 .env.*
-README.md
-migrations
-*.sql
-.venv
+!.env.example
+*.env.local
+
+# Database/Artifacts
+*.sqlite3
+*.db
+*.sqlite
+*.pid
+
+# PHP Composer
+vendor
+
+
+# Docker Compose files (optional, if not needed in image)
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Markdown/Docs (optional, if not needed in image)
+# docs
+
+# Hugging Face 
+~/.cache/huggingface/
+
+# Supabase (local dev)
+supabase/.branches
+supabase/.temp

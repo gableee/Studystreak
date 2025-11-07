@@ -27,5 +27,5 @@ dist-ssr
 # .md files and migration files
 AiRoadmap.md
 *.sql
-
+.venv
 .env.local
