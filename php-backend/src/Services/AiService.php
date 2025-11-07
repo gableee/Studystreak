@@ -67,6 +67,21 @@ final class AiService
     }
 
     /**
+     * Generate structured key points (v2) with pagination.
+     * @return array{success: bool, data?: array<string,mixed>, error?: string}
+     */
+    public function generateKeyPointsV2(string $text, int $page = 1, int $pageSize = 24, ?string $language = null): array
+    {
+        $page = max(1, $page);
+        $pageSize = max(1, min(50, $pageSize));
+        $endpoint = '/generate/keypoints/v2?page=' . $page . '&page_size=' . $pageSize;
+        return $this->post($endpoint, [
+            'text' => $this->prepareText($text),
+            'language' => $language,
+        ]);
+    }
+
+    /**
      * Generate quiz questions from extracted text.
      * @param int $numQuestions Number of questions to generate
      * @return array{success: bool, data?: array<string,mixed>, error?: string}
@@ -90,6 +105,21 @@ final class AiService
             'text' => $this->prepareText($text),
             'language' => $language,
         ]);
+    }
+
+    /**
+     * Generate a combined study note document (summary + key concepts).
+     * @return array{success: bool, data?: array<string,mixed>, error?: string}
+     */
+    public function generateStudyNote(string $text, ?int $minWords = null, ?int $maxWords = null, ?string $language = null): array
+    {
+        $payload = [
+            'text' => $this->prepareText($text),
+            'language' => $language,
+        ];
+        if ($minWords !== null) { $payload['min_words'] = $minWords; }
+        if ($maxWords !== null) { $payload['max_words'] = $maxWords; }
+        return $this->post('/generate/study-note', $payload);
     }
 
     /**
@@ -147,45 +177,63 @@ final class AiService
             $headers['X-API-Key'] = $this->config->getApiKey();
         }
 
-        try {
-            $response = $this->client->request('POST', $endpoint, [
-                'headers' => $headers,
-                'json' => $payload,
-            ]);
+        $attempts = 0;
+        $maxAttempts = 4;
+        $lastError = null;
 
-            $status = $response->getStatusCode();
-            $body = (string)$response->getBody();
-            $decoded = json_decode($body, true);
+        while ($attempts < $maxAttempts) {
+            $attempts++;
+            try {
+                $response = $this->client->request('POST', $endpoint, [
+                    'headers' => $headers,
+                    'json' => $payload,
+                ]);
 
-            if ($status >= 200 && $status < 300) {
+                $status = $response->getStatusCode();
+                $body = (string)$response->getBody();
+                $decoded = json_decode($body, true);
+
+                if ($status >= 200 && $status < 300) {
+                    return [
+                        'success' => true,
+                        'data' => is_array($decoded) ? $decoded : ['raw' => $body],
+                    ];
+                }
+
+                $errorMessage = is_array($decoded) && isset($decoded['error'])
+                    ? (string)$decoded['error']
+                    : "AI service returned status $status";
+
+                error_log('[AiService] Request failed: ' . json_encode([
+                    'endpoint' => $endpoint,
+                    'status' => $status,
+                    'response' => $decoded ?? $body,
+                ]));
+
                 return [
-                    'success' => true,
-                    'data' => is_array($decoded) ? $decoded : ['raw' => $body],
+                    'success' => false,
+                    'error' => $errorMessage,
+                ];
+
+            } catch (GuzzleException $e) {
+                $lastError = $e->getMessage();
+                // Retry only for connection/timeout related errors
+                if ($attempts < $maxAttempts) {
+                    usleep(250000); // 250ms backoff
+                    continue;
+                }
+                error_log('[AiService] HTTP error (final): ' . $lastError);
+                return [
+                    'success' => false,
+                    'error' => 'Failed to connect to AI service: ' . $lastError,
                 ];
             }
-
-            $errorMessage = is_array($decoded) && isset($decoded['error']) 
-                ? (string)$decoded['error'] 
-                : "AI service returned status $status";
-
-            error_log('[AiService] Request failed: ' . json_encode([
-                'endpoint' => $endpoint,
-                'status' => $status,
-                'response' => $decoded ?? $body,
-            ]));
-
-            return [
-                'success' => false,
-                'error' => $errorMessage,
-            ];
-
-        } catch (GuzzleException $e) {
-            error_log('[AiService] HTTP error: ' . $e->getMessage());
-            return [
-                'success' => false,
-                'error' => 'Failed to connect to AI service: ' . $e->getMessage(),
-            ];
         }
+
+        return [
+            'success' => false,
+            'error' => 'Unknown error contacting AI service',
+        ];
     }
 
     /**

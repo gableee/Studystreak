@@ -38,7 +38,7 @@ def get_embedding_model():
 
 
 class EmbeddingRequest(BaseModel):
-    text: str = Field(..., min_length=1, max_length=10000, description="Text to embed")
+    text: str = Field(..., min_length=1, max_length=50000, description="Text to embed (will be truncated to 10k chars)")
     model: Optional[str] = Field(
         default="sentence-transformers/all-MiniLM-L6-v2",
         description="Model to use for embeddings (currently only all-MiniLM-L6-v2 supported)"
@@ -75,9 +75,14 @@ async def generate_embedding(req: EmbeddingRequest):
         # Get or load the model
         model = get_embedding_model()
         
+        # Truncate text to 10k characters to avoid model limits
+        text_to_embed = req.text[:10000] if len(req.text) > 10000 else req.text
+        if len(req.text) > 10000:
+            logger.warning(f"Text truncated from {len(req.text)} to 10000 chars for embedding")
+        
         # Generate embedding
         # encode() returns numpy array, convert to list
-        embedding = model.encode(req.text, convert_to_tensor=False)
+        embedding = model.encode(text_to_embed, convert_to_tensor=False)
         vector = embedding.tolist()
         
         # Validate dimensions

@@ -1,0 +1,255 @@
+{
+  "doc": {
+    "documentMarkdown": "## 📘 Summary\n\nNausea - Vomiting - Vertigo - Slurred speech - Unsteadiness - Incoordination - Ipsilateral headache in occipital, frontal and upper cervical areas. Tonsillar herniation - decreased consciousness, brainstem findings, hydrocephalus or head tilt - Hypotonia - Pendular reflex.\n\n## 📌 Key Concepts\n- **NEUROSCIENCE LEC: CEREBELLUM CEREBELLUM:** 📖 \n• 150g (10% of brain weight)\n• Surface area 1000 cm2 (40% of cerebral cortex)\n• Folia and fissures\n• Integrates massive sensory and other inputs from the brain and spinal cord\n• Coordinate ongoing movements and participate in motor planning…\n- **vermis and cerebellar cortex or connect both hemispheres ● AFFERENT:** 💡 \n• greater part; proceed to cerebellar cortex; enter through inferior and middle cerebellar peduncle ● EFFERENT\n• output\n• start as axons of Purkinje cells of the cerebellar cortex, synapse with neurons of the cerebellar nuclei then leave the cerebellum -…\n- **Synapse in pontine nuclei:** 🔍 \n• Form pontocerebellar fibers that decussate and gives rise to transverse fibers of pons\n• Enter opposite cerebellar hemisphere as MCP\n• Gives rise to mossy fibers CEREBRORETICULOCEREBELLAR PATHWAYS\n• Nerve cells from sensorimotor cortex\n• Terminate in ipsilateral and contralateral…\n- **INTERMEDIATE ZONE TO INTERPOSED NUCLEI:** ⚡ \n• Intermediate zone\n• Control of ongoing movements of the distal extremities\n• Axons from globose and emboliform nuclei pass through superior cerebellar peduncle\n• Decussate to contralateral superior cerebellar peduncle ➔ Terminate:\n• at contralateral VL which project to motor…\n- **Ataxia is ipsilateral to cerebellar:** 🎓 lesion.\n- **➢ \"double crossed\" ➢ 1st cross: decussation of the superior cerebellar peduncle (level of inferior colliculus of midbrain) ➢ 2nd cross: corticospinal tract:** 📌 pyramidal decussation; rubrospinal tract - ventral tegmental decussation 2.\n- **Midline lesions of the vermis:** ✨ or flocculonodular lobe mainly cause unsteady gait (truncal ataxia) and eye movement abnormalities.\n- **.:** 🧠 \n- **Lesions lateral to the cerebellar:** 📚 vermis mainly cause ataxia of the limbs (appendicular ataxia).\n- **ataxia may be seen with lesions in other locations because the cerebellum's extensive connections VERMIAN LESION ● TRUNCAL ATAXIA:** 🔬 \n• Wide based, unsteady, drunk like gait\n• May have difficult sitting up without support CEREBELLAR HEMISPHERE LESION (INTERMEDIATE & LATERAL ZONE) ● APPENDICULAR ATAXIA\n• Ataxia on movement of extremities SIGNS & SYMPTOMS OF CEREBELLAR DISORDERS\n• Nausea\n• Vomiting…\n- **ACTION TREMOR OR INTENTION TREMOR:** 📖 \n• Appendicular ataxia during movements toward a target TESTS FOR TRUNCAL ATAXIA\n• Wide-based, unsteady gait\n• Tandem gait\n• Romberg test\n• Titubation ➢ Midline cerebellar lesions EYE MOVEMENT & SPEECH ABNORMALITIES EYE MOVEMENT PROBLEMS\n• Ocular Dysmetria ➢ Saccades…",
+    "outline": [
+      {
+        "title": "Summary",
+        "level": 2
+      },
+      {
+        "title": "Key Concepts",
+        "level": 2
+      }
+    ],
+    "wordCount": 431,
+    "confidence": 0.875,
+    "keypointsCount": 11,
+    "materialId": "6cd53e19-0b0e-4e84-b8eb-847d4b3f219c",
+    "generatedAt": "2025-11-07T07:33:10+00:00"
+  },
+  "cards": {
+    "items": [
+      {
+        "term": "NEUROSCIENCE LEC: CEREBELLUM CEREBELLUM",
+        "definition": "150g (10% of brain weight) - Surface area 1000 cm2 (40% of cerebral cortex) - Folia and fissures - Integrates massive sensory and other inputs from the brain and spinal cord - Coordinate ongoing movements and participate in motor planning…",
+        "shortDefinition": "150g (10% of brain weight) - Surface area 1000 cm2 (40% of cerebral cortex) - Folia and fissures - Integrates massive sensory and other inputs from the brain and spinal cord - Coordinate ongoing movements and participate in motor planning…",
+        "fullDefinition": "150g (10% of brain weight) - Surface area 1000 cm2 (40% of cerebral cortex) - Folia and fissures - Integrates massive sensory and other inputs from the brain and spinal cord - Coordinate ongoing movements and participate in motor planning - No direct connections to LMNs GROSS ANATOMY - In posterior cranial fossa - Covered superiorly by tentorium cerebelli = infratentorial - Posterior to the 4th ventricle, pons and upper medulla - Connected to the posterior aspect of the brainstem by superior, middle and inferior cerebellar peduncles - Forms the roof of the 4th ventricle LONGITUDINAL PLANE ● PRIMARY FISSURE - deepest; separates anterior and posterior lobe ● UVULONODULAR FISSURE(POSTEROLATERAL FISSURE) - ventroinferior surface; separates the middle lobe from flocculonodular lobe ● HORIZONTAL FISSURE - along the margin of the cerebellum separates the superior from inferior surfaces; separates the posterior lobe further into a middle and posterior lobe TRANSVERSE PLANE - 3 MAIN LOBES ● ANTERIOR LOBE - superior surface and separated from middle (posterior) lobe by the primary fissure ● POSTERIOR LOBE - largest; between the primary and uvulonodular fissures ● FLOCCULONODULAR LOBE - posterior to uvulonodular fissure - 2 flocculi are connected to the nodulus by thin pedicles - Nodulus: most inferior portion of the cerebellar vermis CEREBELLAR TONSIL - herniate through the foramen magnum in cases of increased intracranial pressure ➢ Death via compression of medullary respiratory centers 3 ANATOMICAL SUBDIVISIONS (LONGITUDINAL PLANE) - Vermis: influences movement of the long axis of the body (neck, shoulder, thorax, abdomen and hips) - Flocculonodular lobe: balance and vestibulo-ocular reflex ● CEREBELLAR HEMISPHERES - Intermediate zone (paravermis) ➢ immediately lateral to the vermis; control muscles of distal parts of limbs - Lateral zone ➢ planning of sequential movements of entire body; conscious assessment of movement errors ANATOMICAL DIVISION OF THE CEREBELLUM STRUCTURES - Outer gray (cortex), inner white - With intracerebellar nuclei - Each fold or folium contains a core of white matter, covered by gray matter ● FOLIA - Small ridges that run from medial to lateral surface of the cerebellum (leaves) CEREBELLAR CORTEX - Uniform structure throughout its extent - 3 Layers (outer to inner) ➢ Molecular layer ➢ Purkinje cell layer ➢ Granular layer MOLECULAR LAYER - Contains ➢ Stellate cells: outer ➢ Basket cells: inner - Scattered among dendritic arborizations and numerous thin axons that run parallel to long axis of folia = unmyelinated granule cell axons, Purkinje cell dendrites PURKINJE CELL LAYER - Contains Purkinje cells - Large Golgi type I neurons - Flask-shaped - Arranged in a single layer - Dendrites pass into the molecular layer where they branch out profusely - Primary and secondary branches are smooth and subsequent branches are covered by short, thick dendritic spines - Spines form synapses with parallel fibers from granule cell axons - Axons pass through the granular layer to enter the white matter - Terminates by synapsing with intracerebellar nuclei - Collateral branches synapses with dendrites of basket and stellate cells of the molecular layer in same area or in distant folia - Few axons pass directly to vestibular nuclei GRANULAR LAYER ● CONTAINS GRANULAR CELLS - Small cells with densely staining nuclei and scanty cytoplasm - Each cell gives rise to 4-5 dendrites which synapses with mossy fiber input - Axons pass through molecular layer and bifurcates at a T junction = parallel fibers ● PARALLEL FIBERS - Branches running parallel to the long axis of the folium - Run at right angles to the dendritic processes of the Purkinje cells - Synapse with spinous processes of dendrites of Purkinje cells ● GOLGI CELLS - dendrites ramify in molecular layer and axons terminate with dendrites of granular cells INTRACEREBELLAR NUCLEI - Lateral to medial ➢ Dentate ➢ Emboliform ➢ Globose ➢ Fastigial - Composed of large, multipolar neurons with branching dendrites - Axons form the cerebellar outflow in the superior and inferior cerebellar peduncles - All outputs from cerebellum are relayed by cerebellar nuclei - Receive collateral fibers of cerebellar inputs on their way to the cerebellar cortex DENTATE NUCLEUS - Largest - Crumpled bag with opening facing medially - Interior is filled with white matter - efferents that leave the nucleus to form superior cerebellar peduncle - Receive projections from lateral cerebellar hemisphere - Active just before voluntary movement EMBOLIFORM NUCLEUS - Ovoid - Medial to the dentate GLOBUS NUCLEUS - Consists of one or more rounded cell groups medial to the emboliform nucleus INTERPOSED NUCLEI - Emboliform and Globose - Receive input from intermediate part of cerebellar hemisphere - Active during and in relation to movement FASTIGIAL NUCLEUS - Near midline in the vermis - Close to roof of 4th ventricle - Larger than globose - Receive input from vermis and flocculonodular lobe - Most fibers leaving the inferior vermis and floccule project to the vestibular nuclei WHITE MATTER - Small amount of white matter in the vermis - Increased white matter in cerebellar hemisphere - Arbor vitae ➢ closely resembles trunk and \"branches of a tree\" - Axons from dentate, emboliform and globose ➢ superior cerebellar peduncle - Fastigial nucleus ➢ superior and inferior cerebellar peduncle - Inferior vermis and flocculonodular lobe ➢ juxtarestiform body 3 GROUPS ● INTRINSIC - do not leave cerebellum, connect different regions within the organ ie.",
+        "bulletedHighlights": [
+          "150g (10% of brain weight)",
+          "Surface area 1000 cm2 (40% of cerebral cortex)",
+          "Folia and fissures",
+          "Integrates massive sensory and other inputs from the brain and spinal cord",
+          "Coordinate ongoing movements and participate in motor planning",
+          "No direct connections to LMNs GROSS ANATOMY"
+        ],
+        "usage": null,
+        "icon": "📖",
+        "importance": 1,
+        "sourceSpan": null
+      },
+      {
+        "term": "vermis and cerebellar cortex or connect both hemispheres ● AFFERENT",
+        "definition": "greater part; proceed to cerebellar cortex; enter through inferior and middle cerebellar peduncle ● EFFERENT - output - start as axons of Purkinje cells of the cerebellar cortex, synapse with neurons of the cerebellar nuclei then leave the cerebellum -…",
+        "shortDefinition": "greater part; proceed to cerebellar cortex; enter through inferior and middle cerebellar peduncle ● EFFERENT - output - start as axons of Purkinje cells of the cerebellar cortex, synapse with neurons of the cerebellar nuclei then leave the cerebellum -…",
+        "fullDefinition": "greater part; proceed to cerebellar cortex; enter through inferior and middle cerebellar peduncle ● EFFERENT - output - start as axons of Purkinje cells of the cerebellar cortex, synapse with neurons of the cerebellar nuclei then leave the cerebellum - Or as Purkinje axons in flocculonodular lobe and vermis, bypass the cerebellar nuclei and leave without synapsing traveling directly towards the vestibular nuclei CEREBELLAR PEDUNCLES - Form the wall of the 4th ventricle - Superior cerebellar peduncle - carry mainly output from cerebellum - Decussates at the level of inferior colliculi - Middle cerebellar peduncle and inferior cerebellar peduncle ➢ carry mainly input SUPERIOR CEREBELLAR PEDUNCLE - Brachium Conjunctivum MIDDLE CEREBELLAR PEDUNCLE - Brachium Pontis INFERIOR CEREBELLAR PEDUNCLE - Restiform Body CEREBELLAR CORTICAL MECHANISMS - 2 kinds of synaptic synaptic inputs to cerebellum ➢ Climbing fibers ➢ Mossy fibers - Excitatory to the purkinje cells CLIMBING FIBERS - Terminal fibers of olivocerebellar tract - Exclusively from contralateral inferior olivary nucleus - Pass through granular layer and terminate in the molecular layer by branching - Each climbing fiber synapses profusely with dendrites of Purkinie cell (wrap around the cell body and proximal dendritic tree of the Purkinje cells) forming excitatory synapses - 1 climbing fiber: 10 Purkinje cells - 1 Purkinje cell: 1 climbing fiber - Few branches synapse with stellate and basket cells OTHER CELLS OF CEREBELLAR CORTEX - Stellate cells - Basket cells - Golgi cells - Inhibitory interneurons - Limit area stimulated - Influence degree of Purkinje cell excitațion produced by mossy and climbing fiber input - Fluctuating inhibitory impulses are transmitted by Purkinje cells to the intracerebellar nuclei, which in turn, modify the muscular activity through motor control areas of brainstem and cerebral cortex PURKINJE FIBERS - Center of a functional unit of cerebellar cortex STELLATE & BASKET CELLS - Excited by synaptic inputs trom granule cell parallel fibers then give rise to processes that run in rostro-caudal direction, perpendicular to the parallel fibers - Lateral inhibition of adjacent Purkinje cells and narrow the spatial extent of excitatory inputs to Purkinje cells - Stellate cells terminate on purkinje cell dendrites - Basket cells on purkinje cell body GOLGI CELLS - Receive excitatory inputs from the granule cell parallel fibers in the molecular layer then provide feedback inhibition onto the granule cell dendrites - Shorten the duration of excitatory inputs to the granule cell CEREBELLAR AFFERENT (INPUT) FIBERS - Virtually all areas of the cerebral cortex - Multiple sensory modalities, including vestibular, visual, auditory and somatosensory systems - Brainstem nuclei - Spinal cord CEREBELLAR INPUT PATHWAYS - Rough somatotopic organization, with ipsilateral body represented in both anterior and posterior lobes - Carried by mossy fibers and climbing fibers (olivocerebellar fibers) FROM CEREBRAL CORTEX - Corticopontocerebellar pathway - Cerebro-olivocerebellar pathway - Cerebroreticulocerebellar pathway - Control of voluntary movement - Monitor and adjust muscle activity CORTICOPONTOCEREBELLAR PATHWAY - Cells from frontal, parietal, temporal and occipital lobes - Descend in corona radiata, internal capsule then cerebral peduncles.",
+        "bulletedHighlights": [
+          "proceed to cerebellar cortex",
+          "enter through inferior and middle cerebellar peduncle ● EFFERENT",
+          "start as axons of Purkinje cells of the cerebellar cortex, synapse with neurons of the cerebellar nuclei then…",
+          "Or as Purkinje axons in flocculonodular lobe and vermis, bypass the cerebellar nuclei and leave without synapsing traveling…",
+          "Form the wall of the 4th ventricle",
+          "Superior cerebellar peduncle"
+        ],
+        "usage": null,
+        "icon": "💡",
+        "importance": 0.95,
+        "sourceSpan": null
+      },
+      {
+        "term": "Synapse in pontine nuclei",
+        "definition": "Form pontocerebellar fibers that decussate and gives rise to transverse fibers of pons - Enter opposite cerebellar hemisphere as MCP - Gives rise to mossy fibers CEREBRORETICULOCEREBELLAR PATHWAYS - Nerve cells from sensorimotor cortex - Terminate in ipsilateral and contralateral…",
+        "shortDefinition": "Form pontocerebellar fibers that decussate and gives rise to transverse fibers of pons - Enter opposite cerebellar hemisphere as MCP - Gives rise to mossy fibers CEREBRORETICULOCEREBELLAR PATHWAYS - Nerve cells from sensorimotor cortex - Terminate in ipsilateral and contralateral…",
+        "fullDefinition": "Form pontocerebellar fibers that decussate and gives rise to transverse fibers of pons - Enter opposite cerebellar hemisphere as MCP - Gives rise to mossy fibers CEREBRORETICULOCEREBELLAR PATHWAYS - Nerve cells from sensorimotor cortex - Terminate in ipsilateral and contralateral reticular formation in pons and medulla - Gives rise to reticulocerebellar fibers that enter the ipsilateral cerebellar hemisphere through the inferior and middle cerebellar peduncle FROM SPINAL CORD (SPINOCEREBELLAR FIBERS) - Anterior (Ventral) Spinocerebellar tract - Posterior (Dorsal) Spinocerebellar tract - Cuneocerebellar tract - Rostral Spinocerebellar tract ANTERIOR SPINOCEREBELLAR TRACT - Peripheral process - DRG - Nucleus dorsalis (Clarke column) at base of posterior gray horn - Decussate and ascend as anterior spinocerebellar tract in contralateral lateral white column - Enter via superior cerebellar peduncle, decussate back - Terminate as mossy fibers in cerebellar cortex - All segments of spinal cord - Convey information from muscle spindles, tendon organs and joint receptors of UE and LE POSTERIOR SPINOCEREBELLAR TRACT - Peripheral process - DRG - Nucleus dorsalis (Clarke column) - Posterolateral part of lateral column ipsilaterally as posterior spinocerebellar tract - Inferior cerebellar peduncle - Terminate as mossy fibers of the cerebellar cortex - Collateral branches to intracerebellar nuclei - Convey information from muscle spindles, tendon organs and joint receptors of trunk and lower limbs CUNEOCEREBELLAR TRACT - Originate in nucleus cuneatus of medulla - Ipsilateral inferior cerebellar peduncle - Terminate as mossy fibers in cerebellar cortex - Collateral branches to deep cerebellar nuclei are given off too - Receives information from muscle spindles, tendon organs and joint receptors of the UE and neck FROM THE VESTIBULAR NERVE - Semicircular canal (motion) and utricle and saccule (position relative to gravity) - Vestibular nerve afferent fibers pass through ipsilateral inferior cerebellar peduncle directly to cerebellum - Other afferents pass the vestibular nuclei - Synapse - Ipsilateral inferior cerebellar peduncle - All afferents from the inner ear terminate as mossy fibers in flocculonodular lobe VESTIBULOCEREBELLAR FIBERS - Convey information concerning the position of the head and body in space - As well as information useful in orienting the eyes during movement CEREBELLAR EFFERENT (OUTPUT) FIBERS - Output of cerebellar cortex: axons of Purkinje cells - Most of axons of Purkinje cells end by synapsing with deep cerebellar nuclei - Axons from cerebellar nuclei is the main outflow from cerebellum - Few Purkinje cell axons pass directly out the cerebellum to lateral vestibular nucleus - Efferents from cerebellum connect with red nucleus, thalamus, vestibular cortex and reticular formation CEREBELLAR OUTPUT PATHWAYS - Organized around 3 functional regions LATERAL HEMISPHERE TO DENTATE NUCLEUS - Lateral cerebellar hemisphere - Motor planning - Project to dentate nucleus - Cross midline in decussation of superior cerebellar peduncle - Synapse with contralateral ventrolateral (VL) nucleus of thalamus (thalamic fasciculus) ➢ More anterior parts of the thalamic fsciculis: include outputs from the basal ganglia terminate in VL pars oralis ➢ More posterior parts: output from cerebellum terminate in VL pars caudalis - VL thalamus axons ascend the internal capsule and corona radiata - Terminate in primary motor cortex - Other areas: premotor cortex, supplementary motor cortex, parietal lobe - As output fibers of dentate nucleus penetrate the red nucleus in the midbrain, some terminate in the rostral parvocellular division of the red nucleus which projects to the inferior olives - Dentate nucleus affect motor activity via contralateral cerebral cortex - Impulses from motor cortex are transmitted to spinal segmental levels through corticospinal tract - Because of pyramidal decussation of corticospinal tract, dentate nucleus coordinates ipsilateral muscle activity.",
+        "bulletedHighlights": [
+          "Form pontocerebellar fibers that decussate and gives rise to transverse fibers of pons",
+          "Enter opposite cerebellar hemisphere as MCP",
+          "Gives rise to mossy fibers CEREBRORETICULOCEREBELLAR PATHWAYS",
+          "Nerve cells from sensorimotor cortex",
+          "Terminate in ipsilateral and contralateral reticular formation in pons and medulla",
+          "Gives rise to reticulocerebellar fibers that enter the ipsilateral cerebellar hemisphere through the inferior and middle cerebellar peduncle…"
+        ],
+        "usage": null,
+        "icon": "🔍",
+        "importance": 0.9,
+        "sourceSpan": null
+      },
+      {
+        "term": "INTERMEDIATE ZONE TO INTERPOSED NUCLEI",
+        "definition": "Intermediate zone - Control of ongoing movements of the distal extremities - Axons from globose and emboliform nuclei pass through superior cerebellar peduncle - Decussate to contralateral superior cerebellar peduncle ➔ Terminate: - at contralateral VL which project to motor…",
+        "shortDefinition": "Intermediate zone - Control of ongoing movements of the distal extremities - Axons from globose and emboliform nuclei pass through superior cerebellar peduncle - Decussate to contralateral superior cerebellar peduncle ➔ Terminate: - at contralateral VL which project to motor…",
+        "fullDefinition": "Intermediate zone - Control of ongoing movements of the distal extremities - Axons from globose and emboliform nuclei pass through superior cerebellar peduncle - Decussate to contralateral superior cerebellar peduncle ➔ Terminate: - at contralateral VL which project to motor, upplementary motor and premotor cortex to influence he lateral corticospinal traci - synapse with contralateral red nucleus magnocellular livision) to influence the rubrospinal traci ➔ Decussates twice: - Superior cerebellar peduncle - Lateral corticospinal tract or Rubrospinal tract CEREBELLAR VERMIS & FLOCCULONODULAR LOBE TO FASTIGIAL NUCLEUS ● CEREBELLAR VERMIS & FLOCCULONODULAR LOBES - Influencing medial motor systems ie proximal trunk movements (anterior corticospinal, reticulospinal, vestibulospinal and tectospinal tract) - The flocculonodular lobe and inferior vermis have direct projections to the vestibular nuclei influencing balance and vestibulo-ocular reflex ● VERMIS TO MEDIAL MOTOR SYSTEMS FOR TRUNK CONTROL - Fastigial nuclei - SCP - Thalamic VL - Cortex ➢ Anterior corticospinal tract - Tectal area ➢ Tectospinal tract - Juxtarestiform body - Ipsilateral reticular formation and vestibular nuclei ➢ Reticulospinal and vestibulospinal tracts FASTIGIAL RETICULAR PATHWAYS - Axons from fastigial nucleus - Inferior cerebellar peduncle - Synapse with reticular formation - Influence spinal segmental activity via reticulospinal tract FASTIGIAL NUCLEUS OUTPUT PATHWAYS ● FLOCCULONODULAR LOBE & INFERIOR VERMIS (VESTIBULOCEREBELLUM) - Project mainly to vestibular nuclei - Via juxtarestiform body - Equilibrium and balance FASTIGIAL VESTIBULAR PATHWAYS - Axons from fastigial nucleus - Inferior cerebellar peduncle - Project to lateral vestibular nucleus bilaterally - Some Purkinje axons project directly to lateral vestibular nucleus - Vestibulospinal tract - Fastigial nucleus influence on Ipsilateral extensors FUNCTIONS OF CEREBELLUM - To coordinate and stabilize movement - To maintain balance - Coordinator of precise movement by continuously comparing the output of motor cortex with proprioceptive information - Exerts influence by acting on LMN - Accomplished by controlling the timing and sequence of firing of the alpha and gamma motor neurons - Cerebellum can possibly send back information to the motor cerebral cortex to inhibit the agonist muscles and stimulate the antagonist muscles, thus limiting the extent of voluntary movement BLOOD SUPPLY TO CEREBELLUM - Branches of the Vertebral and Basilar Arteries ➢ PICA ➢ AICA ➢ SCA - Wrap around brainstem PICA - lateral medulla, inferior half of cerebellum, inferior vermis AICA - inferior lateral pons, middle cerebellar peduncle, a strip of the anterior cerebellum between PICA and SCA territories, including the flocculus SCA - upper lateral pons, superior cerebellar peduncle, most of the superior half of the cerebellar hemisphere, including the cerebellar nuclei and superior vermis NEUROLOGIC EXAMINATION & CLINICAL CORRELATION CEREBELLAR LESION ● ATAXIA - \"lack of order\"; disordered contraction of agonist and antagonist muscles and lack of normal coordination between movements at different joints, seen in patients with cerebellar dysfunction - Movements have irregular, wavering course consisting of continuous overshooting, overcorrecting and then overshooting again around the intended trajectory ➢ Dysrhythmia: abnormal timing ➢ Dysmetria: abnormal trajectory through space 1.",
+        "bulletedHighlights": [
+          "Control of ongoing movements of the distal extremities",
+          "Axons from globose and emboliform nuclei pass through superior cerebellar peduncle",
+          "Decussate to contralateral superior cerebellar peduncle ➔ Terminate:",
+          "at contralateral VL which project to motor, upplementary motor and premotor cortex to influence he lateral corticospinal traci",
+          "synapse with contralateral red nucleus magnocellular livision) to influence the rubrospinal traci ➔ Decussates twice:",
+          "Superior cerebellar peduncle"
+        ],
+        "usage": null,
+        "icon": "⚡",
+        "importance": 0.85,
+        "sourceSpan": null
+      },
+      {
+        "term": "Ataxia is ipsilateral to cerebellar",
+        "definition": "lesion.",
+        "shortDefinition": "lesion.",
+        "fullDefinition": "lesion.",
+        "bulletedHighlights": [],
+        "usage": null,
+        "icon": "🎓",
+        "importance": 0.8,
+        "sourceSpan": null
+      },
+      {
+        "term": "➢ \"double crossed\" ➢ 1st cross: decussation of the superior cerebellar peduncle (level of inferior colliculus of midbrain) ➢ 2nd cross: corticospinal tract",
+        "definition": "pyramidal decussation; rubrospinal tract - ventral tegmental decussation 2.",
+        "shortDefinition": "pyramidal decussation; rubrospinal tract - ventral tegmental decussation 2.",
+        "fullDefinition": "pyramidal decussation; rubrospinal tract - ventral tegmental decussation 2.",
+        "bulletedHighlights": [
+          "ventral tegmental decussation 2."
+        ],
+        "usage": null,
+        "icon": "📌",
+        "importance": 0.75,
+        "sourceSpan": null
+      },
+      {
+        "term": "Midline lesions of the vermis",
+        "definition": "or flocculonodular lobe mainly cause unsteady gait (truncal ataxia) and eye movement abnormalities.",
+        "shortDefinition": "or flocculonodular lobe mainly cause unsteady gait (truncal ataxia) and eye movement abnormalities.",
+        "fullDefinition": "or flocculonodular lobe mainly cause unsteady gait (truncal ataxia) and eye movement abnormalities.",
+        "bulletedHighlights": [
+          "or flocculonodular lobe mainly cause unsteady gait (truncal ataxia) and eye movement abnormalities."
+        ],
+        "usage": null,
+        "icon": "✨",
+        "importance": 0.7,
+        "sourceSpan": null
+      },
+      {
+        "term": ".",
+        "definition": "",
+        "shortDefinition": "",
+        "fullDefinition": "Key concept from the material.",
+        "bulletedHighlights": [],
+        "usage": null,
+        "icon": "🧠",
+        "importance": 0.65,
+        "sourceSpan": null
+      },
+      {
+        "term": "Lesions lateral to the cerebellar",
+        "definition": "vermis mainly cause ataxia of the limbs (appendicular ataxia).",
+        "shortDefinition": "vermis mainly cause ataxia of the limbs (appendicular ataxia).",
+        "fullDefinition": "vermis mainly cause ataxia of the limbs (appendicular ataxia).",
+        "bulletedHighlights": [
+          "vermis mainly cause ataxia of the limbs (appendicular ataxia)."
+        ],
+        "usage": null,
+        "icon": "📚",
+        "importance": 0.6,
+        "sourceSpan": null
+      },
+      {
+        "term": "ataxia may be seen with lesions in other locations because the cerebellum's extensive connections VERMIAN LESION ● TRUNCAL ATAXIA",
+        "definition": "Wide based, unsteady, drunk like gait - May have difficult sitting up without support CEREBELLAR HEMISPHERE LESION (INTERMEDIATE & LATERAL ZONE) ● APPENDICULAR ATAXIA - Ataxia on movement of extremities SIGNS & SYMPTOMS OF CEREBELLAR DISORDERS - Nausea - Vomiting…",
+        "shortDefinition": "Wide based, unsteady, drunk like gait - May have difficult sitting up without support CEREBELLAR HEMISPHERE LESION (INTERMEDIATE & LATERAL ZONE) ● APPENDICULAR ATAXIA - Ataxia on movement of extremities SIGNS & SYMPTOMS OF CEREBELLAR DISORDERS - Nausea - Vomiting…",
+        "fullDefinition": "Wide based, unsteady, drunk like gait - May have difficult sitting up without support CEREBELLAR HEMISPHERE LESION (INTERMEDIATE & LATERAL ZONE) ● APPENDICULAR ATAXIA - Ataxia on movement of extremities SIGNS & SYMPTOMS OF CEREBELLAR DISORDERS - Nausea - Vomiting - Vertigo - Slurred speech - Unsteadiness - Incoordination - Ipsilateral headache in occipital, frontal and upper cervical areas - Tonsillar herniation ➢ decreased consciousness, brainstem findings, hydrocephalus or head tilt - Hypotonia - Pendular reflex TESTS FOR APPENDICULAR ATAXIA DYSMETRIA - Abnormal over or undershoot (past pointing) during movement towards a target DYSRHYTHMIA - abnormal rhythm and timing of movements - Precision finger tap ➢ Index finger tapping on the crease of the thumb - Heel tapping DYSDIADOCHOKINESIA - Rapid pronation and supination of hands - Abnormal rapid alternating movement OVERSHOOT OR LOSS OF CHECK (REBOUND) - raise both arms over the head and suddenly lowered to examiner's arms or apply pressure to outstretched arms then suddenly release POSTURAL TREMOR - irregular large amplitude - occurs when the limb muscles are activated to hold a particular position-for example, both arms held outstretched.",
+        "bulletedHighlights": [
+          "Wide based, unsteady, drunk like gait",
+          "May have difficult sitting up without support CEREBELLAR HEMISPHERE LESION (INTERMEDIATE & LATERAL ZONE) ● APPENDICULAR ATAXIA",
+          "Ataxia on movement of extremities SIGNS & SYMPTOMS OF CEREBELLAR DISORDERS",
+          "Ipsilateral headache in occipital, frontal and upper cervical areas",
+          "Tonsillar herniation ➢ decreased consciousness, brainstem findings, hydrocephalus or head tilt",
+          "Pendular reflex TESTS FOR APPENDICULAR ATAXIA DYSMETRIA"
+        ],
+        "usage": null,
+        "icon": "🔬",
+        "importance": 0.55,
+        "sourceSpan": null
+      },
+      {
+        "term": "ACTION TREMOR OR INTENTION TREMOR",
+        "definition": "Appendicular ataxia during movements toward a target TESTS FOR TRUNCAL ATAXIA - Wide-based, unsteady gait - Tandem gait - Romberg test - Titubation ➢ Midline cerebellar lesions EYE MOVEMENT & SPEECH ABNORMALITIES EYE MOVEMENT PROBLEMS - Ocular Dysmetria ➢ Saccades…",
+        "shortDefinition": "Appendicular ataxia during movements toward a target TESTS FOR TRUNCAL ATAXIA - Wide-based, unsteady gait - Tandem gait - Romberg test - Titubation ➢ Midline cerebellar lesions EYE MOVEMENT & SPEECH ABNORMALITIES EYE MOVEMENT PROBLEMS - Ocular Dysmetria ➢ Saccades…",
+        "fullDefinition": "Appendicular ataxia during movements toward a target TESTS FOR TRUNCAL ATAXIA - Wide-based, unsteady gait - Tandem gait - Romberg test - Titubation ➢ Midline cerebellar lesions EYE MOVEMENT & SPEECH ABNORMALITIES EYE MOVEMENT PROBLEMS - Ocular Dysmetria ➢ Saccades overshoot or undershoot target - Slow saccades or jerky saccadic intrusions - Nistagmus - Scanning or explosive speech ➢ Irregular fluctuations in rate and volume - Slurred speech.",
+        "bulletedHighlights": [
+          "Appendicular ataxia during movements toward a target TESTS FOR TRUNCAL ATAXIA",
+          "Wide-based, unsteady gait",
+          "Titubation ➢ Midline cerebellar lesions EYE MOVEMENT & SPEECH ABNORMALITIES EYE MOVEMENT PROBLEMS",
+          "Ocular Dysmetria ➢ Saccades overshoot or undershoot target",
+          "Slow saccades or jerky saccadic intrusions",
+          "Scanning or explosive speech ➢ Irregular fluctuations in rate and volume"
+        ],
+        "usage": null,
+        "icon": "📖",
+        "importance": 0.5,
+        "sourceSpan": null
+      }
+    ],
+    "count": 11,
+    "total_count": 11,
+    "page": 1,
+    "pageSize": 50,
+    "confidence": 0.8,
+    "materialId": "6cd53e19-0b0e-4e84-b8eb-847d4b3f219c",
+    "generatedAt": "2025-11-07T07:33:12+00:00"
+  },
+  "mode": "document",
+  "documentView": "concise",
+  "page": 1
+}
+
+
+Another one is from our course packet 1:
+It only have this data but it has more. Why do it only have this kind of data extracted? I will attached some of the screenshot of the course packet 1 (namely pasted image, pasted image 2, pasted image 3, pasted image 4, pasted image 5)
+{
+  "doc": {
+    "documentMarkdown": "## 📘 Summary\n\nThe \"Database Management System\" course aims to provide a deep understanding of various database concepts. It prepares students for advanced studies in databases. A database is an organized collection of structured information, or data. A functional DBMS environment requires data, software, hardware, processes, and people.\n\n## 📌 Key Concepts\n- **The \"Database Management System\" course:** 📖 aims to provide a deep understanding of various database concepts.\n  - 💡 Use: It prepares students for advanced studies in databases For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sentences max) Focus on core definitions, facts, and concepts, not a summary.",
+    "outline": [
+      {
+        "title": "Summary",
+        "level": 2
+      },
+      {
+        "title": "Key Concepts",
+        "level": 2
+      }
+    ],
+    "wordCount": 108,
+    "confidence": 0.875,
+    "keypointsCount": 1,
+    "materialId": "f0bf8821-3b25-48cb-bcf6-db151354dee0",
+    "generatedAt": "2025-11-07T07:49:29+00:00"
+  },
+  "cards": {
+    "items": [
+      {
+        "term": "The \"Database Management System\" course",
+        "definition": "aims to provide a deep understanding of various database concepts.",
+        "shortDefinition": "aims to provide a deep understanding of various database concepts.",
+        "fullDefinition": "aims to provide a deep understanding of various database concepts.",
+        "bulletedHighlights": [
+          "aims to provide a deep understanding of various database concepts."
+        ],
+        "usage": "It prepares students for advanced studies in databases For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sentences max) Focus on core definitions, facts, and concepts, not a summary.",
+        "icon": "📖",
+        "importance": 1,
+        "sourceSpan": null
+      }
+    ],
+    "count": 1,
+    "total_count": 1,
+    "page": 1,
+    "pageSize": 50,
+    "confidence": 0.8,
+    "materialId": "f0bf8821-3b25-48cb-bcf6-db151354dee0",
+    "generatedAt": "2025-11-07T07:49:44+00:00"
+  },
+  "mode": "document",
+  "documentView": "concise",
+  "page": 1
+}
+

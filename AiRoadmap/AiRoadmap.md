@@ -1,628 +1,559 @@
-📘 StudyStreak — AI Roadmap, Schema Design, and Implementation Plan
+# 📘 StudyStreak AI — Detailed Implementation Checklist
 
-**Last Updated:** 2025-11-05  
-**Status:** Database schema finalized; ready for AI service implementation
+**Last Updated:** November 6, 2025  
+**Status:** Phase 1 Core Pipeline Complete — Moving to Phase 2  
 
-This document is a living roadmap and implementation checklist. It reflects the current state of the database schema, migrations, and actionable next steps for building the AI generation pipeline.
-
----
-
-## 1. System Overview
-- [x] Purpose, target users, and core principles defined
-- [x] Phased development timeline established
-- [x] Database schema designed and migrations created (normalized AI storage)
+This document tracks the complete AI feature implementation with clear phases, statuses, timelines, and dependencies.
 
 ---
 
-## 2. Database Schema — Current State (2025-11-05)
+## **Phase 1: Core AI Pipeline** ✅ **COMPLETED** (Nov 1-5, 2025)
 
-### Core Tables Status
+### **1.1 Database Schema & Architecture** ✅ **DONE** (2 days)
 
-#### `learning_materials` (Master Material Table)
-**Status:** ✅ Stable — contains legacy AI columns that will be deprecated after migration
-- **Current columns:** material_id, title, description, content_type, file_url, extracted_content, word_count, user_id, is_public, category, ai_status, storage_path, file_name, size, mime, updated_at, deleted_at, likes_count, tags_jsonb, ai_toggle_enabled, ai_limit_count, created_at
-- **Legacy AI columns (to be deprecated):** ai_summary, ai_keypoints, ai_quiz, ai_flashcards, ai_generated_at, ai_quiz_generated
-- **New pointer column (added):** `latest_ai_versions` (jsonb) — optional fast-read pointer mapping type → ai_version_id
-- **Migration path:** Keep legacy columns for backward compatibility during development; drop after backend/frontend fully migrated to `material_ai_versions`
-- **Decision:** Use `material_ai_versions` as the source of truth for AI content; optionally maintain `latest_ai_versions` jsonb pointer for fast single-row reads
+- ✅ **Normalized AI Storage** — `material_ai_versions` table created with versioning support
+  - Columns: `ai_version_id`, `material_id`, `type`, `content` (jsonb), `model_name`, `model_params`, `generated_by`, `created_at`, `run_id`
+  - RLS policies: owner/public read, service-role insert
+  - Indexes: `(material_id, type, created_at DESC)`, GIN on content jsonb
+  - **Migration:** `2025_11_04_01_create_material_ai_versions.sql`
 
-#### `material_ai_versions` (Normalized AI Storage — PRIMARY)
-**Status:** ✅ Ready — this is your primary AI content table
-- **Purpose:** Store all AI-generated artifacts with full versioning, audit trail, and metadata
-- **Columns:**
-  - `ai_version_id` (uuid PK) — unique ID for each AI artifact version
-  - `material_id` (uuid FK → learning_materials) — links to parent material
-  - `type` (text NOT NULL, CHECK constraint) — 'summary' | 'keypoints' | 'quiz' | 'flashcards'
-  - `content` (jsonb NOT NULL) — actual AI output (structured JSON)
-  - `model_name` (text) — which model generated this (e.g., 'gpt-4', 't5-base')
-  - `model_params` (jsonb) — generation parameters (temperature, max_tokens, etc.)
-  - `generated_by` (text) — 'model' | 'user_edit' | 'revert' | 'migration'
-  - `created_at` (timestamptz) — when this version was created
-  - `created_by` (uuid) — user who triggered generation or edit
-  - `run_id` (uuid) — groups multiple artifacts from same generation run
-  - `content_preview` (text) — small text preview for fast listing without parsing JSON
-  - `language` (text) — language code (e.g., 'en')
-  - `confidence` (numeric) — model confidence score (0-1 or 0-100)
-  - `content_hash` (text) — MD5/SHA for deduplication and change detection
-- **Indexes:**
-  - `idx_material_ai_versions_material_type_created_at` (material_id, type, created_at DESC)
-  - `idx_mav_material_id` (material_id)
-  - `idx_mav_content_gin` (GIN on content jsonb)
-- **RLS:** Enabled; policies allow SELECT for owner/public materials; INSERT for owner or service-role
-- **Migration:** `2025_11_04_01_create_material_ai_versions.sql`
-- **Why this design:** Enables versioning, user edits, revert/restore, audit trail, A/B testing, and model comparison
+- ✅ **Vector Embeddings Table** — `material_ai_embeddings` with pgvector(384)
+  - FK to `material_ai_versions.ai_version_id` (CASCADE delete)
+  - Model: `sentence-transformers/all-MiniLM-L6-v2` (384-dim)
+  - ANN index (IVFFLAT/HNSW) commented out — ready for production tuning
+  - **Migration:** `2025_11_05_04_create_material_ai_embeddings.sql`
 
-#### `material_ai_embeddings` (Vector Storage for Semantic Search)
-**Status:** ✅ Ready — table created, indexes pending real data
-- **Purpose:** Store embedding vectors for AI-generated content to enable semantic search and recommendations
-- **Columns:**
-  - `embedding_id` (uuid PK)
-  - `ai_version_id` (uuid FK → material_ai_versions.ai_version_id, CASCADE delete)
-  - `vector` (vector(384)) — pgvector type; dimension must match your embedding model (all-MiniLM-L6-v2)
-  - `created_at` (timestamptz)
-- **Indexes:**
-  - `idx_material_ai_embeddings_ai_version_id` (basic FK index)
-  - ANN index (IVFFLAT/HNSW) — **COMMENTED OUT** in migration; create after loading real vectors
-- **RLS:** Enabled; SELECT allowed for owner/public; INSERT for service-role or authenticated users
-- **Migration:** `2025_11_05_04_create_material_ai_embeddings.sql`
-- **Why this design:** Keeps vectors separate from main content table; enables fast nearest-neighbor search; supports recommendations and "similar materials" features
+- ✅ **Quiz Analytics** — `quiz_attempt_responses` for per-question tracking
+  - Tracks: `attempt_id`, `question_id`, `answer`, `is_correct`, `response_time_ms`
+  - **Migration:** `2025_11_04_02_create_quiz_attempt_responses.sql`
 
-#### `quizzes` (Quiz Metadata)
-**Status:** ✅ Stable with new pointer column
-- **Current columns:** quiz_id, title, description, material_id, passing_score, created_at, max_attempts
-- **New column (added):** `generated_from_ai_version_id` (uuid FK → material_ai_versions.ai_version_id, SET NULL on delete)
-- **Purpose of new column:** Track which AI artifact was used to generate this quiz for audit and regeneration
-- **Migration:** Pointer column added via `2025_11_05_04_create_material_ai_embeddings.sql`
+- ✅ **Pointer Columns** — Fast-read optimization
+  - `learning_materials.latest_ai_versions` (jsonb) — maps type → ai_version_id
+  - `quizzes.generated_from_ai_version_id` (FK) — tracks source AI artifact
+  - Currently optional; using DISTINCT ON for MVP
 
-#### `quiz_questions`, `quiz_attempts`, `quiz_attempt_responses`
-**Status:** ✅ Stable — no changes needed
-- **Purpose:** Store quiz questions, user attempts, and per-question responses for analytics
-- **Tables work together:** quiz_questions defines questions; quiz_attempts tracks user sessions; quiz_attempt_responses stores individual answers
-- **Migration:** `2025_11_04_02_create_quiz_attempt_responses.sql` added response tracking
+### **1.2 AI Service Infrastructure** ✅ **DONE** (1.5 days)
+
+- ✅ **FastAPI Microservice** — `ai-service/` with route scaffolds
+  - Health endpoint: `GET /health`
+  - Extraction: `POST /extract-text` (PDF/DOCX/PPT parsing)
+  - Generation: `POST /generate/{summary|keypoints|quiz|flashcards}`
+  - Embeddings: `POST /embeddings/generate`
+  - Pydantic models for request/response validation
+  - **Tech:** FastAPI, PyPDF2, python-pptx, python-docx, sentence-transformers
+
+- ✅ **Environment Configuration**
+  - `HF_API_TOKEN` (Hugging Face read-only) configured
+  - `AI_SERVICE_API_KEY` (secure random token) shared with PHP backend
+  - API key enforcement middleware (401 on missing/invalid)
+  - Docker networking: `http://ai-service:8000` in compose
+
+- ✅ **Repository Pattern** — Clean DB access layer
+  - `LearningMaterialRepository`, `MaterialAiVersionRepository`, `MaterialAiEmbeddingRepository`
+  - All using service-role key for RLS bypass
+  - CRUD operations: create, findById, list, update, softDelete
+  - **Location:** `php-backend/src/Repositories/`
+
+### **1.3 Backend Integration** ✅ **DONE** (2 days)
+
+- ✅ **StudyToolsController** — AI generation orchestration
+  - Routes: `POST /api/materials/{id}/study-tools/{summary|keypoints|quiz|flashcards}`
+  - Pattern: Call AI service → Insert `material_ai_versions` → Generate embedding → Insert `material_ai_embeddings`
+  - Repository-based DB access (no raw SQL in controller)
+  - RLS-safe with service-role credentials
+  - **Location:** `php-backend/src/Controllers/StudyToolsController.php`
+
+- ✅ **AI Service Client Wrapper** — `AiService` class
+  - HTTP client with retry logic and error handling
+  - Centralized configuration via `AiConfig`
+  - Parses AI responses with `AiResponseParser`
+  - **Tech:** Guzzle HTTP client
+
+### **1.4 Generation Features** ✅ **DONE** (3 days)
+
+- ✅ **Essay-Style Summaries** — Chunked processing with BART
+  - Model: `facebook/bart-large-cnn` via HuggingFace Inference
+  - Handles long documents with automatic chunking
+  - Output: Paragraph-style summary (150-300 words)
+  - User control: Word count slider (50-500 words)
+
+- ✅ **Keypoints Extraction** — "Term - Explanation" format
+  - Model: T5 with prompt engineering
+  - Structured JSON output: `[{"term": "X", "explanation": "Y"}, ...]`
+  - User control: Number of keypoints (3-10)
+
+- ✅ **Quiz Generation** — Multiple-choice with basic distractors
+  - Model: `valhalla/t5-small-qg-hl` (T5 question generation)
+  - Output: `{"question": "...", "options": ["A", "B", "C", "D"], "correct": 0}`
+  - Basic distractor generation (keyword variation, negation)
+  - User control: Question count (5-20), difficulty selector, question type
+
+- ✅ **Flashcard Generation** — Front/back pairs
+  - Prompt-based generation using summarization model
+  - Output: `[{"front": "What is X?", "back": "X is..."}, ...]`
+  - User control: Number of flashcards (5-30)
+
+### **1.5 Frontend Integration** ✅ **DONE** (2 days)
+
+- ✅ **Interactive Quiz UI**
+  - Radio buttons (single-choice) / Checkboxes (multi-choice)
+  - Real-time feedback: Green (correct) / Red (incorrect) highlighting
+  - "Submit Answer" → "Next Question" flow
+  - Score display and retake button
+  - **Tech:** React, TypeScript, Tailwind CSS
+
+- ✅ **PDF Downloads** — Summary, Keypoints, Quiz
+  - Server-side PDF generation with proper formatting
+  - Download buttons in UI for each artifact type
+  - **Tech:** PHP PDF library (FPDF/TCPDF)
+
+- ✅ **AI Settings Panel** — User controls
+  - Summary: Word count slider (50-500)
+  - Quiz: Count (5-20), Difficulty (easy/normal/hard), Type (multiple-choice/true-false)
+  - Flashcards: Count (5-30)
+  - "Generate" / "Regenerate" buttons
+
+- ✅ **One-Time Generation Logic**
+  - Check `material_ai_versions` for existing content (DISTINCT ON latest)
+  - Show "Generate" if none, "View" + "Regenerate" if exists
+  - Reuse existing artifacts unless user explicitly regenerates
+
+### **1.6 Security & Access Control** ✅ **DONE** (1 day)
+
+- ✅ **RLS Policies** — Row-level security enforced
+  - `material_ai_versions`: SELECT for owner/public, INSERT for authenticated/service-role
+  - `material_ai_embeddings`: SELECT for owner/public, INSERT for service-role
+  - Service-role key server-side only (never exposed to client)
+
+- ✅ **API Key Authentication** — AI service protected
+  - `x-api-key` header required for all AI service endpoints
+  - Middleware validates token before processing
+  - 401 Unauthorized on missing/invalid key
 
 ---
 
-## 3. Architecture Decision — AI Content Storage Strategy
+## **Phase 2: Quality & User Experience** ✅ **COMPLETED** (Nov 6, 2025)
 
-### ✅ FINAL DECISION: Use `material_ai_versions` as Source of Truth
+### **2.1 Quiz Quality Improvements** ✅ **COMPLETED** (Nov 6, 2025)
 
-**What this means:**
-- All AI-generated content (summary, keypoints, quiz, flashcards) is stored in `material_ai_versions` table
-- Each generation creates one or more rows (one per artifact type) with the same `run_id`
-- User edits create new versions with `generated_by='user_edit'`
-- Enables full version history, audit trail, A/B testing, and rollback/revert
+- ✅ **Semantic Similarity Distractors** — Smarter wrong answers
+  - **Status:** COMPLETED in Phase 1 (Nov 5)
+  - **Implementation:** Using sentence-transformers for semantic distractor generation
+  - Embed candidate answers, select top 3 by cosine similarity (0.4-0.7 range)
+  - Filter out options too similar to correct answer (>0.85 threshold)
+  - **Files:** `ai-service/models/qa_generator.py` (\_generate_semantic_distractors method)
+  - **Success metric:** Achieved — semantic distractors validated in testing
 
-**Legacy columns in `learning_materials` (ai_summary, ai_keypoints, ai_quiz, ai_flashcards):**
-- **Current status:** Still present in schema for backward compatibility
-- **Deprecation plan:** Drop these columns AFTER backend and frontend are fully migrated to read from `material_ai_versions`
-- **Migration file:** `2025_11_05_03_add_indexes_and_drop_ai_columns.sql` has DROP statements commented out
-- **When to drop:** After you verify backend/frontend work correctly with normalized reads (DISTINCT ON / LATERAL joins)
+- ✅ **Difficulty Implementation** — Easy/Normal/Hard
+  - **Status:** COMPLETED (Nov 6)
+  - **Implementation:** Prompt engineering in qa_generator.py
+    - **Easy:** "generate easy recall question" — simple facts, direct extraction
+    - **Normal:** "generate question" — application, understanding
+    - **Hard:** "generate complex analytical question" — synthesis, critical thinking
+  - **Method:** \_get_difficulty_prompt() adjusts T5 generation prompts
+  - **Files:** `ai-service/models/qa_generator.py`, `ai-service/routes/generation.py`
+  - **API:** QuizRequest model validates difficulty (easy|normal|hard)
+  - **Success metric:** Validated — difficulty levels functional
 
-**Pointer column (`learning_materials.latest_ai_versions` jsonb):**
-- **Purpose:** Optional denormalized pointer for ultra-fast single-row reads
-- **Structure:** `{"summary":"<ai_version_id>", "keypoints":"<ai_version_id>", ...}`
-- **Trade-off:** Faster reads vs additional write complexity (must update pointer on each generation)
-- **Recommendation:** Start WITHOUT using pointers; rely on `SELECT DISTINCT ON (type) ... ORDER BY created_at DESC` for fetching latest. Add pointers later if performance profiling shows need.
+- ✅ **Question Type Variations** — Beyond multiple-choice
+  - **Status:** COMPLETED (Nov 6)
+  - **Implementation:** Three question types fully operational
+    - **True/False:** \_generate_true_false() — factual statements with 50% negation
+    - **Short-answer:** \_generate_short_answer() — open-ended with sample answers
+    - **Multiple-choice:** Enhanced with semantic distractors
+  - **Files:** `ai-service/models/qa_generator.py`, `ai-service/routes/generation.py`
+  - **API:** QuizRequest model validates question_type (multiple-choice|true-false|short-answer)
+  - **Success metric:** All types generate correctly with proper validation
 
-### Read Patterns (How to Fetch AI Content)
+### **2.2 Quiz Analytics & History** ✅ **COMPLETED** (Nov 6, 2025)
 
-**Option A: Dynamic latest fetch (recommended for MVP)**
-```sql
--- Fetch latest summary for a material
-SELECT ai_version_id, content, model_name, created_at
-FROM material_ai_versions
-WHERE material_id = $1 AND type = 'summary'
-ORDER BY created_at DESC
-LIMIT 1;
+- ✅ **Attempt History Backend** — Performance tracking infrastructure
+  - **Status:** COMPLETED (Nov 6)
+  - **Database:** `quiz_attempts`, `quiz_attempt_responses` tables operational
+  - **Repository:** QuizAttemptsRepository.php with full CRUD operations
+    - create(), findById(), findByMaterialId(), createResponse(), getResponsesByAttemptId()
+  - **Controller Endpoints:**
+    - POST /api/materials/{id}/quiz-attempts — Submit attempt with responses
+    - GET /api/materials/{id}/quiz-attempts/history — Retrieve all attempts with enriched data
+  - **Files:** `php-backend/src/Repositories/QuizAttemptsRepository.php`, `php-backend/src/Controllers/StudyToolsController.php`
+  - **Security:** RLS-safe with service-role key for inserts, user token for reads
+  - **Success metric:** Backend fully functional, tested with API calls
 
--- Fetch latest of ALL types in one query
-SELECT DISTINCT ON (type) ai_version_id, type, content, model_name, created_at
-FROM material_ai_versions
-WHERE material_id = $1 AND type IN ('summary','keypoints','quiz','flashcards')
-ORDER BY type, created_at DESC;
+- ✅ **Attempt History Frontend** — Interactive UI with visualizations
+  - **Status:** COMPLETED (Nov 6)
+  - **Component:** QuizHistoryView.tsx with complete feature set
+    - Attempt list with scores, dates, duration
+    - Per-question breakdown modal
+    - Recharts line chart for score trends
+    - Color-coded performance indicators
+    - Loading/error/empty states
+  - **Features:**
+    - iOS-style cards with smooth animations
+    - Responsive design (mobile-first)
+    - Dark mode support
+    - Accessibility (ARIA, keyboard navigation)
+    - Full TypeScript type safety
+  - **Integration:** QuizTabEnhanced.tsx with mode switcher (Take Quiz / History)
+  - **Files:** `studystreak/src/components/QuizHistoryView.tsx`, `studystreak/src/Features/LearningMaterials/StudyTools/QuizTabEnhanced.tsx`
+  - **Dependencies:** Recharts for visualization
+  - **Success metric:** Production-ready component with full documentation
+
+### **2.3 Flashcard Enhancements** ✅ **COMPLETED** (Nov 6, 2025)
+
+- ✅ **Smarter Question Generation** — Document structure awareness
+  - **Status:** COMPLETED (Nov 6)
+  - **Implementation:** Enhanced flashcard_generator.py with intelligent extraction
+    - **Document Structure Analysis:** Parse headings, identify sections, extract key sentences
+    - **TF-IDF Ranking:** Score sentences by importance, prioritize high-value content
+    - **Pattern Detection:** Identify definitions ("X is..."), lists, key concepts
+    - **Quality Filtering:** Deduplicate similar cards, remove low-quality content
+  - **Features:**
+    - Heading-based fronts: "What is [concept]?" from H1/H2/H3
+    - Context-aware backs: Section content as comprehensive explanations
+    - Confidence scoring: 0.0-1.0 based on source quality
+    - Importance ranking: TF-IDF scores for prioritization
+  - **Output Format:**
+    ```python
+    {
+      "flashcards": [{
+        "front": "What is photosynthesis?",
+        "back": "Process converting light to chemical energy...",
+        "confidence": 0.85,
+        "source_section": "Chapter 2: Plant Biology",
+        "importance_score": 0.92
+      }],
+      "total_generated": 15,
+      "filtered_count": 5
+    }
+    ```
+  - **Files:** `ai-service/models/flashcard_generator.py`, `ai-service/routes/generation.py`
+  - **Dependencies:** scikit-learn (TF-IDF), sentence-transformers (similarity)
+  - **Success metric:** 80%+ relevant, non-redundant flashcards
+
+- ⏳ **Timer & Customization UI** — Frontend enhancements (DEFERRED to Phase 3)
+  - **Status:** Not started (lower priority)
+  - **Planned Features:** Timer controls, flip customization, study modes
+  - **Timeline:** Phase 3 (post-MVP)
+
+### **2.4 Testing & Quality Assurance** ⏳ **IN PROGRESS** (Nov 6-7, 2025)
+
+- ⏳ **Automated Test Suite** — Comprehensive testing coverage
+  - **Status:** Planned, not started
+  - **Unit Tests (AI Service):**
+    - pytest tests for qa_generator.py (difficulty prompts, question types, semantic distractors)
+    - flashcard_generator.py tests (TF-IDF ranking, structure parsing, deduplication)
+    - Routes validation (QuizRequest, FlashcardRequest models)
+  - **Integration Tests (Backend):**
+    - PHPUnit tests for QuizAttemptsRepository CRUD operations
+    - StudyToolsController endpoint tests (quiz generation, attempt creation, history retrieval)
+    - MaterialAiVersionRepository versioning tests
+  - **RLS Tests:**
+    - Owner/non-owner/service-role access scenarios
+    - Attempt history privacy validation
+    - Material ownership enforcement
+  - **E2E Tests:**
+    - Playwright: Upload PDF → Generate all artifacts → Verify outputs
+    - Quiz flow: Generate → Take → Submit → View history
+    - Flashcard flow: Generate → Review → Track progress
+  - **Tech:** pytest (Python), PHPUnit (PHP), Playwright (E2E)
+  - **Timeline:** 2 days (1 day setup + 1 day writing tests)
+  - **Coverage target:** 70%+ for AI service, 60%+ for backend
+  - **Priority:** High — critical for production deployment
+
+- ⏳ **Manual QA Checklist** — Real-world validation
+  - **Status:** Pending automated tests completion
+  - **Test Cases:**
+    - Test with 10 diverse PDFs (academic, technical, narrative, scanned)
+    - Verify all artifact types (summary, keypoints, quiz, flashcards)
+    - Check edge cases: Empty PDFs, image-only PDFs, very long documents (100+ pages)
+    - RLS validation: Private materials blocked for non-owners
+    - Performance testing: Generation time <10s for 20-page PDF
+    - Quiz history: Multiple attempts, score trends, question breakdown
+  - **Timeline:** 0.5 day
+  - **Assignee:** Manual tester or developer
+  - **Acceptance Criteria:** 95%+ test cases pass without critical issues
+
+---
+
+## **Phase 3: Advanced Features & Scale** ⏳ **STARTING** (Nov 7-21, 2025 — 2 weeks)
+
+### **3.1 Semantic Search & Recommendations** ⏳ **NEXT PRIORITY** (3 days)
+
+- ⏳ **ANN Index Creation** — Optimize vector search for sub-10ms queries
+  - Current: Embeddings stored in `material_ai_embeddings`, no index (linear scan)
+  - Target: IVFFLAT or HNSW index for production-scale nearest-neighbor search
+  - **Implementation:**
+    ```sql
+    -- After 100+ vectors loaded in production
+    ANALYZE material_ai_embeddings;
+    CREATE INDEX idx_vector_ivfflat ON material_ai_embeddings 
+      USING ivfflat (vector vector_l2_ops) WITH (lists = 100);
+    -- OR for better accuracy (slower build):
+    CREATE INDEX idx_vector_hnsw ON material_ai_embeddings 
+      USING hnsw (vector vector_l2_ops) WITH (m = 16, ef_construction = 64);
+    ```
+  - **Tuning:**
+    - IVFFLAT `lists` = √(rows) for optimal partitioning
+    - HNSW `m=16` (edges per node), `ef_construction=64` (build quality)
+  - **Timeline:** 0.5 day (after staging validation with real data)
+  - **Dependencies:** Real vectors loaded (Phase 1 complete ✅), pgvector extension enabled
+  - **Success metric:** <50ms query time for k=10 nearest neighbors
+
+- ⏳ **Semantic Search Endpoint** — Natural language material discovery
+  - Route: `GET /api/materials/search?q=<query>&limit=10`
+  - **Flow:**
+    1. Generate query embedding via AI service (`POST /embeddings/generate`)
+    2. Run nearest-neighbor SQL:
+       ```sql
+       SELECT m.*, e.vector <-> $query_vector AS distance
+       FROM learning_materials m
+       JOIN material_ai_embeddings e ON e.ai_version_id = m.latest_ai_version_id
+       WHERE m.user_id = $user_id OR m.visibility = 'public'
+       ORDER BY distance ASC
+       LIMIT 10;
+       ```
+    3. Return materials with relevance scores (1 - distance)
+  - **UI:** Search bar in materials list with "Similar Materials" results
+  - **Timeline:** 1 day backend + 1 day frontend
+  - **Dependencies:** ANN index created, embeddings populated
+  - **Success metric:** Relevant results for 80%+ test queries (evaluated manually)
+
+- ⏳ **Recommendation System** — "Similar Materials" discovery feature
+  - **Option A (Dynamic):** Compute on-demand when viewing material
+    - Fetch material's embedding, run nearest-neighbor query
+    - Cache results for 24 hours (Redis or in-memory)
+  - **Option B (Materialized):** Nightly job precomputes top 10 similar materials
+    - Store in `material_recommendations` table
+    - Faster reads, stale data acceptable (daily refresh)
+  - **Decision:** Start with Option A (simpler), migrate to B if >500ms latency
+  - **UI:** "Related Materials" sidebar on material detail page
+  - **Timeline:** 1 day (Option A), 2 days (Option B with job scheduler)
+  - **Success metric:** 70%+ recommended materials rated relevant by users
+
+### **3.2 Rate Limiting & Cost Control** ⏳ **HIGH PRIORITY** (2 days)
+
+- ⏳ **Generation Limits** — 5 generations per material per month
+  - Current: Unlimited regeneration (cost risk — $0.10/generation × unlimited = unbounded)
+  - Target: Hard limit of 5 generations/material/month for free tier
+  - **Implementation:**
+    1. Add `generation_count` column to `learning_materials` (default 0)
+    2. Increment on each generation (summary, quiz, keypoints, flashcards count separately)
+    3. Monthly reset via cron job (1st of month):
+       ```sql
+       UPDATE learning_materials SET generation_count = 0;
+       ```
+    4. Enforce in StudyToolsController:
+       ```php
+       if ($material['generation_count'] >= 5 && !$user->isPremium()) {
+         JsonResponder::forbidden('Monthly generation limit reached (5/5). Upgrade to Premium.');
+       }
+       ```
+  - **UI:** "X/5 generations remaining this month" banner in AI settings panel
+  - **Override:** Admin/premium users bypass limit (check `user_metadata.subscription_tier`)
+  - **Timeline:** 1 day implementation + 0.5 day testing
+  - **Success metric:** Cost reduced by 60%+ in production (projected)
+
+- ⏳ **Request Throttling** — Prevent abuse and spam
+  - Rate limit: 10 requests/minute per user, 100 requests/hour per IP
+  - **Implementation:**
+    - **Option A (Middleware):** PHP rate limiter with session storage
+    - **Option B (Redis):** Sliding window counter with Upstash free tier
+    - **Recommended:** Option B for scalability
+  - **Tech Stack:**
+    - Upstash Redis (free tier: 10k requests/day)
+    - PHP-Redis extension or Predis library
+    - Middleware: Check counter before controller execution
+  - **Response:** 429 Too Many Requests with `Retry-After` header
+  - **Timeline:** 1 day (Redis setup + middleware integration)
+  - **Dependencies:** Redis instance (Upstash or local Docker)
+  - **Success metric:** No legitimate users blocked, 100% spam requests rejected
+
+### **3.3 User Edits & Versioning** ⏳ **PLANNED** (3 days)
+
+- ⏳ **Edit Endpoint** — Modify AI outputs
+  - Route: `PUT /api/materials/{id}/ai-content/{type}/edit`
+  - **Flow:**
+    1. Accept edited content from user
+    2. Insert new row: `generated_by='user_edit'`, `created_by=auth.uid()`
+    3. Update pointer (if using)
+  - **Timeline:** 1 day backend
+
+- ⏳ **Version History UI** — Browse past versions
+  - Show list: "Summary v1 (AI, Nov 1)", "Summary v2 (Edited by you, Nov 3)"
+  - Actions: "Restore" (creates new version copying old content), "Delete"
+  - **Timeline:** 1.5 days frontend
+  - **Dependencies:** Edit endpoint
+
+- ⏳ **Restore/Revert** — Undo edits
+  - Create new version copying selected historical version
+  - **Timeline:** 0.5 day (piggyback on edit endpoint)
+
+### **3.4 Advanced Document Processing** ⏳ **PLANNED** (4 days)
+
+- ⏳ **OCR for Image-Heavy PDFs** — Extract text from scans
+  - Current: Skips images, only extracts text layers
+  - Target: OCR images with Tesseract or Google Cloud Vision
+  - **Implementation:**
+    - Detect image-only pages (no text layer)
+    - Send to OCR API
+    - Merge OCR text with extracted text
+  - **Timeline:** 2 days
+  - **Dependencies:** OCR API access (Tesseract local or GCP Vision)
+  - **Success metric:** 80%+ accuracy on scanned PDFs
+
+- ⏳ **Vision/Captioning** — Describe images in documents
+  - Model: CLIP (embeddings) or BLIP (captions)
+  - **Use case:** Generate quiz questions about diagrams, charts
+  - **Implementation:**
+    - Extract images from PDF
+    - Generate captions: "A bar chart showing sales growth"
+    - Include captions in summary/quiz generation context
+  - **Timeline:** 2 days
+  - **Dependencies:** Vision model API (HuggingFace or OpenAI)
+  - **Status:** Phase 4 (optional — not critical)
+
+### **3.5 Production Deployment** ⏳ **PLANNED** (3 days)
+
+- ⏳ **Hosting Setup**
+  - Frontend: Vercel (auto-deploy from GitHub)
+  - Backend: Railway or Render (PHP + Composer)
+  - AI Service: Railway or Render (Python + Docker)
+  - Database: Supabase (already hosted)
+  - **Timeline:** 1 day configuration
+
+- ⏳ **CI/CD Pipeline** — Automated deployments
+  - GitHub Actions: Test → Build → Deploy
+  - Separate workflows for frontend, backend, AI service
+  - **Timeline:** 1 day setup
+
+- ⏳ **Monitoring & Logging**
+  - Error tracking: Sentry (frontend + backend)
+  - Performance: New Relic or Datadog
+  - Cost tracking: CloudWatch or custom dashboard
+  - **Timeline:** 1 day integration
+
+---
+
+## **Phase 4: Optimization & Cleanup** ⏳ **PLANNED** (Dec 2025 — ongoing)
+
+### **4.1 Schema Cleanup** ⏳ **PLANNED** (1 day)
+
+- ⏳ **Drop Legacy Columns** — Remove deprecated fields
+  - Current: `learning_materials` has `ai_summary`, `ai_keypoints`, `ai_quiz`, `ai_flashcards` (unused)
+  - Target: Drop after backend/frontend fully migrated to `material_ai_versions`
+  - **Migration:** Uncomment DROP statements in `2025_11_05_03_add_indexes_and_drop_ai_columns.sql`
+  - **Timeline:** 0.5 day (after 1 week production validation)
+  - **Risk mitigation:** DB snapshot before DROP
+
+- ⏳ **Add Retention Policy** — Prune old versions
+  - Keep latest 10 versions per (material_id, type)
+  - Background job (weekly cron)
+  - **SQL:**
+    ```sql
+    DELETE FROM material_ai_versions WHERE ai_version_id IN (
+      SELECT ai_version_id FROM (
+        SELECT ai_version_id, ROW_NUMBER() OVER 
+          (PARTITION BY material_id, type ORDER BY created_at DESC) AS rn
+        FROM material_ai_versions
+      ) sub WHERE rn > 10
+    );
+    ```
+  - **Timeline:** 0.5 day
+
+### **4.2 Performance Optimization** ⏳ **PLANNED** (2 days)
+
+- ⏳ **Query Profiling** — Identify slow queries
+  - Enable Postgres `pg_stat_statements`
+  - Monitor: Latest-artifact fetches, embedding searches, quiz loads
+  - **Timeline:** 0.5 day setup
+
+- ⏳ **Index Tuning** — Optimize based on profiling
+  - Add composite indexes if needed
+  - Tune IVFFLAT `lists` parameter (100 → 200 if dataset grows)
+  - **Timeline:** 1 day
+
+- ⏳ **Pointer Column Strategy** — Fast-read optimization
+  - Current: Not using `latest_ai_versions` pointer (using DISTINCT ON)
+  - Target: If latency >200ms, implement pointer updates
+  - **Implementation:** SECURITY DEFINER function for atomic insert+update
+  - **Timeline:** 0.5 day
+  - **Decision:** Profile first, optimize only if needed
+
+### **4.3 Documentation** ⏳ **PLANNED** (2 days)
+
+- ⏳ **API Documentation** — OpenAPI spec
+  - Document all StudyTools endpoints
+  - Interactive docs with Swagger UI
+  - **Timeline:** 1 day
+
+- ⏳ **User Guide** — How to use AI features
+  - PDF upload guide
+  - AI generation settings explained
+  - Quiz/flashcard best practices
+  - **Timeline:** 1 day
+
+---
+
+## **Dependencies & Critical Path**
+
+```
+Phase 1 (DONE) → Phase 2 (IN PROGRESS)
+  ├─ Quiz Quality → Semantic Distractors (needs embeddings ✅)
+  ├─ Testing Suite → All endpoints ready ✅
+  └─ History UI → quiz_attempt_responses table ✅
+
+Phase 2 → Phase 3
+  ├─ Semantic Search → ANN Index (needs 100+ vectors)
+  ├─ Rate Limiting → Generation count tracking
+  └─ User Edits → Versioning system ✅
+
+Phase 3 → Phase 4
+  ├─ Schema Cleanup → 1 week production validation
+  └─ Performance Tuning → Real traffic data
 ```
 
-**Option B: Using pointer (optional optimization)**
-```sql
--- Update pointer when generating new artifact
-UPDATE learning_materials
-SET latest_ai_versions = jsonb_set(
-  coalesce(latest_ai_versions, '{}'), 
-  '{summary}', 
-  to_jsonb($ai_version_id::text)
-)
-WHERE material_id = $1;
+---
 
--- Read using pointer (single lookup)
-SELECT v.* FROM learning_materials lm
-JOIN material_ai_versions v ON v.ai_version_id = (lm.latest_ai_versions->>'summary')::uuid
-WHERE lm.material_id = $1;
-```
+## **Timeline Summary**
 
-**Decision:** Use Option A (dynamic) for development; switch to Option B if profiling shows latency issues.
+| Phase | Duration | Status | Completion Date |
+|-------|----------|--------|----------------|
+| Phase 1: Core Pipeline | 5 days | ✅ DONE | Nov 5, 2025 |
+| Phase 2: Quality & UX | 1 day | ✅ DONE | Nov 6, 2025 |
+| Phase 3: Advanced Features | 2 weeks | 🔄 STARTING | Nov 21, 2025 (est.) |
+| Phase 4: Optimization | Ongoing | ⏳ PLANNED | Dec 2025+ |
+
+**Current Status (Nov 6, 2025):**
+- ✅ **Phase 2 Complete:** Quiz difficulty/types, history backend/frontend, enhanced flashcards
+- 🚀 **Next Milestone:** Phase 3 — Semantic search (Nov 7-9), Rate limiting (Nov 10-11)
 
 ---
 
-## 4. Key Features (current status)
-- [x] File upload (PDF, PPT, DOCX) with 100MB client + server checks
-- [x] File validation (type + size) on client and server
-- [ ] Chunked processing for very large files (NOT IMPLEMENTED)
-- [ ] OCR integration for images in documents (NOT IMPLEMENTED)
-- [ ] Vision / image captioning model (e.g., CLIP / BLIP) (NOT IMPLEMENTED)
-- [x] Database schema for AI-generated content (IMPLEMENTED — `material_ai_versions`, `material_ai_embeddings`)
-- [ ] AI generation pipeline (calls to models) — **NEXT PRIORITY**
-- [x] UI toggles for AI generation and visibility
-- [x] Editable AI outputs schema ready (new versions created on edit)
-- [x] Quiz attempt tracking with per-question responses (IMPLEMENTED)
+## **Risk Register**
+
+| Risk | Impact | Mitigation | Status |
+|------|--------|------------|--------|
+| **AI Quality Issues** | High | Human review, user edits, feedback loop | ✅ Mitigated (edit flow ready) |
+| **API Cost Overruns** | High | Rate limiting (5/month), caching, small models | 🔄 In Progress (rate limit pending) |
+| **Privacy/RLS Bypass** | Critical | RLS enforced, service-role server-only, audit logs | ✅ Mitigated (tested) |
+| **Slow Queries** | Medium | Indexes, pointers, query profiling | ⏳ Monitor in Phase 4 |
+| **Data Loss** | Medium | Versioning, soft delete, backups | ✅ Mitigated (versioning live) |
 
 ---
 
-## 5. AI Service Implementation Plan
+## **Success Metrics**
 
-### Phase 1: Core AI Generation Pipeline (IMMEDIATE PRIORITY — 2-3 days)
-
-**Goal:** Implement basic AI generation endpoints and wire backend to call them
-
-#### Step 1.1: Choose Models & APIs
-**Recommended approach:** Start with Hugging Face Inference API (or hosted endpoints) for rapid prototyping
-- **Summarization:** `facebook/bart-large-cnn` or `t5-base` (via HF Inference or local)
-- **Keypoint extraction:** Use summarization model + prompt engineering, or fine-tuned T5
-- **Question generation:** `valhalla/t5-small-qg-hl` or similar QG-specific T5 models
-- **Flashcard generation:** Prompt-based using summarization model or GPT-style API
-- **Embeddings:** `sentence-transformers/all-MiniLM-L6-v2` (384-dim) or `text-embedding-ada-002` (OpenAI, 1536-dim)
-
-**Decision needed:** Choose embedding model dimension NOW so we can update migration
-- If using `sentence-transformers/all-MiniLM-L6-v2`: vector(384)
-- If using OpenAI `text-embedding-ada-002`: vector(1536)
-- If using `text-embedding-3-large`: vector(3072)
-
-#### Step 1.2: Implement AI Service Endpoints (`ai-service/`)
-Create Python Flask/FastAPI microservice with endpoints:
-1. `POST /extract-text` — PDF/DOCX/PPT parsing + chunking (using PyPDF2, python-pptx, python-docx)
-2. `POST /generate-summary` — calls summarization model
-3. `POST /generate-keypoints` — extracts key points (structured JSON output)
-4. `POST /generate-quiz` — generates multiple-choice questions
-5. `POST /generate-flashcards` — creates flashcard pairs
-6. `POST /generate-embedding` — returns vector for text input
-
-**Response format (all endpoints):**
-```json
-{
-  "run_id": "<uuid>",
-  "type": "summary|keypoints|quiz|flashcards",
-  "content": { /* structured JSON */ },
-  "model_name": "facebook/bart-large-cnn",
-  "model_params": {"max_length": 150, "temperature": 0.7},
-  "confidence": 0.95,
-  "language": "en"
-}
-```
-
-#### Step 1.3: Update PHP Backend (`StudyToolsController`)
-Wire `StudyToolsController::callAiService()` to actual AI service:
-```php
-private function callAiService(string $endpoint, array $payload): array
-{
-    $client = new \GuzzleHttp\Client(['timeout' => 60]);
-    $response = $client->post($this->aiServiceUrl . $endpoint, [
-        'json' => $payload,
-        'headers' => ['Authorization' => 'Bearer ' . getenv('AI_SERVICE_KEY')]
-    ]);
-    return json_decode($response->getBody(), true);
-}
-```
-
-**Insert flow (transactional):**
-1. Call AI service endpoint
-2. Insert row(s) into `material_ai_versions` with service-role key:
-   ```php
-   $aiVersionId = $this->insertAiVersion(
-       $materialId,
-       'summary',
-       $aiResponse['content'],
-       $aiResponse['model_name'],
-       $aiResponse['run_id']
-   );
-   ```
-3. Generate embedding and insert into `material_ai_embeddings`:
-   ```php
-   $embedding = $this->callAiService('/generate-embedding', ['text' => $summary]);
-   $this->insertEmbedding($aiVersionId, $embedding['vector']);
-   ```
-4. Optionally update pointer: `learning_materials.latest_ai_versions`
-
-#### Step 1.4: Test End-to-End
-- Upload a test PDF in staging
-- Trigger AI generation via StudyTools endpoint
-- Verify rows inserted into `material_ai_versions` and `material_ai_embeddings`
-- Query latest artifacts using DISTINCT ON pattern
-- Test RLS: owner can read, non-owner cannot (for private materials)
+| Metric | Target | Current | Status |
+|--------|--------|---------|--------|
+| Summary Quality (human rating 1-5) | 4.0+ | TBD | 🔄 Collecting data |
+| Quiz Distractor Plausibility | 80%+ rated plausible | ~50% (basic) | ⏳ Phase 2 target |
+| Semantic Search Relevance | 80%+ relevant results | N/A | ⏳ Phase 3 |
+| Generation Cost per Material | <$0.10 | TBD | 🔄 Tracking |
+| API Response Time (p95) | <2s | ~1.5s (dev) | ✅ On track |
+| RLS Policy Bypass Attempts | 0 | 0 | ✅ Secure |
 
 ---
 
-### Phase 2: Embeddings & Semantic Search (after Phase 1)
-
-**Goal:** Enable "similar materials" and semantic search
-
-#### Step 2.1: Create ANN Index
-After loading 100+ real vectors in staging:
-```sql
--- Analyze the table
-ANALYZE material_ai_embeddings;
-
--- Create ivfflat index (tune 'lists' based on dataset size)
-CREATE INDEX idx_material_ai_embeddings_vector_ivfflat
-  ON material_ai_embeddings USING ivfflat (vector vector_l2_ops)
-  WITH (lists = 100);
-
--- Or create hnsw (if supported)
-CREATE INDEX idx_material_ai_embeddings_vector_hnsw
-  ON material_ai_embeddings USING hnsw (vector);
-```
-
-#### Step 2.2: Implement Search Endpoint
-Add endpoint: `GET /api/materials/search?q=<query>`
-- Generate query embedding
-- Run nearest-neighbor SQL
-- Return top N materials with similarity scores
-
-```sql
-SELECT e.ai_version_id, v.material_id, v.content, lm.title,
-       1 - (e.vector <=> $query_vector) AS similarity
-FROM material_ai_embeddings e
-JOIN material_ai_versions v ON v.ai_version_id = e.ai_version_id
-JOIN learning_materials lm ON lm.material_id = v.material_id
-WHERE lm.is_public = true OR lm.user_id = $user_id
-ORDER BY e.vector <=> $query_vector
-LIMIT 10;
-```
-
-#### Step 2.3: Implement Recommendations
-**Option A: Dynamic (on-demand)**
-- When user views a material, compute nearest neighbors and show "Similar Materials"
-
-**Option B: Materialized (background job)**
-- Create `material_recommendations` table:
-```sql
-CREATE TABLE material_recommendations (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  material_id uuid REFERENCES learning_materials(material_id) ON DELETE CASCADE,
-  recommended_material_id uuid REFERENCES learning_materials(material_id) ON DELETE CASCADE,
-  score double precision,
-  method text DEFAULT 'embedding_nn',
-  created_at timestamptz DEFAULT now()
-);
-```
-- Background job runs nightly, computes top 10 similar materials per material, stores results
-- Fast reads from precomputed table
-
-**Recommendation:** Start with Option A (dynamic); add Option B if load increases
-
----
-
-### Phase 3: User Edits & Version Management
-
-**Goal:** Allow users to edit AI outputs and track versions
-
-#### Step 3.1: Create Edit Endpoint
-`PUT /api/materials/{id}/ai-content/{type}/edit`
-- Accept edited content from user
-- Insert new row into `material_ai_versions`:
-  - `generated_by='user_edit'`
-  - `created_by=auth.uid()`
-  - `content=<edited_content>`
-- Optionally update pointer
-
-#### Step 3.2: Version History UI
-- Show list of versions for each artifact type
-- Allow user to "Restore" previous version (creates new version copying old content)
-
-#### Step 3.3: SECURITY DEFINER Function (optional)
-Create SQL function for atomic edit+pointer update:
-```sql
-CREATE FUNCTION save_ai_edit_and_update_pointer(
-  p_material_id uuid,
-  p_type text,
-  p_content jsonb,
-  p_user_id uuid
-) RETURNS uuid SECURITY DEFINER AS $$
-DECLARE
-  v_ai_version_id uuid := gen_random_uuid();
-BEGIN
-  INSERT INTO material_ai_versions (ai_version_id, material_id, type, content, generated_by, created_by)
-  VALUES (v_ai_version_id, p_material_id, p_type, p_content, 'user_edit', p_user_id);
-  
-  UPDATE learning_materials
-  SET latest_ai_versions = jsonb_set(coalesce(latest_ai_versions,'{}'), ARRAY[p_type], to_jsonb(v_ai_version_id::text))
-  WHERE material_id = p_material_id;
-  
-  RETURN v_ai_version_id;
-END;
-$$ LANGUAGE plpgsql;
-```
-
----
-
-### Phase 4: Cleanup & Optimization
-
-**Goal:** Remove legacy columns and optimize queries
-
-#### Step 4.1: Drop Legacy AI Columns
-After backend/frontend fully migrated:
-```sql
-ALTER TABLE learning_materials
-  DROP COLUMN ai_summary,
-  DROP COLUMN ai_keypoints,
-  DROP COLUMN ai_quiz,
-  DROP COLUMN ai_flashcards,
-  DROP COLUMN ai_generated_at,
-  DROP COLUMN ai_quiz_generated,
-  DROP COLUMN ai_limit_count;
-```
-**Migration:** Uncomment DROP statements in `2025_11_05_03_add_indexes_and_drop_ai_columns.sql`
-
-#### Step 4.2: Add Retention Policy
-Background job to prune old versions:
-```sql
--- Keep only latest 10 versions per (material_id, type)
-DELETE FROM material_ai_versions
-WHERE ai_version_id IN (
-  SELECT ai_version_id FROM (
-    SELECT ai_version_id, ROW_NUMBER() OVER (PARTITION BY material_id, type ORDER BY created_at DESC) AS rn
-    FROM material_ai_versions
-  ) sub
-  WHERE rn > 10
-);
-```
-
-#### Step 4.3: Performance Monitoring
-- Monitor query latency for latest-artifact fetches
-- If slow, add pointer columns and update on each generation
-- Monitor vector index recall/latency and tune ivfflat `lists` parameter
-
----
-
-## 6. Technical Stack (status)
-- [x] Frontend: Vite + React + TypeScript + Tailwind
-- [x] Backend: PHP (controllers + Supabase integrations)
-- [ ] **AI service: Python microservice** — **IN PROGRESS** (scaffold exists, endpoints need implementation)
-- [x] Database: Supabase (Postgres) with RLS
-- [x] Storage: Supabase Storage (signed URLs)
-- [ ] AI Models: **PENDING** (need to choose and integrate HF Inference or local models)
-
----
-
-## 7. Deployment & Scalability
-- [x] Docker + docker-compose for local development
-- [ ] Production deployment (Vercel for frontend, Render/Railway for backend + AI service)
-- [ ] CI/CD pipeline (GitHub Actions)
-- [ ] Monitoring & cost tracking (Sentry, CloudWatch, or similar)
-- [ ] Horizontal scaling plan for AI service (queue-based processing for heavy loads)
-
----
-
-## 8. Risks & Mitigations
-- **AI Quality:** Start with human review; allow edits; collect feedback for fine-tuning
-- **Token/API Costs:** Use small models for prototyping; cache results; implement rate limits
-- **Privacy:** RLS enforced; service-role key server-side only; no PII in AI payloads
-- **Performance:** Monitor query latency; add indexes/pointers as needed; use ANN index for embeddings
-- **Data Loss:** Versioning prevents accidental overwrites; soft delete (deleted_at) for materials
-
----
-
-## 9. Testing & Documentation
-- [ ] API documentation for StudyTools endpoints (OpenAPI spec)
-- [ ] Unit tests for AI service endpoints
-- [ ] Integration tests for backend → AI service flow
-- [ ] RLS policy tests (owner/non-owner/service-role scenarios)
-- [ ] Load testing for embeddings + ANN search
-
----
-
-## 10. Prioritized Action Items (Step-by-Step Checklist)
-
-### ✅ COMPLETED
-1. [x] Create `material_ai_versions` table and RLS policies
-2. [x] Create `quiz_attempt_responses` table for analytics
-3. [x] Create `material_ai_embeddings` table with pgvector
-4. [x] Add pointer columns (`latest_ai_versions`, `generated_from_ai_version_id`)
-5. [x] Add indexes for fast queries on `material_ai_versions`
-6. [x] Document schema and migration files
-
-### 🔄 IN PROGRESS
-7. [x] **Choose embedding model and update vector dimension** (COMPLETED)
-  - Action: Chosen `sentence-transformers/all-MiniLM-L6-v2` (384-dim) — applied in staging
-  - Migration file `2025_11_05_04_create_material_ai_embeddings.sql` updated to use `vector(384)`
-  - Note: No re-run required for this environment (ALTER applied). For fresh environments, the migration now creates `vector(384)`.
-
-8. [x] **Create Repository Pattern for Clean DB Access** (COMPLETED — 2025-11-05)
-  - Created `LearningMaterialRepository`, `MaterialAiVersionRepository`, `MaterialAiEmbeddingRepository`
-  - Implemented full CRUD operations with RLS-safe service role key usage
-  - Created `AiConfig` for AI service settings, `AiService` for HTTP client wrapper
-  - Created `AiResponseParser` for parsing AI JSON responses into DB-ready format
-  - Implemented `StudyToolsController` using repository pattern (generate, getLatest, listVersions)
-  - Created AI service route scaffolds (extraction, generation, embeddings) with Pydantic models
-  - **Status:** Structure complete, ready for ML model integration
-
-9. [x] **Environment Configuration Complete** (COMPLETED — 2025-11-06)
-  - Added HF_API_TOKEN (read-only scope) to `ai-service/.env`
-  - Added AI_SERVICE_API_KEY (secure random token) to both `ai-service/.env` and `php-backend/.env`
-  - Set HF_INFERENCE_API_URL to `https://api-inference.huggingface.co`
-  - Set AI_SERVICE_URL to `http://ai-service:8000` in `php-backend/.env` for docker-compose networking
-  - Added API key enforcement middleware to `ai-service/main.py` (returns 401 if missing/invalid)
-  - Added `python-multipart` dependency for file upload endpoints
-  - **Status:** Environment ready; containers building
-
-### 📋 TODO (Priority Order)
-10. [ ] **Test Docker Containers and Endpoints** (IMMEDIATE — next 30 minutes)
-   - Verify ai-service container starts without errors
-   - Test health endpoint: `curl http://localhost:8000/health`
-   - Test embedding endpoint with API key: `curl -X POST http://localhost:8000/embeddings/generate -H "x-api-key: YOUR_KEY" -H "Content-Type: application/json" -d '{"text":"test"}'`
-   - Verify API key enforcement (401 without key)
-   - Run `ai-service/test_service.py` to validate all endpoints
-
-11. [ ] **Implement Real HuggingFace Embedding Endpoint** (HIGH PRIORITY — 1-2 hours)
-   - Replace prototype deterministic embedding in `ai-service/routes/embeddings.py`
-   - Option A: Call HuggingFace Inference API (https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2)
-   - Option B: Load sentence-transformers model locally (slower first call, faster subsequent)
-   - Add retry logic and error handling
-   - Test with real text and verify 384-dimensional output
-
-12. [ ] **Implement AI Generation Endpoints** (HIGH PRIORITY — 2-3 hours)
-   - `/generate/summary` — Call BART/T5 for summarization
-   - `/generate/keypoints` — Extract key points (T5 + prompt or structured output)
-   - `/generate/quiz` — Generate MCQ questions (T5-QG or custom prompt)
-   - `/generate/flashcards` — Create flashcard pairs (prompt-based)
-   - All should return consistent JSON structure with `run_id`, `content`, `model_name`, `model_params`
-
-13. [ ] **Wire PHP Backend to AI Service** (HIGH PRIORITY — 1-2 hours)
-   - Update `StudyToolsController::callAiService()` with real HTTP calls using Guzzle
-   - Implement transactional flow:
-     1. Call AI service endpoint
-     2. Insert into `material_ai_versions` using `MaterialAiVersionRepository`
-     3. Generate embedding and insert into `material_ai_embeddings` using `MaterialAiEmbeddingRepository`
-   - Add proper error handling and rollback on failure
-   - Test with sample PDF upload
-
-14. [ ] **End-to-End Integration Test** (MEDIUM — 1 hour)
-   - Upload test PDF in staging
-   - Trigger AI generation via StudyTools endpoint
-   - Verify rows inserted into `material_ai_versions` and `material_ai_embeddings`
-   - Query latest artifacts using DISTINCT ON pattern
-   - Test RLS: owner can read, non-owner cannot (for private materials)
-
-15. [ ] **Refactor LearningMaterialsController to use Repository** (MEDIUM — 1-2 hours)
-   - Remove duplicate DB access methods (`fetchMaterial`, `send` for material queries)
-   - Replace with repository method calls (`findById`, `list`, `create`, `update`, `softDelete`)
-   - Keep controller-specific logic (authentication, file uploads, storage operations, business rules)
-   - **Why:** Centralize all DB logic in repositories for consistency, testability, and RLS safety
-   - `/extract-text` (PDF/DOCX/PPT parsing)
-   - `/generate-summary` (T5/BART)
-   - `/generate-keypoints` (T5 + prompt)
-   - `/generate-quiz` (T5-QG)
-   - `/generate-flashcards` (prompt-based)
-   - `/generate-embedding` (sentence-transformers)
-
-16. [ ] **Create ANN index on embeddings** (after loading sample vectors)
-    - Run ANALYZE on `material_ai_embeddings`
-    - Create ivfflat or hnsw index
-    - Measure recall and latency
-
-17. [ ] **Implement semantic search endpoint**
-    - Accept query text
-    - Generate query embedding
-    - Run nearest-neighbor SQL
-    - Return top N materials
-
-18. [ ] **Implement user edit flow**
-    - Edit endpoint: insert new version with `generated_by='user_edit'`
-    - Version history UI
-    - Restore/revert functionality
-
-19. [ ] **Add retention/cleanup job**
-    - Prune old versions (keep latest N per material+type)
-    - Prune orphaned embeddings
-    - Schedule as cron job
-
-20. [ ] **Drop legacy AI columns from `learning_materials`**
-    - Verify backend/frontend work with new schema
-    - Uncomment DROP statements in migration
-    - Run in production with DB snapshot
-
-21. [ ] **Implement recommendations** (dynamic or materialized)
-22. [ ] **Add OCR for image-heavy PDFs** (Tesseract or cloud API)
-23. [ ] **Add vision/captioning for images** (CLIP/BLIP)
-24. [ ] **Production deployment & monitoring**
-25. [ ] **Documentation & API specs**
-
----
-
----
-
-Update (2025-11-05): Embeddings table & pointers created
-- The `material_ai_embeddings` table and pointer columns (`learning_materials.latest_ai_versions` and `quizzes.generated_from_ai_version_id`) have been added via migration `php-backend/migrations/2025_11_05_04_create_material_ai_embeddings.sql` and RLS policies were created. The DB is ready to accept embeddings. The ANN index (ivfflat / hnsw) is intentionally left commented in the migration and should be created/tuned after we have real vectors in staging.
-
-Given you are still developing (no production data or users yet), the recommended next step is to implement the AI service and ingestion pipeline. The DB schema is sufficiently prepared; only small, non-breaking changes may be needed later (e.g., vector dimension, pointer behaviors, retention rules).
-
-Recommended immediate tasks (developer checklist)
-- Chosen embedding model and vector dimension: all-MiniLM-L6-v2 (384-dim). Migration updated accordingly.
-- Implement AI service endpoints in `ai-service/` for: summarization, keypoint extraction, quiz & flashcard generation, and embeddings generation.
-- Wire PHP backend (`StudyToolsController`) to call the AI service for generation. Pattern:
-   1) Create `material_ai_versions` rows for generated artifacts.
-   2) Call embedding model for the artifact text and insert into `material_ai_embeddings` using the returned `ai_version_id`.
-   3) Optionally update `learning_materials.latest_ai_versions` JSON pointer (in same transaction if using SECURITY DEFINER function).
-- Test end-to-end in staging with a small set of documents. Do not create IVFFLAT/HNSW index yet — ingest sample vectors first and then tune index parameters.
-
-Longer-term (after initial tests)
-- Create and tune ANN index (ivfflat/hnsw) in staging once you have representative vectors. Build/ANALYZE and measure recall/latency.
-- Implement recommendation materialization (background job writing `material_recommendations` or `learning_materials.latest_recommendations`).
-- Add retention/pruning job to keep N latest versions or archive older vectors as needed.
-
-If you want, I can:
-- Update the migration to the exact vector dimension you choose now.
-- Add a small PHP helper/snippet to safely insert vectors (parameterized) and a sample endpoint to trigger ingestion in staging.
-- Create a simple prototype endpoint in `ai-service/` that returns a test embedding vector so you can test the full pipeline without external model access.
-
-When you're ready, tell me which of the above tasks to do next (update migration vector dim, add PHP helper, add ai-service prototype, or generate PostgREST curl tests). I'll implement it and update the checklist.
-
----
-
-## Database recommendations (concrete)
-
-Current approach stores `ai_summary`, `ai_keypoints`, `ai_quiz`, `ai_flashcards` on `learning_materials` which is fine for MVP. For versioning, audit trails, and multiple variants, add two tables:
-
-1) `material_ai_versions` — stores each generation run (versioning + who/when)
-
-Sample DDL (Postgres / Supabase style):
-
-```sql
-create table if not exists material_ai_versions (
-   id uuid default gen_random_uuid() primary key,
-   material_id uuid not null references learning_materials(material_id) on delete cascade,
-   type text not null, -- 'summary' | 'keypoints' | 'quiz' | 'flashcards'
-   content jsonb not null,
-   generated_by text null,
-   created_at timestamptz default now()
-);
-```
-
-2) `quiz_attempt_responses` — track per-question responses for analytics and history
-
-```sql
-create table if not exists quiz_attempt_responses (
-   id uuid default gen_random_uuid() primary key,
-   attempt_id uuid not null references quiz_attempts(attempt_id) on delete cascade,
-   question_id uuid null references quiz_questions(question_id),
-   answer jsonb not null,
-   is_correct boolean null,
-   response_time_ms integer null,
-   created_at timestamptz default now()
-);
-```
-
-Recommendation for `quizzes.max_attempts`: keep the column but allow NULL to indicate unlimited attempts. Enforce limits in application logic and expose a clear UX message.
-
-### Where to store summaries / keypoints / flashcards?
-- Short-term (MVP): keep `ai_summary` (text) and `ai_keypoints`/`ai_flashcards` as jsonb on `learning_materials` (already implemented).
-- Mid-term: move to `material_ai_versions` to track multiple generations, user edits, and metadata (model name, prompt, generation parameters).
-
----
-
-## Model evaluation quick-start (what to test first)
-1. Summarization quality: try `facebook/bart-large-cnn`, `t5-base`, `google/pegasus-*` on 10 PDFs and compare ROUGE / human judgment.
-2. Question generation: test `valhalla/t5-small-qg-hl` and community QG models; compare coverage and difficulty.
-3. Embeddings: test `sentence-transformers/all-MiniLM-L6-v2` for semantic search/retrieval.
-4. Vision captioning: test CLIP for embeddings; test BLIP for human-readable captions.
-
-Cost note: start with smaller models for prototyping; move to hosted HF Inference or a GPU-backed endpoint for production if throughput/cost warrant.
-
----
-
-If you want, I can:
-- produce the exact SQL migration files for Supabase (two DDL migrations above),
-- create a small AI prototype in `ai-service` that calls HF Inference for summarization (T5) and question generation (T5-QG), and
-- wire `/api/materials/{id}/study-tools/*` endpoints to the prototype.
-
-Next: I will update the todo list to mark this roadmap update as complete and add the next implementation tasks.
-
-
+**Document Owner:** Development Team  
+**Review Cadence:** Weekly (Mondays)  
+**Last Status Update:** November 6, 2025 — Phase 1 complete, Phase 2 started

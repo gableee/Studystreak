@@ -424,6 +424,19 @@ if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/keypoints$#', $
   exit;
 }
 
+// GET /api/materials/{id}/study-tools/keypoints-v2
+if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/keypoints-v2$#', $path, $matches)) {
+  $materialId = $matches[1];
+  if ($method === 'GET') {
+    $authMiddleware->handle($request, function(Request $authedRequest) use ($studyToolsController, $materialId): void {
+      $studyToolsController->getKeyPointsV2($authedRequest, $materialId);
+    });
+  } else {
+    JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
+  }
+  exit;
+}
+
 // POST /api/materials/{id}/study-tools/quiz
 if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/quiz$#', $path, $matches)) {
   $materialId = $matches[1];
@@ -450,13 +463,57 @@ if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/flashcards$#', 
   exit;
 }
 
+// POST /api/materials/{id}/study-tools/study-note
+if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/study-note$#', $path, $matches)) {
+  $materialId = $matches[1];
+  if ($method === 'POST') {
+    $authMiddleware->handle($request, function(Request $authedRequest) use ($studyToolsController, $materialId): void {
+      $studyToolsController->getStudyNote($authedRequest, $materialId);
+    });
+  } else {
+    JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
+  }
+  exit;
+}
+
 // GET /api/materials/{id}/study-tools/{type}.pdf
 if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/(summary|keypoints|quiz)\.pdf$#', $path, $matches)) {
   $materialId = $matches[1];
   $type = $matches[2];
+  if ($method === 'OPTIONS') {
+    // CORS preflight already handled at top of file
+    http_response_code(204);
+    exit;
+  }
   if ($method === 'GET') {
     $authMiddleware->handle($request, function(Request $authedRequest) use ($studyToolsController, $materialId, $type): void {
       $studyToolsController->downloadPdf($authedRequest, $materialId, $type);
+    });
+  } else {
+    JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
+  }
+  exit;
+}
+
+// POST /api/materials/{id}/quiz-attempts
+if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/quiz-attempts$#', $path, $matches)) {
+  $materialId = $matches[1];
+  if ($method === 'POST') {
+    $authMiddleware->handle($request, function(Request $authedRequest) use ($studyToolsController, $materialId): void {
+      $studyToolsController->createQuizAttempt($authedRequest, $materialId);
+    });
+  } else {
+    JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
+  }
+  exit;
+}
+
+// GET /api/materials/{id}/quiz-attempts/history
+if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/quiz-attempts/history$#', $path, $matches)) {
+  $materialId = $matches[1];
+  if ($method === 'GET') {
+    $authMiddleware->handle($request, function(Request $authedRequest) use ($studyToolsController, $materialId): void {
+      $studyToolsController->getQuizAttemptHistory($authedRequest, $materialId);
     });
   } else {
     JsonResponder::withStatus(405, ['error' => 'Method not allowed']);

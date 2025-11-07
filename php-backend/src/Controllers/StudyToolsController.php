@@ -11,6 +11,7 @@ use App\Http\Request;
 use App\Repositories\LearningMaterialRepository;
 use App\Repositories\MaterialAiVersionRepository;
 use App\Repositories\MaterialAiEmbeddingRepository;
+use App\Repositories\QuizAttemptsRepository;
 use App\Services\AiService;
 use App\Services\PdfService;
 use App\Utils\AiResponseParser;
@@ -25,6 +26,7 @@ final class StudyToolsController
     private LearningMaterialRepository $materialRepo;
     private MaterialAiVersionRepository $aiVersionRepo;
     private MaterialAiEmbeddingRepository $embeddingRepo;
+    private QuizAttemptsRepository $quizAttemptsRepo;
     private AiService $aiService;
     private PdfService $pdfService;
     private Client $supabaseClient;
@@ -53,13 +55,19 @@ final class StudyToolsController
             $supabaseConfig->getAnonKey(),
             $supabaseConfig->getServiceRoleKey()
         );
-        
         $this->embeddingRepo = new MaterialAiEmbeddingRepository(
             $client,
             $supabaseConfig->getAnonKey(),
             $supabaseConfig->getServiceRoleKey()
         );
+        
+        $this->quizAttemptsRepo = new QuizAttemptsRepository(
+            $client,
+            $supabaseConfig->getAnonKey(),
+            $supabaseConfig->getServiceRoleKey()
+        );
 
+        $this->aiService = new AiService($aiConfig);
         $this->aiService = new AiService($aiConfig);
         $this->pdfService = new PdfService();
     }
@@ -270,6 +278,62 @@ final class StudyToolsController
     }
 
     /**
+     * Get structured key points (v2) with pagination. Pass-through (no DB persistence for MVP).
+     * GET /api/materials/{id}/study-tools/keypoints-v2?page=&page_size=
+     */
+    public function getKeyPointsV2(Request $request, string $materialId): void
+    {
+        $user = $request->getAttribute('user');
+        $token = $request->getAttribute('access_token');
+
+        if (!$user instanceof AuthenticatedUser || !is_string($token) || $token === '') {
+            JsonResponder::unauthorized('Authentication required');
+            return;
+        }
+
+        // Fetch material and check ownership + AI toggle
+        $material = $this->materialRepo->findById($materialId, $token);
+        if ($material === null) {
+            JsonResponder::withStatus(404, ['error' => 'Learning material not found']);
+            return;
+        }
+        if ((string)($material['user_id'] ?? '') !== $user->getId()) {
+            JsonResponder::unauthorized('You do not have access to this material');
+            return;
+        }
+        if (!(bool)($material['ai_toggle_enabled'] ?? false)) {
+            JsonResponder::badRequest('AI is not enabled for this material. Enable it in material settings.');
+            return;
+        }
+
+        // Prepare text
+        $sourceText = trim((string)($material['description'] ?? ''));
+        if ($sourceText === '') {
+            $sourceText = trim((string)($material['extracted_content'] ?? ''));
+        }
+        if ($sourceText === '') {
+            JsonResponder::badRequest('Material has no text content to process. Add a description or upload a file.');
+            return;
+        }
+
+        // Query params
+        $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
+        $pageSize = isset($_GET['page_size']) && is_numeric($_GET['page_size']) ? (int)$_GET['page_size'] : 24;
+
+        $aiResponse = $this->aiService->generateKeyPointsV2($sourceText, $page, $pageSize);
+        if (!($aiResponse['success'] ?? false)) {
+            JsonResponder::withStatus(500, ['error' => 'AI service failed', 'details' => $aiResponse['error'] ?? 'Unknown error']);
+            return;
+        }
+
+        // Pass through AI response, add metadata for FE convenience
+        $data = $aiResponse['data'] ?? [];
+        $data['materialId'] = $materialId;
+        $data['generatedAt'] = date('c');
+        JsonResponder::ok($data);
+    }
+
+    /**
      * Generate quiz for a material.
      * POST /api/materials/{id}/study-tools/quiz
      */
@@ -285,6 +349,59 @@ final class StudyToolsController
     public function getFlashcards(Request $request, string $materialId): void
     {
         $this->getOrGenerateContent($request, $materialId, 'flashcards');
+    }
+
+    /**
+     * Generate combined study note (summary + key concepts). Pass-through (no DB persistence for MVP).
+     * POST /api/materials/{id}/study-tools/study-note
+     */
+    public function getStudyNote(Request $request, string $materialId): void
+    {
+        $user = $request->getAttribute('user');
+        $token = $request->getAttribute('access_token');
+
+        if (!$user instanceof AuthenticatedUser || !is_string($token) || $token === '') {
+            JsonResponder::unauthorized('Authentication required');
+            return;
+        }
+
+        $material = $this->materialRepo->findById($materialId, $token);
+        if ($material === null) {
+            JsonResponder::withStatus(404, ['error' => 'Learning material not found']);
+            return;
+        }
+        if ((string)($material['user_id'] ?? '') !== $user->getId()) {
+            JsonResponder::unauthorized('You do not have access to this material');
+            return;
+        }
+        if (!(bool)($material['ai_toggle_enabled'] ?? false)) {
+            JsonResponder::badRequest('AI is not enabled for this material. Enable it in material settings.');
+            return;
+        }
+
+        $sourceText = trim((string)($material['description'] ?? ''));
+        if ($sourceText === '') {
+            $sourceText = trim((string)($material['extracted_content'] ?? ''));
+        }
+        if ($sourceText === '') {
+            JsonResponder::badRequest('Material has no text content to process. Add a description or upload a file.');
+            return;
+        }
+
+        $input = $request->getBody() ?? [];
+        $minWords = isset($input['min_words']) && is_numeric($input['min_words']) ? (int)$input['min_words'] : null;
+        $maxWords = isset($input['max_words']) && is_numeric($input['max_words']) ? (int)$input['max_words'] : null;
+
+        $aiResponse = $this->aiService->generateStudyNote($sourceText, $minWords, $maxWords);
+        if (!($aiResponse['success'] ?? false)) {
+            JsonResponder::withStatus(500, ['error' => 'AI service failed', 'details' => $aiResponse['error'] ?? 'Unknown error']);
+            return;
+        }
+
+        $data = $aiResponse['data'] ?? [];
+        $data['materialId'] = $materialId;
+        $data['generatedAt'] = date('c');
+        JsonResponder::ok($data);
     }
 
     /**
@@ -325,9 +442,17 @@ final class StudyToolsController
         $fileBase = $this->safeFileBase($title);
         $result = $this->pdfService->render($html, $fileBase . '-' . $type . '.pdf');
 
+        // Set headers and output PDF
         header('Content-Type: ' . $result['content_type']);
         header('Content-Disposition: attachment; filename="' . $result['filename'] . '"');
+        header('Content-Length: ' . strlen($result['body']));
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
+        // Output the PDF and exit to prevent JsonResponder interference
         echo $result['body'];
+        exit;
     }
 
     /**
@@ -786,5 +911,296 @@ final class StudyToolsController
             ],
             default => ['error' => 'Unknown type'],
         };
+    }
+
+    /**
+     * Create a quiz attempt with responses.
+     * POST /api/materials/{material_id}/quiz-attempts
+     * Body: { "quiz_id": "uuid", "score": 80.5, "total_questions": 10, "correct_answers": 8, "time_spent": 300, "responses": [...] }
+     */
+    public function createQuizAttempt(Request $request, string $materialId): void
+    {
+        $user = $request->getAttribute('user');
+        $token = $request->getAttribute('access_token');
+
+        if (!$user instanceof AuthenticatedUser || !is_string($token) || $token === '') {
+            JsonResponder::unauthorized('Authentication required');
+            return;
+        }
+
+        // Verify material ownership
+        $material = $this->materialRepo->findById($materialId, $token);
+        if ($material === null) {
+            JsonResponder::withStatus(404, ['error' => 'Learning material not found']);
+            return;
+        }
+
+        $ownerId = (string)($material['user_id'] ?? '');
+        if ($ownerId !== $user->getId()) {
+            JsonResponder::unauthorized('You do not have access to this material');
+            return;
+        }
+
+        // Parse request body
+        $input = $request->getBody() ?? [];
+        $quizId = isset($input['quiz_id']) ? trim((string)$input['quiz_id']) : '';
+        $score = isset($input['score']) && is_numeric($input['score']) ? (float)$input['score'] : null;
+        $totalQuestions = isset($input['total_questions']) && is_numeric($input['total_questions']) ? (int)$input['total_questions'] : null;
+        $correctAnswers = isset($input['correct_answers']) && is_numeric($input['correct_answers']) ? (int)$input['correct_answers'] : 0;
+        $timeSpent = isset($input['time_spent']) && is_numeric($input['time_spent']) ? (int)$input['time_spent'] : 0;
+        $responses = isset($input['responses']) && is_array($input['responses']) ? $input['responses'] : [];
+
+        // Validate required fields
+        if ($quizId === '' || $score === null || $totalQuestions === null) {
+            JsonResponder::badRequest('Missing required fields: quiz_id, score, total_questions');
+            return;
+        }
+
+        // Verify quiz exists and belongs to this material
+        $quizResult = $this->send('GET', '/rest/v1/quizzes', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $token,
+                'apikey' => $this->anonKey,
+                'Accept' => 'application/json',
+            ],
+            'query' => [
+                'select' => '*',
+                'quiz_id' => 'eq.' . $quizId,
+                'material_id' => 'eq.' . $materialId,
+                'limit' => 1,
+            ],
+        ]);
+
+        if ($quizResult['status'] >= 400 || !is_array($quizResult['payload']) || empty($quizResult['payload'])) {
+            JsonResponder::withStatus(404, ['error' => 'Quiz not found for this material']);
+            return;
+        }
+
+        // Create the attempt record
+        $attemptData = [
+            'quiz_id' => $quizId,
+            'user_id' => $user->getId(),
+            'score' => $score,
+            'total_questions' => $totalQuestions,
+            'correct_answers' => $correctAnswers,
+            'time_spent' => $timeSpent,
+        ];
+
+        $attemptId = $this->quizAttemptsRepo->create($attemptData, $token);
+        if ($attemptId === null) {
+            JsonResponder::withStatus(500, ['error' => 'Failed to create quiz attempt']);
+            return;
+        }
+
+        // Create response records for each question
+        $responsesCreated = 0;
+        foreach ($responses as $response) {
+            if (!is_array($response)) {
+                continue;
+            }
+
+            $questionId = isset($response['question_id']) ? trim((string)$response['question_id']) : '';
+            $userAnswer = $response['user_answer'] ?? null;
+            $isCorrect = isset($response['is_correct']) ? (bool)$response['is_correct'] : false;
+            $responseTimeMs = isset($response['response_time_ms']) && is_numeric($response['response_time_ms']) ? (int)$response['response_time_ms'] : null;
+
+            if ($questionId === '') {
+                continue;
+            }
+
+            // Store answer as JSONB (can be string, array, or object)
+            $answerData = is_array($userAnswer) || is_object($userAnswer) ? $userAnswer : ['value' => $userAnswer];
+
+            $responseData = [
+                'attempt_id' => $attemptId,
+                'question_id' => $questionId,
+                'answer' => json_encode($answerData),
+                'is_correct' => $isCorrect,
+                'response_time_ms' => $responseTimeMs,
+            ];
+
+            $responseId = $this->quizAttemptsRepo->createResponse($responseData, $token);
+            if ($responseId !== null) {
+                $responsesCreated++;
+            }
+        }
+
+        // Return success response
+        JsonResponder::created([
+            'attempt_id' => $attemptId,
+            'created_at' => date('c'),
+            'score' => $score,
+            'total_questions' => $totalQuestions,
+            'correct_answers' => $correctAnswers,
+            'responses_saved' => $responsesCreated,
+        ]);
+    }
+
+    /**
+     * Get quiz attempt history for a material.
+     * GET /api/materials/{material_id}/quiz-attempts/history
+     * Returns all quiz attempts with detailed responses.
+     */
+    public function getQuizAttemptHistory(Request $request, string $materialId): void
+    {
+        $user = $request->getAttribute('user');
+        $token = $request->getAttribute('access_token');
+
+        if (!$user instanceof AuthenticatedUser || !is_string($token) || $token === '') {
+            JsonResponder::unauthorized('Authentication required');
+            return;
+        }
+
+        // Verify material ownership
+        $material = $this->materialRepo->findById($materialId, $token);
+        if ($material === null) {
+            JsonResponder::withStatus(404, ['error' => 'Learning material not found']);
+            return;
+        }
+
+        $ownerId = (string)($material['user_id'] ?? '');
+        if ($ownerId !== $user->getId()) {
+            JsonResponder::unauthorized('You do not have access to this material');
+            return;
+        }
+
+        // Get all attempts for this material's quizzes
+        $attempts = $this->quizAttemptsRepo->findByMaterialId($materialId, $user->getId(), $token);
+
+        // For each attempt, fetch responses and get quiz questions for correct answers
+        $enrichedAttempts = [];
+        foreach ($attempts as $attempt) {
+            $attemptId = (string)($attempt['attempt_id'] ?? '');
+            $quizId = (string)($attempt['quiz_id'] ?? '');
+            
+            if ($attemptId === '') {
+                continue;
+            }
+
+            // Get responses for this attempt
+            $responses = $this->quizAttemptsRepo->getResponsesByAttemptId($attemptId, $token);
+
+            // Get quiz questions to include correct answers
+            $quizQuestions = $this->getQuizQuestions($quizId, $token);
+            $questionsMap = [];
+            foreach ($quizQuestions as $q) {
+                $qid = (string)($q['question_id'] ?? '');
+                if ($qid !== '') {
+                    $questionsMap[$qid] = $q;
+                }
+            }
+
+            // Transform responses to include correct answers
+            $enrichedResponses = [];
+            foreach ($responses as $resp) {
+                $questionId = (string)($resp['question_id'] ?? '');
+                $userAnswer = null;
+                
+                // Decode JSONB answer field
+                if (isset($resp['answer'])) {
+                    if (is_string($resp['answer'])) {
+                        $decoded = json_decode($resp['answer'], true);
+                        $userAnswer = is_array($decoded) ? ($decoded['value'] ?? $decoded) : $resp['answer'];
+                    } else {
+                        $userAnswer = $resp['answer'];
+                    }
+                }
+
+                $correctAnswer = null;
+                if (isset($questionsMap[$questionId])) {
+                    $correctAnswer = $questionsMap[$questionId]['correct_answer'] ?? null;
+                }
+
+                $enrichedResponses[] = [
+                    'question_id' => $questionId,
+                    'user_answer' => $userAnswer,
+                    'is_correct' => (bool)($resp['is_correct'] ?? false),
+                    'correct_answer' => $correctAnswer,
+                    'response_time_ms' => isset($resp['response_time_ms']) ? (int)$resp['response_time_ms'] : null,
+                ];
+            }
+
+            $score = isset($attempt['score']) && is_numeric($attempt['score']) ? (float)$attempt['score'] : 0.0;
+            $totalQuestions = isset($attempt['total_questions']) && is_numeric($attempt['total_questions']) ? (int)$attempt['total_questions'] : 0;
+            $percentage = $totalQuestions > 0 ? round(($score / $totalQuestions) * 100, 2) : 0.0;
+
+            $enrichedAttempts[] = [
+                'attempt_id' => $attemptId,
+                'quiz_id' => $quizId,
+                'score' => $score,
+                'total_questions' => $totalQuestions,
+                'correct_answers' => isset($attempt['correct_answers']) ? (int)$attempt['correct_answers'] : 0,
+                'percentage' => $percentage,
+                'time_spent' => isset($attempt['time_spent']) ? (int)$attempt['time_spent'] : 0,
+                'completed_at' => (string)($attempt['completed_at'] ?? ''),
+                'responses' => $enrichedResponses,
+            ];
+        }
+
+        JsonResponder::ok([
+            'material_id' => $materialId,
+            'attempts' => $enrichedAttempts,
+            'total_attempts' => count($enrichedAttempts),
+        ]);
+    }
+
+    /**
+     * Get quiz questions for a specific quiz.
+     * @param string $quizId
+     * @param string $token
+     * @return array<int,array<string,mixed>>
+     */
+    private function getQuizQuestions(string $quizId, string $token): array
+    {
+        $result = $this->send('GET', '/rest/v1/quiz_questions', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $token,
+                'apikey' => $this->anonKey,
+                'Accept' => 'application/json',
+            ],
+            'query' => [
+                'select' => '*',
+                'quiz_id' => 'eq.' . $quizId,
+                'order' => 'created_at.asc',
+            ],
+        ]);
+
+        if ($result['status'] >= 400 || !is_array($result['payload'])) {
+            return [];
+        }
+
+        return $result['payload'];
+    }
+
+    /**
+     * Send HTTP request to Supabase REST API.
+     * @param string $method
+     * @param string $path
+     * @param array<string,mixed> $options
+     * @return array{status: int, payload: mixed, headers: array<string,array<int,string>>}
+     */
+    private function send(string $method, string $path, array $options): array
+    {
+        $options['http_errors'] = false;
+        $options['timeout'] = $options['timeout'] ?? 15;
+
+        try {
+            $response = $this->supabaseClient->request($method, $path, $options);
+            $status = $response->getStatusCode();
+            $body = (string)$response->getBody();
+            $decoded = json_decode($body, true);
+            $payload = is_array($decoded) ? $decoded : ($body === '' ? null : $body);
+            return [
+                'status' => $status,
+                'payload' => $payload,
+                'headers' => $response->getHeaders(),
+            ];
+        } catch (\GuzzleHttp\Exception\GuzzleException $e) {
+            return [
+                'status' => 500,
+                'payload' => ['error' => $e->getMessage()],
+                'headers' => [],
+            ];
+        }
     }
 }

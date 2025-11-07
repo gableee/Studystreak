@@ -18,6 +18,44 @@ export interface StudyKeyPoints {
   generatedAt: string;
 }
 
+export interface KeyPointV2Item {
+  term: string;
+  definition: string; // Backwards compatible: maps to shortDefinition
+  shortDefinition?: string; // Concise 1-2 sentences (~25 words)
+  fullDefinition?: string; // Complete definition with all details
+  bulletedHighlights?: string[]; // 2-6 key facts as bullet points
+  usage?: string | null;
+  icon: string;
+  importance: number; // 0..1
+  sourceSpan?: string | null;
+}
+
+export interface StructuredKeyPoints {
+  materialId: string;
+  items: KeyPointV2Item[];
+  count: number;
+  total_count: number;
+  page: number;
+  pageSize: number;
+  confidence: number;
+  generatedAt: string;
+}
+
+export interface StudyNoteOutlineItem {
+  title: string;
+  level: number;
+}
+
+export interface StudyNote {
+  materialId: string;
+  documentMarkdown: string;
+  outline: StudyNoteOutlineItem[];
+  wordCount: number;
+  confidence: number;
+  keypointsCount: number;
+  generatedAt: string;
+}
+
 export type QuizType = 'multiple-choice' | 'true-false' | 'short-answer';
 export type QuizDifficulty = 'easy' | 'normal' | 'hard';
 

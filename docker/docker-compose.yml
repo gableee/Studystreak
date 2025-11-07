@@ -6,7 +6,7 @@ services:
       - "8181:8181"
     env_file:
       - ../php-backend/.env
-    command: php -d variables_order=EGPCS -d upload_max_filesize=100M -d post_max_size=100M -d memory_limit=128M -d max_execution_time=180 -d max_input_time=180 -S 0.0.0.0:8181 -t public
+    command: php -d variables_order=EGPCS -d upload_max_filesize=100M -d post_max_size=100M -d memory_limit=128M -d max_execution_time=180 -d max_input_time=180 -S 0.0.0.0:8181 -t public public/router.php
     depends_on:
       - ai-service
 

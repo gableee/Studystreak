@@ -1,15 +1,19 @@
 import { useState } from 'react';
-import { Sparkles, Loader2, AlertCircle } from 'lucide-react';
+import { Sparkles, Loader2, AlertCircle, History, Play } from 'lucide-react';
 import { fetchQuiz } from './api';
 import { apiClient } from '@/lib/apiClient';
 import { supabase } from '@/lib/supabaseClient';
+import { QuizHistoryView } from '@/components/QuizHistoryView';
 import type { StudyQuiz, QuizType, QuizDifficulty } from './types';
 
 interface QuizTabProps {
   materialId: string;
 }
 
+type QuizMode = 'take-quiz' | 'history';
+
 export function QuizTab({ materialId }: QuizTabProps) {
+  const [mode, setMode] = useState<QuizMode>('take-quiz');
   const [quiz, setQuiz] = useState<StudyQuiz | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -140,295 +144,334 @@ export function QuizTab({ materialId }: QuizTabProps) {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Quiz Controls */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-lg border border-slate-200/60 dark:bg-white/5 dark:border-slate-700/60 space-y-6">
-        {/* Type Selector */}
-        <div>
-          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
-            Quiz Type
-          </label>
-          <div className="bg-slate-100/80 p-1 rounded-2xl inline-flex gap-1 dark:bg-slate-800/80">
-            {types.map((type) => (
-              <button
-                key={type.value}
-                onClick={() => setSelectedType(type.value)}
-                disabled={loading}
-                className={`
-                  px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300
-                  ${
-                    selectedType === type.value
-                      ? 'bg-white text-slate-900 shadow-md dark:bg-slate-700 dark:text-white'
-                      : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
-                  }
-                  disabled:opacity-50 disabled:cursor-not-allowed
-                `}
-              >
-                {type.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Difficulty Selector */}
-        <div>
-          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
-            Difficulty
-          </label>
-          <div className="bg-slate-100/80 p-1 rounded-2xl inline-flex gap-1 dark:bg-slate-800/80">
-            {difficulties.map((diff) => (
-              <button
-                key={diff.value}
-                onClick={() => setSelectedDifficulty(diff.value)}
-                disabled={loading}
-                className={`
-                  px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300
-                  ${
-                    selectedDifficulty === diff.value
-                      ? 'bg-white text-slate-900 shadow-md dark:bg-slate-700 dark:text-white'
-                      : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
-                  }
-                  disabled:opacity-50 disabled:cursor-not-allowed
-                `}
-              >
-                {diff.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Question Count */}
-        <div>
-          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
-            Number of Questions
-          </label>
-          <input
-            type="number"
-            min={1}
-            max={50}
-            value={questionCount}
-            onChange={(e) => setQuestionCount(Math.max(1, Math.min(50, Number(e.target.value) || 1)))}
-            className="w-28 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700"
-          />
-        </div>
-
-        {/* Generate Button */}
+      {/* Mode Switcher */}
+      <div className="bg-slate-100/80 backdrop-blur-sm p-1 rounded-2xl inline-flex gap-1 shadow-inner dark:bg-slate-800/80">
         <button
-          onClick={handleGenerateQuiz}
-          disabled={loading}
-          className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold py-3.5 px-6 rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+          onClick={() => setMode('take-quiz')}
+          className={`
+            px-6 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 flex items-center gap-2
+            ${
+              mode === 'take-quiz'
+                ? 'bg-white text-slate-900 shadow-md scale-[1.02] dark:bg-slate-700 dark:text-white'
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
+            }
+          `}
         >
-          {loading ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              <span>Generating Quiz...</span>
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-5 h-5" />
-              <span>Generate Quiz</span>
-            </>
-          )}
+          <Play className="w-4 h-4" />
+          <span>Take Quiz</span>
+        </button>
+        <button
+          onClick={() => setMode('history')}
+          className={`
+            px-6 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 flex items-center gap-2
+            ${
+              mode === 'history'
+                ? 'bg-white text-slate-900 shadow-md scale-[1.02] dark:bg-slate-700 dark:text-white'
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
+            }
+          `}
+        >
+          <History className="w-4 h-4" />
+          <span>History</span>
         </button>
       </div>
 
-      {/* Error Display */}
-      {error && (
-        <div className="bg-red-50/50 backdrop-blur-sm rounded-3xl p-6 border border-red-100 dark:bg-red-500/10 dark:border-red-500/30">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+      {/* Content Based on Mode */}
+      {mode === 'history' ? (
+        <QuizHistoryView materialId={materialId} />
+      ) : (
+        <>
+          {/* Quiz Controls */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-lg border border-slate-200/60 dark:bg-white/5 dark:border-slate-700/60 space-y-6">
+            {/* Type Selector */}
             <div>
-              <h3 className="font-semibold text-red-900 dark:text-red-200 mb-1">Failed to generate quiz</h3>
-              <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
+                Quiz Type
+              </label>
+              <div className="bg-slate-100/80 p-1 rounded-2xl inline-flex gap-1 dark:bg-slate-800/80">
+                {types.map((type) => (
+                  <button
+                    key={type.value}
+                    onClick={() => setSelectedType(type.value)}
+                    disabled={loading}
+                    className={`
+                      px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300
+                      ${
+                        selectedType === type.value
+                          ? 'bg-white text-slate-900 shadow-md dark:bg-slate-700 dark:text-white'
+                          : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
+                      }
+                      disabled:opacity-50 disabled:cursor-not-allowed
+                    `}
+                  >
+                    {type.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* Quiz Display */}
-      {quiz && quiz.questions.length > 0 && (
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-lg border border-slate-200/60 dark:bg-white/5 dark:border-slate-700/60">
-          <div className="flex items-center justify-between gap-2 mb-6">
-            <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 text-sm font-medium">
-              <Sparkles className="w-4 h-4" />
-              <span>AI Generated Quiz</span>
-              <span className="text-slate-400 dark:text-slate-500">
-                • {quiz.questions.length} questions
-              </span>
+            {/* Difficulty Selector */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
+                Difficulty
+              </label>
+              <div className="bg-slate-100/80 p-1 rounded-2xl inline-flex gap-1 dark:bg-slate-800/80">
+                {difficulties.map((diff) => (
+                  <button
+                    key={diff.value}
+                    onClick={() => setSelectedDifficulty(diff.value)}
+                    disabled={loading}
+                    className={`
+                      px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300
+                      ${
+                        selectedDifficulty === diff.value
+                          ? 'bg-white text-slate-900 shadow-md dark:bg-slate-700 dark:text-white'
+                          : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
+                      }
+                      disabled:opacity-50 disabled:cursor-not-allowed
+                    `}
+                  >
+                    {diff.label}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {/* Question Count */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
+                Number of Questions
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={50}
+                value={questionCount}
+                onChange={(e) => setQuestionCount(Math.max(1, Math.min(50, Number(e.target.value) || 1)))}
+                className="w-28 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700"
+              />
+            </div>
+
+            {/* Generate Button */}
             <button
-              onClick={async () => {
-                const { data } = await supabase.auth.getSession();
-                const token = data.session?.access_token;
-                const url = `${apiClient.baseUrl}/api/materials/${materialId}/study-tools/quiz.pdf`;
-                const res = await fetch(url, {
-                  headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-                });
-                const blob = await res.blob();
-                const dlUrl = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = dlUrl;
-                a.download = 'quiz.pdf';
-                document.body.appendChild(a);
-                a.click();
-                URL.revokeObjectURL(dlUrl);
-                a.remove();
-              }}
-              className="px-3 py-1.5 rounded-xl bg-slate-900 text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white transition text-sm"
+              onClick={handleGenerateQuiz}
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold py-3.5 px-6 rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
             >
-              Download PDF
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Generating Quiz...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5" />
+                  <span>Generate Quiz</span>
+                </>
+              )}
             </button>
           </div>
 
-          {/* Score Display */}
-          {submitted && score && (
-            <div className="mb-6 p-6 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-500/10 dark:to-blue-500/10 rounded-2xl border border-purple-200 dark:border-purple-500/30">
-              <div className="text-center">
-                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-                  Quiz Complete!
-                </h3>
-                <p className="text-lg text-slate-700 dark:text-slate-300">
-                  You scored{' '}
-                  <span className="font-bold text-purple-600 dark:text-purple-400">
-                    {score.correct} out of {score.total}
-                  </span>
-                  {' '}({Math.round((score.correct / score.total) * 100)}%)
-                </p>
+          {/* Error Display */}
+          {error && (
+            <div className="bg-red-50/50 backdrop-blur-sm rounded-3xl p-6 border border-red-100 dark:bg-red-500/10 dark:border-red-500/30">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-red-900 dark:text-red-200 mb-1">Failed to generate quiz</h3>
+                  <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
+                </div>
               </div>
             </div>
           )}
-          
-          <div className="space-y-8">
-            {quiz.questions.map((question, index) => {
-              const isMultipleCorrect = Array.isArray(question.correctAnswer) && question.correctAnswer.length > 1;
-              const questionCorrect = isAnswerCorrect(question.id);
-              const userSelectedAnswers = userAnswers[question.id] || [];
 
-              return (
-                <div key={question.id} className="border-b border-slate-200 dark:border-slate-700 last:border-0 pb-8 last:pb-0">
-                  <div className="flex gap-4">
-                    <div className={`
-                      flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm
-                      ${submitted && questionCorrect === true ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300' : ''}
-                      ${submitted && questionCorrect === false ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300' : ''}
-                      ${!submitted ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300' : ''}
-                    `}>
-                      {index + 1}
-                    </div>
-                    <div className="flex-1">
-                      {/* Question Text */}
-                      <p className="text-slate-900 dark:text-white font-semibold mb-4 text-lg">
-                        {question.question}
-                      </p>
+          {/* Quiz Display */}
+          {quiz && quiz.questions.length > 0 && (
+            <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-lg border border-slate-200/60 dark:bg-white/5 dark:border-slate-700/60">
+              <div className="flex items-center justify-between gap-2 mb-6">
+                <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 text-sm font-medium">
+                  <Sparkles className="w-4 h-4" />
+                  <span>AI Generated Quiz</span>
+                  <span className="text-slate-400 dark:text-slate-500">
+                    • {quiz.questions.length} questions
+                  </span>
+                </div>
+                <button
+                  onClick={async () => {
+                    const { data } = await supabase.auth.getSession();
+                    const token = data.session?.access_token;
+                    const url = `${apiClient.baseUrl}/api/materials/${materialId}/study-tools/quiz.pdf`;
+                    const res = await fetch(url, {
+                      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+                    });
+                    const blob = await res.blob();
+                    const dlUrl = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = dlUrl;
+                    a.download = 'quiz.pdf';
+                    document.body.appendChild(a);
+                    a.click();
+                    URL.revokeObjectURL(dlUrl);
+                    a.remove();
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-slate-900 text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white transition text-sm"
+                >
+                  Download PDF
+                </button>
+              </div>
 
-                      {/* Options */}
-                      {question.options && (
-                        <div className="space-y-2">
-                          {question.options.map((option, optIndex) => {
-                            const isSelected = userSelectedAnswers.includes(option);
-                            const isCorrectOption = isOptionCorrect(question.id, option);
-                            const showCorrect = submitted && isCorrectOption;
-                            const showWrong = submitted && isSelected && !isCorrectOption;
-
-                            return (
-                              <button
-                                key={optIndex}
-                                onClick={() => handleAnswerSelect(question.id, option, isMultipleCorrect)}
-                                disabled={submitted}
-                                className={`
-                                  w-full p-4 rounded-xl text-left transition-all duration-200 flex items-center gap-3 border-2
-                                  ${!submitted && !isSelected ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-500 hover:bg-slate-100 dark:hover:bg-slate-700/50' : ''}
-                                  ${!submitted && isSelected ? 'bg-purple-100 dark:bg-purple-500/20 border-purple-400 dark:border-purple-500' : ''}
-                                  ${showCorrect ? 'bg-green-100 dark:bg-green-500/20 border-green-500 dark:border-green-400' : ''}
-                                  ${showWrong ? 'bg-red-100 dark:bg-red-500/20 border-red-500 dark:border-red-400' : ''}
-                                  ${submitted ? 'cursor-not-allowed' : 'cursor-pointer'}
-                                `}
-                              >
-                                {/* Checkbox/Radio Circle */}
-                                <div className={`
-                                  flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center
-                                  ${!submitted && isSelected ? 'border-purple-500 bg-purple-500' : ''}
-                                  ${!submitted && !isSelected ? 'border-slate-300 dark:border-slate-600' : ''}
-                                  ${showCorrect ? 'border-green-500 bg-green-500' : ''}
-                                  ${showWrong ? 'border-red-500 bg-red-500' : ''}
-                                  ${submitted && !showCorrect && !showWrong ? 'border-slate-300 dark:border-slate-600' : ''}
-                                `}>
-                                  {(isSelected || showCorrect) && (
-                                    <div className="w-2 h-2 bg-white rounded-full"></div>
-                                  )}
-                                </div>
-
-                                {/* Option Text */}
-                                <span className={`
-                                  flex-1 text-sm font-medium
-                                  ${showCorrect ? 'text-green-900 dark:text-green-100' : ''}
-                                  ${showWrong ? 'text-red-900 dark:text-red-100' : ''}
-                                  ${!submitted ? 'text-slate-700 dark:text-slate-200' : ''}
-                                  ${submitted && !showCorrect && !showWrong ? 'text-slate-500 dark:text-slate-400' : ''}
-                                `}>
-                                  {option}
-                                </span>
-
-                                {/* Correct/Wrong Indicators */}
-                                {showCorrect && (
-                                  <span className="text-xs font-semibold text-green-700 dark:text-green-300 bg-green-200 dark:bg-green-900/30 px-2 py-1 rounded-lg">
-                                    ✓ Correct
-                                  </span>
-                                )}
-                                {showWrong && (
-                                  <span className="text-xs font-semibold text-red-700 dark:text-red-300 bg-red-200 dark:bg-red-900/30 px-2 py-1 rounded-lg">
-                                    ✗ Wrong
-                                  </span>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {/* Explanation (shown after submission) */}
-                      {submitted && question.explanation && (
-                        <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-500/10 rounded-xl border border-blue-200 dark:border-blue-500/30">
-                          <p className="text-sm text-blue-900 dark:text-blue-100">
-                            <span className="font-semibold">Explanation: </span>
-                            {question.explanation}
-                          </p>
-                        </div>
-                      )}
-                    </div>
+              {/* Score Display */}
+              {submitted && score && (
+                <div className="mb-6 p-6 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-500/10 dark:to-blue-500/10 rounded-2xl border border-purple-200 dark:border-purple-500/30">
+                  <div className="text-center">
+                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+                      Quiz Complete!
+                    </h3>
+                    <p className="text-lg text-slate-700 dark:text-slate-300">
+                      You scored{' '}
+                      <span className="font-bold text-purple-600 dark:text-purple-400">
+                        {score.correct} out of {score.total}
+                      </span>
+                      {' '}({Math.round((score.correct / score.total) * 100)}%)
+                    </p>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              )}
+              
+              <div className="space-y-8">
+                {quiz.questions.map((question, index) => {
+                  const isMultipleCorrect = Array.isArray(question.correctAnswer) && question.correctAnswer.length > 1;
+                  const questionCorrect = isAnswerCorrect(question.id);
+                  const userSelectedAnswers = userAnswers[question.id] || [];
 
-          {/* Submit Button */}
-          {!submitted && (
-            <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
-              <button
-                onClick={handleSubmit}
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold py-3.5 px-6 rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
-              >
-                Submit Quiz
-              </button>
+                  return (
+                    <div key={question.id} className="border-b border-slate-200 dark:border-slate-700 last:border-0 pb-8 last:pb-0">
+                      <div className="flex gap-4">
+                        <div className={`
+                          flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm
+                          ${submitted && questionCorrect === true ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300' : ''}
+                          ${submitted && questionCorrect === false ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300' : ''}
+                          ${!submitted ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300' : ''}
+                        `}>
+                          {index + 1}
+                        </div>
+                        <div className="flex-1">
+                          {/* Question Text */}
+                          <p className="text-slate-900 dark:text-white font-semibold mb-4 text-lg">
+                            {question.question}
+                          </p>
+
+                          {/* Options */}
+                          {question.options && (
+                            <div className="space-y-2">
+                              {question.options.map((option, optIndex) => {
+                                const isSelected = userSelectedAnswers.includes(option);
+                                const isCorrectOption = isOptionCorrect(question.id, option);
+                                const showCorrect = submitted && isCorrectOption;
+                                const showWrong = submitted && isSelected && !isCorrectOption;
+
+                                return (
+                                  <button
+                                    key={optIndex}
+                                    onClick={() => handleAnswerSelect(question.id, option, isMultipleCorrect)}
+                                    disabled={submitted}
+                                    className={`
+                                      w-full p-4 rounded-xl text-left transition-all duration-200 flex items-center gap-3 border-2
+                                      ${!submitted && !isSelected ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-500 hover:bg-slate-100 dark:hover:bg-slate-700/50' : ''}
+                                      ${!submitted && isSelected ? 'bg-purple-100 dark:bg-purple-500/20 border-purple-400 dark:border-purple-500' : ''}
+                                      ${showCorrect ? 'bg-green-100 dark:bg-green-500/20 border-green-500 dark:border-green-400' : ''}
+                                      ${showWrong ? 'bg-red-100 dark:bg-red-500/20 border-red-500 dark:border-red-400' : ''}
+                                      ${submitted ? 'cursor-not-allowed' : 'cursor-pointer'}
+                                    `}
+                                  >
+                                    {/* Checkbox/Radio Circle */}
+                                    <div className={`
+                                      flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center
+                                      ${!submitted && isSelected ? 'border-purple-500 bg-purple-500' : ''}
+                                      ${!submitted && !isSelected ? 'border-slate-300 dark:border-slate-600' : ''}
+                                      ${showCorrect ? 'border-green-500 bg-green-500' : ''}
+                                      ${showWrong ? 'border-red-500 bg-red-500' : ''}
+                                      ${submitted && !showCorrect && !showWrong ? 'border-slate-300 dark:border-slate-600' : ''}
+                                    `}>
+                                      {(isSelected || showCorrect) && (
+                                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                                      )}
+                                    </div>
+
+                                    {/* Option Text */}
+                                    <span className={`
+                                      flex-1 text-sm font-medium
+                                      ${showCorrect ? 'text-green-900 dark:text-green-100' : ''}
+                                      ${showWrong ? 'text-red-900 dark:text-red-100' : ''}
+                                      ${!submitted ? 'text-slate-700 dark:text-slate-200' : ''}
+                                      ${submitted && !showCorrect && !showWrong ? 'text-slate-500 dark:text-slate-400' : ''}
+                                    `}>
+                                      {option}
+                                    </span>
+
+                                    {/* Correct/Wrong Indicators */}
+                                    {showCorrect && (
+                                      <span className="text-xs font-semibold text-green-700 dark:text-green-300 bg-green-200 dark:bg-green-900/30 px-2 py-1 rounded-lg">
+                                        ✓ Correct
+                                      </span>
+                                    )}
+                                    {showWrong && (
+                                      <span className="text-xs font-semibold text-red-700 dark:text-red-300 bg-red-200 dark:bg-red-900/30 px-2 py-1 rounded-lg">
+                                        ✗ Wrong
+                                      </span>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Explanation (shown after submission) */}
+                          {submitted && question.explanation && (
+                            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-500/10 rounded-xl border border-blue-200 dark:border-blue-500/30">
+                              <p className="text-sm text-blue-900 dark:text-blue-100">
+                                <span className="font-semibold">Explanation: </span>
+                                {question.explanation}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Submit Button */}
+              {!submitted && (
+                <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+                  <button
+                    onClick={handleSubmit}
+                    className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold py-3.5 px-6 rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+                  >
+                    Submit Quiz
+                  </button>
+                </div>
+              )}
+
+              {/* Retake Button */}
+              {submitted && (
+                <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+                  <button
+                    onClick={() => {
+                      setUserAnswers({});
+                      setSubmitted(false);
+                      setScore(null);
+                    }}
+                    className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-semibold py-3.5 px-6 rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+                  >
+                    Retake Quiz
+                  </button>
+                </div>
+              )}
             </div>
           )}
-
-          {/* Retake Button */}
-          {submitted && (
-            <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
-              <button
-                onClick={() => {
-                  setUserAnswers({});
-                  setSubmitted(false);
-                  setScore(null);
-                }}
-                className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-semibold py-3.5 px-6 rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
-              >
-                Retake Quiz
-              </button>
-            </div>
-          )}
-        </div>
+        </>
       )}
     </div>
   );

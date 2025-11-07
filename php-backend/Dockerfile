@@ -34,4 +34,4 @@ RUN composer dump-autoload --optimize
 
 EXPOSE 8181
 
-CMD ["php", "-d", "variables_order=EGPCS", "-d", "auto_prepend_file=", "-d", "auto_append_file=", "-d", "upload_max_filesize=150M", "-d", "post_max_size=160M", "-d", "memory_limit=512M", "-d", "max_execution_time=180", "-d", "max_input_time=180", "-S", "0.0.0.0:8181", "-t", "public"]
+CMD ["php", "-d", "variables_order=EGPCS", "-d", "auto_prepend_file=", "-d", "auto_append_file=", "-d", "upload_max_filesize=150M", "-d", "post_max_size=160M", "-d", "memory_limit=512M", "-d", "max_execution_time=180", "-d", "max_input_time=180", "-S", "0.0.0.0:8181", "-t", "public", "public/router.php"]

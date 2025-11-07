@@ -167,19 +167,27 @@ class Summarizer:
                 raise ValueError("Empty text provided for keypoint extraction")
             
             # Instruction-based prompting to produce "Term - Explanation" key points
-            desired = max(1, min(10, num_points))
+            # Allow larger requests (server will paginate in API). Cap at 50 to avoid overly long generations.
+            desired = max(1, min(50, num_points))
             prompt = (
                 "Extract the most important key points from the following text. "
                 "For each key point, provide a term or concept followed by a brief, factual explanation (1-2 sentences max). "
                 "Format as: 'Term - Explanation'. Focus on core definitions, facts, and concepts, not a summary. "
                 f"Limit to {desired} points.\n\nText:\n" + text
             )
-            logger.info(f"Keypoints prompt: {prompt[:160]}...")
+            # Log prompt preview with safe typographic ellipsis if truncated
+            try:
+                from utils.truncate_helpers import clip_chars
+                _preview, _tr = clip_chars(prompt, 160)
+                logger.info(f"Keypoints prompt: {_preview}")
+            except Exception:
+                # Fallback to simple slice if helpers unavailable
+                logger.info(f"Keypoints prompt: {prompt[:160]}")
 
             keypoints: List[str] = []
             try:
-                # Allocate enough space: ~60 words per point
-                kp_max = min(120 * desired, 1200)
+                # Allocate enough space: ~60 words per point (cap tokens reasonably)
+                kp_max = min(120 * desired, 2000)
                 result = self.pipeline(
                     prompt,
                     max_length=kp_max,
@@ -196,14 +204,24 @@ class Summarizer:
                 for line in lines:
                     # Try to split on ' - ' first, else ':'
                     if ' - ' in line:
-                        term, expl = line.split(' - ', 1)
+                        parts = line.split(' - ', 1)
+                        if len(parts) == 2:
+                            term, expl = parts
+                        else:
+                            continue
                     elif ': ' in line:
-                        term, expl = line.split(': ', 1)
+                        parts = line.split(': ', 1)
+                        if len(parts) == 2:
+                            term, expl = parts
+                        else:
+                            continue
                     else:
                         # Fallback: first 5 words as term
                         words = line.split()
-                        term = ' '.join(words[:5])
-                        expl = ' '.join(words[5:]) if len(words) > 5 else ''
+                        if len(words) == 0:
+                            continue
+                        term = ' '.join(words[:min(5, len(words))])
+                        expl = ' '.join(words[5:]) if len(words) > 5 else 'Key concept from the material.'
                     term = term.strip(' -:').strip()
                     expl = expl.strip()
                     if term and expl:
@@ -212,7 +230,7 @@ class Summarizer:
                             expl = expl + '.'
                         normalized.append(f"{term} - {expl}")
 
-                keypoints = normalized[:desired]
+                keypoints = normalized[:desired] if len(normalized) > 0 else []
             except Exception as pe:
                 logger.warning(f"Prompt-based keypoint extraction failed, falling back: {pe}")
                 keypoints = []
@@ -246,3 +264,106 @@ class Summarizer:
         except Exception as e:
             logger.error(f"❌ Keypoint extraction failed: {e}", exc_info=True)
             raise
+    
+    def create_short_definition(self, text: str, max_words: int = 40) -> str:
+        """
+        Create a concise definition from longer text.
+        
+        Args:
+            text: Input text (definition, explanation)
+            max_words: Maximum words for short definition
+        
+        Returns:
+            Shortened definition (1-2 sentences)
+        """
+        try:
+            text = text.strip()
+            if not text:
+                return ""
+            
+            # If already short enough, ensure punctuation and return as-is
+            from utils.truncate_helpers import finalize_with_ellipsis
+            words = text.split()
+            if len(words) <= max_words:
+                return finalize_with_ellipsis(text, False)
+            
+            # Try to extract first 1-2 sentences up to max_words
+            sentences = [s.strip() for s in re.split(r'[.!?]+', text) if s.strip()]
+            if sentences:
+                # Take first sentence
+                first_sent = sentences[0]
+                first_words = first_sent.split()
+                
+                if len(first_words) <= max_words:
+                    # First sentence fits, try adding second if room
+                    result = first_sent
+                    if len(sentences) > 1:
+                        second_sent = sentences[1]
+                        combined_words = (result + ' ' + second_sent).split()
+                        if len(combined_words) <= max_words:
+                            result = result + '. ' + second_sent
+                    from utils.truncate_helpers import finalize_with_ellipsis
+                    return finalize_with_ellipsis(result, False)
+                else:
+                    # First sentence is too long, truncate at word boundary
+                    from utils.truncate_helpers import truncate_words
+                    truncated, _ = truncate_words(first_sent, max_words)
+                    return truncated
+            
+            # Fallback: hard truncate using helper
+            from utils.truncate_helpers import truncate_words
+            truncated, _ = truncate_words(text, max_words)
+            return truncated
+            
+        except Exception as e:
+            logger.warning(f"Short definition creation failed: {e}")
+            # Return first N words as fallback via helper
+            from utils.truncate_helpers import truncate_words
+            truncated, _ = truncate_words(text, max_words)
+            return truncated
+    
+    def create_bulleted_highlights(self, text: str, max_bullets: int = 6) -> List[str]:
+        """
+        Extract key facts/highlights from text as bullet points.
+        
+        Args:
+            text: Input text (definition, explanation)
+            max_bullets: Maximum number of bullets
+        
+        Returns:
+            List of short bullet point strings
+        """
+        try:
+            text = text.strip()
+            if not text:
+                return []
+            
+            # Split on existing bullets or list-like separators
+            bullet_pattern = r'[\n;]+|\s+[•–—\-]\s+'
+            parts = [p.strip(' \t-•\u2022') for p in re.split(bullet_pattern, text) if p.strip()]
+            
+            # Filter out very short or empty parts
+            meaningful = [p for p in parts if len(p.split()) >= 3]
+            
+            if not meaningful:
+                # Try sentence split
+                sentences = [s.strip() for s in re.split(r'[.!?]+', text) if s.strip()]
+                meaningful = [s for s in sentences if len(s.split()) >= 3]
+            
+            # Take first max_bullets, ensure each is reasonably short (6-20 words ideal)
+            bullets = []
+            from utils.truncate_helpers import _strip_trailing_punctuation, ELLIPSIS
+            for item in meaningful[:max_bullets]:
+                words = item.split()
+                if len(words) > 20:
+                    # Truncate long bullets with typographic ellipsis
+                    truncated = ' '.join(words[:18]).rstrip()
+                    truncated = _strip_trailing_punctuation(truncated) + ELLIPSIS
+                    item = truncated
+                bullets.append(item)
+            
+            return bullets[:max_bullets]
+            
+        except Exception as e:
+            logger.warning(f"Bulleted highlights creation failed: {e}")
+            return []

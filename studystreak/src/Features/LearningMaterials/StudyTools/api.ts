@@ -2,6 +2,8 @@ import { apiClient } from '@/lib/apiClient';
 import type {
   StudySummary,
   StudyKeyPoints,
+  StructuredKeyPoints,
+  StudyNote,
   StudyQuiz,
   StudyFlashcards,
   QuizType,
@@ -30,6 +32,17 @@ export async function fetchKeyPoints(materialId: string): Promise<StudyKeyPoints
   return response;
 }
 
+export async function fetchKeyPointsV2(
+  materialId: string,
+  page = 1,
+  pageSize = 24
+): Promise<StructuredKeyPoints> {
+  const response = await apiClient.get<StructuredKeyPoints>(
+    `${BASE_PATH}/${materialId}/study-tools/keypoints-v2?page=${page}&page_size=${pageSize}`
+  );
+  return response;
+}
+
 export async function fetchQuiz(
   materialId: string,
   type: QuizType,
@@ -46,6 +59,18 @@ export async function fetchQuiz(
 export async function fetchFlashcards(materialId: string): Promise<StudyFlashcards> {
   const response = await apiClient.get<StudyFlashcards>(
     `${BASE_PATH}/${materialId}/study-tools/flashcards`
+  );
+  return response;
+}
+
+export async function fetchStudyNote(
+  materialId: string,
+  minWords?: number,
+  maxWords?: number
+): Promise<StudyNote> {
+  const response = await apiClient.post<StudyNote>(
+    `${BASE_PATH}/${materialId}/study-tools/study-note`,
+    { min_words: minWords, max_words: maxWords }
   );
   return response;
 }

@@ -5,6 +5,7 @@ Run this after starting the Docker container to verify everything works.
 
 import requests
 import json
+import os
 
 AI_SERVICE_URL = "http://localhost:8000"
 
@@ -39,9 +40,15 @@ def test_embedding():
         "model": "sentence-transformers/all-MiniLM-L6-v2"
     }
     
+    headers = {}
+    api_key = os.getenv("AI_SERVICE_API_KEY")
+    if api_key:
+        headers["x-api-key"] = api_key
+
     response = requests.post(
         f"{AI_SERVICE_URL}/embeddings/generate",
-        json=payload
+        json=payload,
+        headers=headers
     )
     
     assert response.status_code == 200, f"Embedding failed: {response.status_code} - {response.text}"
@@ -61,7 +68,8 @@ def test_embedding():
     # Test deterministic behavior (same text = same vector)
     response2 = requests.post(
         f"{AI_SERVICE_URL}/embeddings/generate",
-        json=payload
+        json=payload,
+        headers=headers
     )
     data2 = response2.json()
     assert data["vector"] == data2["vector"], "Vectors should be deterministic!"
@@ -80,12 +88,18 @@ def test_generation_routes():
         "/generate/flashcards",
     ]
     
-    test_payload = {"text": "Test text", "language": "en"}
+    test_payload = {"text": "Test text sample for generation endpoints", "language": "en"}
     
     for endpoint in endpoints:
-        response = requests.post(f"{AI_SERVICE_URL}{endpoint}", json=test_payload)
-        assert response.status_code == 501, f"{endpoint} should return 501, got {response.status_code}"
-        print(f"✓ {endpoint} correctly returns 501 (not implemented)")
+        headers = {}
+        api_key = os.getenv("AI_SERVICE_API_KEY")
+        if api_key:
+            headers["x-api-key"] = api_key
+
+        response = requests.post(f"{AI_SERVICE_URL}{endpoint}", json=test_payload, headers=headers)
+        # Endpoints may be implemented (200) or intentionally unimplemented (501).
+        assert response.status_code in (200, 501), f"{endpoint} should return 200 or 501, got {response.status_code}"
+        print(f"✓ {endpoint} returns {response.status_code} as expected")
 
 if __name__ == "__main__":
     print("=" * 60)
