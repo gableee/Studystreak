@@ -495,6 +495,40 @@ if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/(summary|keypoi
   exit;
 }
 
+// POST /api/materials/{id}/generate-reviewer
+if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/generate-reviewer$#', $path, $matches)) {
+  $materialId = $matches[1];
+  if ($method === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+  }
+  if ($method === 'POST') {
+    $authMiddleware->handle($request, function(Request $authedRequest) use ($studyToolsController, $materialId): void {
+      $studyToolsController->queueReviewerGeneration($authedRequest, $materialId);
+    });
+  } else {
+    JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
+  }
+  exit;
+}
+
+// GET /api/materials/{id}/ai-status
+if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/ai-status$#', $path, $matches)) {
+  $materialId = $matches[1];
+  if ($method === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+  }
+  if ($method === 'GET') {
+    $authMiddleware->handle($request, function(Request $authedRequest) use ($studyToolsController, $materialId): void {
+      $studyToolsController->getAiStatus($authedRequest, $materialId);
+    });
+  } else {
+    JsonResponder::withStatus(405, ['error' => 'Method not allowed']);
+  }
+  exit;
+}
+
 // POST /api/materials/{id}/quiz-attempts
 if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/quiz-attempts$#', $path, $matches)) {
   $materialId = $matches[1];

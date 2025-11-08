@@ -1,0 +1,18 @@
+{
+  "materialId": 123,
+  "sourceMeta": {
+    "filename": "bad.txt",
+    "contentType": "pdf",
+    "extractionMethod": "ocr",
+    "language": "en"
+  },
+  "cleanedUnits": [],
+  "concepts": [
+    {
+      "id": "k1",
+      "term": "Term without defs"
+    }
+  ],
+  "sections": [],
+  "processingMeta": {"createdAt": "not-a-date", "pipelineVersion": 1}
+}

@@ -1,0 +1,304 @@
+{
+  "source": "C:\\Users\\admin\\OneDrive\\Desktop\\StudyStreak\\.github\\extractedtext.txt",
+  "original_count": 50,
+  "cleaned_count": 42,
+  "topics": [
+    {
+      "title": "Keys",
+      "icon": "🔑",
+      "keypoints": [
+        "Natural Language Processing (NLP): be treated as a subfield of linguistics concerned with the interaction between computer machine and human."
+      ]
+    },
+    {
+      "title": "Models",
+      "icon": "🧩",
+      "keypoints": [
+        "Neural Network applications can be classified the in the following domains: Images - Signals - Language This presentation uses a free template provided by FPPT."
+      ]
+    },
+    {
+      "title": "DBMS",
+      "icon": "🗄️",
+      "keypoints": [
+        "Machine learning is a field: of study where a computer learns from available data/historical data without being explicitly programmed."
+      ]
+    },
+    {
+      "title": "Misc",
+      "icon": "📌",
+      "keypoints": [
+        "Subsets of AI Lecture 7: Marissa B.",
+        "The operator provides the machine: learning algorithm with a known dataset that includes desired inputs and outputs, and the algorithm must find a method to determine how to arrive at those inputs and outputs.",
+        "Under the umbrella of supervised learning fall: Classification, Regression and Forecasting.",
+        "Regression: In regression tasks, the machine learning program must estimate: and understand - the relationships among variables.",
+        "In an unsupervised learning process,: the algorithm is left to interpret large data sets and address that data accordingly.",
+        "As it assesses more data,: its ability to make decisions on that data gradually improves and becomes more refined.",
+        "Dimension reduction: Dimension reduction reduces the number of variables being considered to find the exact information required.",
+        "Reinforcement learning teaches the machine: through trial and error.",
+        "It allows us to predict: a class/category, based on a given set of features, using probability.",
+        "For example, in spam, you: can see the word ‘vaccine’ much more often than in regular mail.",
+        "Based on what emotions the words in a text express, Naive Bayes: calculate the probability of it being positive or negative.",
+        "Image classification: Key concept from the material."
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "term": "Subsets of AI Lecture 7",
+      "definition": "Marissa B.",
+      "icon": "📖",
+      "importance": 1
+    },
+    {
+      "term": "Machine learning is a field",
+      "definition": "of study where a computer learns from available data/historical data without being explicitly programmed.",
+      "icon": "💡",
+      "importance": 0.99
+    },
+    {
+      "term": "The operator provides the machine",
+      "definition": "learning algorithm with a known dataset that includes desired inputs and outputs, and the algorithm must find a method to determine how to arrive at those inputs and outputs.",
+      "icon": "🔍",
+      "importance": 0.98
+    },
+    {
+      "term": "Under the umbrella of supervised learning fall",
+      "definition": "Classification, Regression and Forecasting.",
+      "icon": "⚡",
+      "importance": 0.97
+    },
+    {
+      "term": "Regression: In regression tasks, the machine learning program must estimate",
+      "definition": "and understand - the relationships among variables.",
+      "icon": "🎓",
+      "importance": 0.96
+    },
+    {
+      "term": "In an unsupervised learning process,",
+      "definition": "the algorithm is left to interpret large data sets and address that data accordingly.",
+      "icon": "✨",
+      "importance": 0.94
+    },
+    {
+      "term": "As it assesses more data,",
+      "definition": "its ability to make decisions on that data gradually improves and becomes more refined.",
+      "icon": "🧠",
+      "importance": 0.93
+    },
+    {
+      "term": "Dimension reduction",
+      "definition": "Dimension reduction reduces the number of variables being considered to find the exact information required.",
+      "icon": "📚",
+      "importance": 0.92
+    },
+    {
+      "term": "Reinforcement learning teaches the machine",
+      "definition": "through trial and error.",
+      "icon": "🔬",
+      "importance": 0.91
+    },
+    {
+      "term": "It allows us to predict",
+      "definition": "a class/category, based on a given set of features, using probability.",
+      "icon": "📖",
+      "importance": 0.9
+    },
+    {
+      "term": "For example, in spam, you",
+      "definition": "can see the word ‘vaccine’ much more often than in regular mail.",
+      "icon": "🔍",
+      "importance": 0.88
+    },
+    {
+      "term": "Based on what emotions the words in a text express, Naive Bayes",
+      "definition": "calculate the probability of it being positive or negative.",
+      "icon": "⚡",
+      "importance": 0.87
+    },
+    {
+      "term": "Image classification",
+      "definition": "Key concept from the material.",
+      "icon": "🎓",
+      "importance": 0.86
+    },
+    {
+      "term": "It then works iteratively",
+      "definition": "to assign each data point to one of K groups based on the features provided.",
+      "icon": "✨",
+      "importance": 0.84
+    },
+    {
+      "term": "Used in finding transactions which are fraudulent in nature, market segmentation, document clustering, image segmentation and image compression",
+      "definition": "Market segmentation is a marketing concept which divides the complete market set up into smaller subsets comprising of consumers with a similar taste, demand and preference.",
+      "icon": "🧠",
+      "importance": 0.83
+    },
+    {
+      "term": "They essentially filter data into",
+      "definition": "categories, which is achieved by providing a set of training examples, each set marked as belonging to one or the other of the two categories.",
+      "icon": "📚",
+      "importance": 0.82
+    },
+    {
+      "term": "Some applications are in financial portfolio prediction, salary forecasting, stock market price and real estate predictions, predicting traffics and ETAs",
+      "definition": "Logistic Regression (Supervised learning - Classification) Logistic regression focuses on estimating the probability of an event occurring based on the previous data provided.",
+      "icon": "🔬",
+      "importance": 0.81
+    },
+    {
+      "term": "ANNs are essentially a large",
+      "definition": "number of interconnected processing elements, working in unison to solve specific problems.",
+      "icon": "📖",
+      "importance": 0.8
+    },
+    {
+      "term": "Each node within the tree represents a test on a specific variable",
+      "definition": "and each branch is the outcome of that test.",
+      "icon": "💡",
+      "importance": 0.79
+    },
+    {
+      "term": "If the person is over",
+      "definition": "30 years and is not married, we walk the tree as follows ‘over 30 years.",
+      "icon": "🔍",
+      "importance": 0.78
+    },
+    {
+      "term": "Each individual classifier is weak,",
+      "definition": "but when combined with others, can produce excellent results.",
+      "icon": "⚡",
+      "importance": 0.77
+    },
+    {
+      "term": "Can predict the likelihood that the passengers in Titanic would have survived based on their characteristics",
+      "definition": "Nearest Neighbors (Supervised LearningClassification/Regression) The K-Nearest-Neighbor algorithm estimates how likely a data point is to be a member of one group or another.",
+      "icon": "🎓",
+      "importance": 0.76
+    },
+    {
+      "term": "This could be written in the form of an association rule as",
+      "definition": "{milk, sugar} -> coffee powder.",
+      "icon": "✨",
+      "importance": 0.73
+    },
+    {
+      "term": "There are five different phases",
+      "definition": "in pattern recognition, such as sensing, segmentation, feature extraction, classification and post-processing.",
+      "icon": "🧠",
+      "importance": 0.72
+    },
+    {
+      "term": "Neural Network applications can be classified the in the following domains",
+      "definition": "Images - Signals - Language This presentation uses a free template provided by FPPT.",
+      "icon": "📚",
+      "importance": 0.71
+    },
+    {
+      "term": "ANNs are also widely used",
+      "definition": "in biometrics, like face recognition or signature verification.",
+      "icon": "🔬",
+      "importance": 0.7
+    },
+    {
+      "term": "Here the scanned images of documents",
+      "definition": "fed to the model, and the model recognizes the textual information in that scanned document.",
+      "icon": "📖",
+      "importance": 0.69
+    },
+    {
+      "term": "Object detection",
+      "definition": "Object detection from images is widely used to detect any object and classify it based on that.",
+      "icon": "💡",
+      "importance": 0.68
+    },
+    {
+      "term": "Image Generation",
+      "definition": "The image generations helps in generating fake images based on the data.",
+      "icon": "🔍",
+      "importance": 0.67
+    },
+    {
+      "term": "ANN in Signals",
+      "definition": "Speech Recognition: Speech recognition system converts the speech signals and decodes them to text or some form of meaning.",
+      "icon": "⚡",
+      "importance": 0.66
+    },
+    {
+      "term": "ANN in Language",
+      "definition": "This can be divided into two models: - Text Classification and Categorization: Text classification is an essential part of document search and filtering, online web searches and language identification and sentiment analysis.",
+      "icon": "🎓",
+      "importance": 0.65
+    },
+    {
+      "term": "Language Generation and Document Summarization",
+      "definition": "Natural Language Generation and Paraphrasing and document summarization are widely used to generate the documents and summarize multi-documents.",
+      "icon": "📌",
+      "importance": 0.64
+    },
+    {
+      "term": "The only difference in deep",
+      "definition": "learning model is that with experience, the model becomes better without any specific guidance.",
+      "icon": "✨",
+      "importance": 0.63
+    },
+    {
+      "term": "Deep learning models are based",
+      "definition": "on neural networks.",
+      "icon": "🧠",
+      "importance": 0.62
+    },
+    {
+      "term": "Robots",
+      "definition": "deployed regularly for directing tasks that may be difficult for people to perform consistently.",
+      "icon": "📖",
+      "importance": 0.59
+    },
+    {
+      "term": "Natural Language Processing (NLP)",
+      "definition": "be treated as a subfield of linguistics concerned with the interaction between computer machine and human.",
+      "icon": "🔍",
+      "importance": 0.57
+    },
+    {
+      "term": "In Rule-based, the rules",
+      "definition": "defined based on the grammar rules of a language.",
+      "icon": "⚡",
+      "importance": 0.56
+    },
+    {
+      "term": "Statistical NLP is better because",
+      "definition": "humans do not stick to grammar rules in general communication, and also a way of speaking also differs from person to person.",
+      "icon": "🎓",
+      "importance": 0.55
+    },
+    {
+      "term": "Create a Chabot using Parsey",
+      "definition": "McParseface, a language parsing deep learning model made by Google that uses point-of-speech tagging.",
+      "icon": "📌",
+      "importance": 0.54
+    },
+    {
+      "term": "Sentiment Analysis, based on Stanford",
+      "definition": "NLP, can be used to identify the feeling, opinion, or belief of a statement, from very negative, to neutral, to very positive.",
+      "icon": "✨",
+      "importance": 0.53
+    },
+    {
+      "term": "One of the examples of an expert system",
+      "definition": "Suggestion for the spelling error while typing in the Google search box.",
+      "icon": "📚",
+      "importance": 0.51
+    },
+    {
+      "term": "Virtual assistants",
+      "definition": "designed to interact with humans in a very human way; most of their responses would feel like the responses you would receive from a friend or colleague.",
+      "icon": "🔬",
+      "importance": 0.5
+    }
+  ],
+  "metadata": {
+    "generatedFrom": "cleanup_extracted_json.py",
+    "removedNoise": 8
+  }
+}

@@ -1,4 +1,4 @@
-export type StudyToolTab = 'summary' | 'keypoints' | 'quiz' | 'flashcards';
+export type StudyToolTab = 'summary' | 'quiz' | 'flashcards';
 
 export interface StudySummary {
   materialId: string;

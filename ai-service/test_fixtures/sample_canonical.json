@@ -1,0 +1,31 @@
+{
+  "materialId": "sample-123",
+  "sourceMeta": {
+    "filename": "sample.txt",
+    "contentType": "text",
+    "extractionMethod": "native",
+    "language": "en"
+  },
+  "cleanedUnits": [
+    {"id": "u1", "text": "Naive Bayes assumes feature independence", "tokens": 7, "origin": {"rawChunkId": "c1"}},
+    {"id": "u2", "text": "It applies Bayes' theorem", "tokens": 6, "origin": {"rawChunkId": "c1"}}
+  ],
+  "concepts": [
+    {
+      "id": "k1",
+      "term": "Naive Bayes Classifier",
+      "conceptType": "DEFINITION",
+      "shortDefinition": "Probabilistic classifier using Bayes' theorem with independence assumption",
+      "fullDefinition": "A probabilistic text classification algorithm that applies Bayes' theorem and assumes each feature contributes independently to the class probability.",
+      "examples": ["Spam filtering"],
+      "subtypes": [],
+      "relatedIds": [],
+      "importance": 0.9,
+      "sourceSpan": null
+    }
+  ],
+  "sections": [
+    {"id": "s1", "title": "Core Algorithms", "icon": "⚙️", "conceptIds": ["k1"]}
+  ],
+  "processingMeta": {"createdAt": "2025-11-08T00:00:00Z", "pipelineVersion": "v1.0"}
+}

@@ -33,10 +33,11 @@ def get_qa_model() -> Pipeline:
         try:
             # Using t5-base for question generation
             # Alternative: "valhalla/t5-small-qg-hl" (specialized for QG)
+            hf_dev = config.get_hf_pipeline_device_id()
             _qa_pipeline = pipeline(
                 "text2text-generation",
                 model="t5-base",
-                device=-1  # CPU (use 0 for GPU)
+                device=hf_dev  # -1 CPU, >=0 GPU index
             )
             logger.info("✅ QA generation model loaded successfully")
         except Exception as e:
@@ -58,7 +59,11 @@ def get_embedding_model() -> SentenceTransformer:
     if _embedding_model is None:
         logger.info("Loading embedding model (all-MiniLM-L6-v2)...")
         try:
-            _embedding_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+            device = config.get_device()
+            _embedding_model = SentenceTransformer(
+                "sentence-transformers/all-MiniLM-L6-v2",
+                device=device
+            )
             logger.info("✅ Embedding model loaded successfully")
         except Exception as e:
             logger.error(f"❌ Failed to load embedding model: {e}")

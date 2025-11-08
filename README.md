@@ -33,6 +33,8 @@ AI-Powered Learning Tools
 - Smart Material Processing: Upload study materials (PDF, PPT, DOC/DOCX) and let our AI extract text, headings, and key concepts.
 - Intelligent Multiple-Choice Quiz Generation: Automatically generate multiple-choice quizzes from your uploaded content. Questions include plausible distractors and explanations to help reinforce learning.
 - Summaries & Key Points: Generate concise summaries and highlight the most important takeaways from each document.
+- AI Reviewer Generation (NEW): Async background processing generates cleaned, organized reviewer documents from PDFs with semantic topic clustering.
+- Full-Screen PDF Viewer: View your materials in full-screen mode with zoom controls and scroll tracking for future analytics.
 - Learning Analytics (basic): Track quiz attempts and accuracy over time to identify weak areas.
 
 Focus & Productivity
@@ -95,9 +97,11 @@ This repo is primarily TypeScript with backend pieces in PHP and utilities in Py
 ---
 
 ## Roadmap
+- Enhanced reviewer generation with PDF.js integration for better navigation
+- Websocket support for real-time job status updates
 - Flashcards (spaced repetition compatible)
 - Advanced To-Do integration with study sessions
-- Detailed analytics and topic-level insights
+- Detailed analytics and topic-level insights (scroll patterns, time-on-page)
 - Achievements & badge collection
 - Browser extension/focus extension for distraction blocking
 - Social features: study groups, shared quizzes, leaderboards

@@ -22,6 +22,18 @@ class AIContentValidator:
         self.min_quiz_questions = 3
         self.min_flashcards = 5
         
+        # NEW: Definition/flashcard length limits
+        self.max_definition_chars = 300
+        self.max_flashcard_back_chars = 400
+        
+        # OCR residue patterns
+        self.ocr_residue_patterns = [
+            r'[➢›→◦▪■□●○◆◇⬥]',  # Special bullets
+            r'…{2,}',  # Multiple ellipses
+            r'—{2,}',  # Multiple em-dashes
+            r'\s*\[\s*\.\.\.\s*\]\s*',  # [...] placeholders
+        ]
+        
         # Quality scoring weights
         self.structure_weight = 0.4
         self.content_weight = 0.4
@@ -222,6 +234,12 @@ class AIContentValidator:
         # 3. Diversity validation (different types/topics)
         diversity_score = self._validate_flashcard_diversity(flashcards)
         quality_score += diversity_score * 0.2
+        
+        # NEW: Check for OCR residue in flashcards
+        ocr_issues = self._check_ocr_residue_in_flashcards(flashcards)
+        if ocr_issues > 0:
+            errors.append(f"OCR residue detected in {ocr_issues} flashcards")
+            quality_score -= 0.1 * min(ocr_issues / len(flashcards), 0.5)
         
         is_valid = len(errors) == 0 and quality_score >= 0.6
         error_message = '; '.join(errors[:5]) if errors else ""
@@ -487,6 +505,11 @@ class AIContentValidator:
         else:
             errors.append(f"Flashcard {index+1} back too short ({back_words} words)")
         
+        # NEW: Check back length limit
+        if len(back) > self.max_flashcard_back_chars:
+            errors.append(f"Flashcard {index+1} back too long ({len(back)} chars, max {self.max_flashcard_back_chars})")
+            score -= 0.1
+        
         # Front and back are different
         if front.lower() != back.lower():
             score += 0.1
@@ -521,6 +544,26 @@ class AIContentValidator:
             score += 0.3
         
         return min(score, 1.0)
+
+
+    def _check_ocr_residue_in_flashcards(self, flashcards: List[dict]) -> int:
+        """Count flashcards with OCR residue. Returns count of affected cards."""
+        affected_count = 0
+        
+        for card in flashcards:
+            front = str(card.get('front', ''))
+            back = str(card.get('back', ''))
+            definition = str(card.get('definition', ''))
+            
+            combined = front + ' ' + back + ' ' + definition
+            
+            # Check for OCR patterns
+            for pattern in self.ocr_residue_patterns:
+                if re.search(pattern, combined):
+                    affected_count += 1
+                    break  # Count each card only once
+        
+        return affected_count
 
 
 # Convenience function for use in generation routes

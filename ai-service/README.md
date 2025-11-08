@@ -178,6 +178,17 @@ pytest --cov=. --cov-report=html
 python demo_flashcards.py
 ```
 
+### Schema validation tests
+
+This service defines a canonical raw JSON structure for early normalization. We include fixtures and tests to validate payloads against `schemas/raw_schema.json`.
+
+```bash
+# Run only schema validation tests
+pytest ai-service/tests/test_schema_validation.py -v
+```
+
+CI also validates a sample canonical JSON against the schema on each PR via `.github/workflows/validate-schemas.yml`.
+
 ## Troubleshooting
 
 **Service won't start:**
@@ -210,6 +221,7 @@ python demo_flashcards.py
 - **API Reference**: http://localhost:8000/docs (Swagger UI)
 - **Flashcard Generator**: See `FLASHCARD_GENERATOR_DOCS.md`
 - **Migration Guide**: See `FLASHCARD_MIGRATION_GUIDE.md`
+- **Prompt & Output Design Guide**: See `PROMPT_DESIGN_GUIDE.md` (canonical schemas + prompt chain)
 
 ## Resources
 

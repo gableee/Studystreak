@@ -139,13 +139,78 @@ def _safe_set_tesseract_cmd() -> Optional[str]:
     """
     if not HAS_PYTESSERACT:
         return None
+
+    def _choose_candidate(path: str) -> Optional[str]:
+        """Given a path that may be a file or a folder, return a valid tesseract executable path if found."""
+        if not path:
+            return None
+        path = os.path.expandvars(path)
+        path = os.path.expanduser(path)
+        # If it's a file and exists, accept it
+        if os.path.isfile(path):
+            return path
+        # If it's a dir, check for tesseract.exe inside it or in a \bin subdir
+        if os.path.isdir(path):
+            candidate = os.path.join(path, "tesseract.exe")
+            if os.path.isfile(candidate):
+                return candidate
+            candidate2 = os.path.join(path, "bin", "tesseract.exe")
+            if os.path.isfile(candidate2):
+                return candidate2
+        return None
+
     tesseract_env = os.getenv("TESSERACT_CMD") or os.getenv("TESSERACT_PATH") or os.getenv("TESSERACT_EXE")
-    if tesseract_env and os.path.isfile(tesseract_env):
+    candidate = _choose_candidate(tesseract_env) if tesseract_env else None
+
+    # If user didn't provide env or it didn't resolve, try common Windows install path
+    if not candidate:
+        common = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+        if os.path.isfile(common):
+            candidate = common
+
+    if candidate:
         try:
-            pytesseract.pytesseract.tesseract_cmd = tesseract_env
-            return tesseract_env
+            pytesseract.pytesseract.tesseract_cmd = candidate
+            return candidate
         except Exception:
             return None
+
+    return None
+
+
+def _normalize_poppler_path(poppler_path: Optional[str]) -> Optional[str]:
+    """Normalize POPPLER_PATH to point at the directory containing pdftoppm executable.
+    Accepts either the full path to the pdftoppm.exe, a folder containing it, or a parent folder
+    (e.g., a packaged poppler directory). Returns a path suitable to pass to pdf2image.convert_from_bytes
+    (the folder containing the binary), or None if not resolvable.
+    """
+    if not poppler_path:
+        return None
+    p = os.path.expandvars(poppler_path)
+    p = os.path.expanduser(p)
+    # If user provided full path to executable
+    if os.path.isfile(p) and os.path.basename(p).lower().startswith("pdftoppm"):
+        return os.path.dirname(p)
+    # If user provided a directory, check for pdftoppm.exe inside or in bin/
+    if os.path.isdir(p):
+        cand = os.path.join(p, "pdftoppm.exe")
+        if os.path.isfile(cand):
+            return p
+        cand2 = os.path.join(p, "bin", "pdftoppm.exe")
+        if os.path.isfile(cand2):
+            return os.path.join(p, "bin")
+        # Also handle case where they pointed to Library\bin (common in some installs)
+        cand3 = os.path.join(p, "Library", "bin", "pdftoppm.exe")
+        if os.path.isfile(cand3):
+            return os.path.join(p, "Library", "bin")
+    # Last resort: if path ends with an exe-like string but file doesn't exist, try parent dirs
+    parts = p.split(os.sep)
+    for i in range(len(parts), 0, -1):
+        check_dir = os.sep.join(parts[:i])
+        cand = os.path.join(check_dir, "pdftoppm.exe")
+        if os.path.isfile(cand):
+            return check_dir
+
     return None
 
 

@@ -23,11 +23,13 @@ def get_embedding_model():
         try:
             from sentence_transformers import SentenceTransformer
             logger.info(f"Loading embedding model: {config.EMBEDDING_MODEL}")
+            device = config.get_device()
             _embedding_model = SentenceTransformer(
                 config.EMBEDDING_MODEL,
-                cache_folder=str(config.MODEL_CACHE_DIR)
+                cache_folder=str(config.MODEL_CACHE_DIR),
+                device=device
             )
-            logger.info(f"Model loaded successfully: {config.EMBEDDING_MODEL}")
+            logger.info(f"Model loaded successfully: {config.EMBEDDING_MODEL} (device={device})")
         except Exception as e:
             logger.error(f"Failed to load embedding model: {e}", exc_info=True)
             raise HTTPException(

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { ExternalLink, Loader2, X, Download, BookOpen } from 'lucide-react'
+import { ExternalLink, Loader2, X, Download, BookOpen, Maximize } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { requestSignedUrl } from '../api'
 import type { LearningMaterial } from '../types'
 
@@ -22,6 +23,7 @@ const initialState = (): PreviewState => ({
 
 export function FilePreviewModal({ material, onClose }: FilePreviewModalProps) {
   const [state, setState] = useState<PreviewState>(initialState)
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (!material) {
@@ -69,6 +71,20 @@ export function FilePreviewModal({ material, onClose }: FilePreviewModalProps) {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (material?.id) {
+                  navigate(`/materials/${material.id}/view`)
+                  onClose()
+                }
+              }}
+              className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
+              disabled={!material?.id}
+            >
+              <Maximize className="h-4 w-4" />
+              Full screen
+            </button>
             <button
               type="button"
               onClick={() => {

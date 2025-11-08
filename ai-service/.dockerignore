@@ -1,0 +1,25 @@
+# Ignore Python virtual environment and caches
+.venv
+venv
+__pycache__
+*.py[cod]
+
+# Git
+.git
+
+# Local logs and caches
+logs
+model_cache
+models--sentence-transformers--all-MiniLM-L6-v2
+
+# Tests and local files not required for the container
+tests
+test_*.py
+
+# Editor settings
+.vscode
+.idea
+
+# Environment files
+.env
+*.env

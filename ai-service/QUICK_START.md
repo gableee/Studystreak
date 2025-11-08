@@ -8,6 +8,9 @@ Three production-ready Python modules to enhance your AI-generated content:
 2. **`utils/quality_validator.py`** - Quality scoring + validation
 3. **`STUDYSTREAK_AI_ENHANCEMENT_GUIDE.md`** - Complete implementation guide
 
+**📌 Important Update:** The `/summary` endpoint is now deprecated and wraps `/keypoints` logic for backwards compatibility. 
+The frontend "Summary" tab now uses the structured KeyPoints implementation (KeyPointsTab component) for a richer, card-based experience.
+
 ---
 
 ## ⚡ Quick Integration (5 Minutes)
@@ -21,7 +24,12 @@ from utils.markdown_formatter import format_summary, format_keypoints
 from utils.quality_validator import validate_ai_content
 ```
 
-### Step 2: Enhance Summary Endpoint
+### Step 2: Enhance Summary Endpoint (Deprecated)
+
+**Note:** The `/summary` endpoint is now a deprecated wrapper that calls keypoints logic. 
+For new integrations, use `/keypoints/v2` instead which returns structured items with term, definition, importance, etc.
+
+If you still need the old summary endpoint:
 
 Find the `generate_summary` function and update it:
 

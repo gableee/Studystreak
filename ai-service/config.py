@@ -37,6 +37,29 @@ FLASHCARD_MODEL = "t5-base"
 MODEL_CACHE_DIR = Path(os.getenv("MODEL_CACHE_DIR", "./model_cache"))
 MODEL_CACHE_DIR.mkdir(exist_ok=True)
 
+# Reviewer Style Prompts (for student-friendly output)
+REVIEWER_STYLE_PROMPT = """
+You are generating study reviewers for students.
+Break long text into concise, scannable sections.
+Keep technical accuracy but improve readability and recall.
+Highlight key ideas in bullet form, use emojis or short labels for sections.
+Organize content by topic, not just sequentially.
+"""
+
+SUMMARY_STYLE_PROMPT = """
+Generate a clear, organized summary for students.
+Use sections with descriptive headings.
+Focus on main concepts, not minor details.
+Keep sentences short and direct (15-20 words max).
+"""
+
+KEYPOINTS_STYLE_PROMPT = """
+Extract key concepts as bullet points.
+Each point should be one concise idea (1-2 sentences).
+Use term-definition format when appropriate.
+Focus on testable, memorable information.
+"""
+
 # Request Limits
 # Removed hard MAX_TEXT_LENGTH limit - chunking handles long texts
 # Allow up to 1M chars but rely on summarizer chunking for safe processing
@@ -66,7 +89,25 @@ def get_device() -> str:
 
 	# auto | cuda | 1 | true
 	if torch.cuda.is_available():
-		return f"cuda:{CUDA_DEVICE}"
+		# Quick runtime probe: try a tiny CUDA op to detect ABI/arch incompatibilities
+		try:
+			dev_str = f"cuda:{CUDA_DEVICE}"
+			# allocate a tiny tensor on the device to surface kernel compatibility errors early
+			t = torch.tensor([1.0], device=dev_str)
+			t *= 2.0
+			return dev_str
+		except Exception as probe_err:
+			# If CUDA is present but the current PyTorch build can't run kernels on this GPU
+			# (e.g. "no kernel image is available for execution on the device"),
+			# fall back to CPU and log a helpful message.
+			try:
+				import logging
+				logging.getLogger(__name__).warning(
+					"CUDA probe failed; falling back to CPU. Error: %s", str(probe_err)
+				)
+			except Exception:
+				pass
+			return "cpu"
 	return "cpu"
 
 

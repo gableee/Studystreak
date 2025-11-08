@@ -19,6 +19,7 @@ import Dashboard from '../Features/Dashboard/Dashboard'
 import Profile from '../Features/Profile/Profile'
 import LearningMaterials from '../Features/LearningMaterials'
 import { StudyToolsPage } from '../Features/LearningMaterials/StudyTools'
+import { PDFViewerPage } from '../Features/LearningMaterials/components/PDFViewerPage'
 import FocusSession from '../Features/FocusSession/FocusSession'
 import MyStudyPlan from '../Features/MyStudyPlan/MyStudyPlan'
 import ProgressAnalytics from '../Features/ProgressAnalytics/ProgressAnalytics'
@@ -38,7 +39,6 @@ import NotFoundPage from './components/NotFoundPage'
  * Defines all application routes with their corresponding components
  */
 const router = createBrowserRouter([
-  // Auth pages (standalone, no RootLayout)
   
   {
     path: "/signin",
@@ -128,6 +128,14 @@ const router = createBrowserRouter([
             <PageTransition>
               <StudyToolsPage />
             </PageTransition>
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: "materials/:id/view",
+        element: (
+          <ProtectedRoute>
+            <PDFViewerPage />
           </ProtectedRoute>
         )
       },

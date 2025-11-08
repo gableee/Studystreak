@@ -12,6 +12,7 @@ use App\Repositories\LearningMaterialRepository;
 use App\Repositories\MaterialAiVersionRepository;
 use App\Repositories\MaterialAiEmbeddingRepository;
 use App\Repositories\QuizAttemptsRepository;
+use App\Repositories\AiJobsRepository;
 use App\Services\AiService;
 use App\Services\PdfService;
 use App\Utils\AiResponseParser;
@@ -27,6 +28,7 @@ final class StudyToolsController
     private MaterialAiVersionRepository $aiVersionRepo;
     private MaterialAiEmbeddingRepository $embeddingRepo;
     private QuizAttemptsRepository $quizAttemptsRepo;
+    private AiJobsRepository $aiJobsRepo;
     private AiService $aiService;
     private PdfService $pdfService;
     private Client $supabaseClient;
@@ -62,6 +64,12 @@ final class StudyToolsController
         );
         
         $this->quizAttemptsRepo = new QuizAttemptsRepository(
+            $client,
+            $supabaseConfig->getAnonKey(),
+            $supabaseConfig->getServiceRoleKey()
+        );
+
+        $this->aiJobsRepo = new AiJobsRepository(
             $client,
             $supabaseConfig->getAnonKey(),
             $supabaseConfig->getServiceRoleKey()
@@ -138,6 +146,33 @@ final class StudyToolsController
         if ($sourceText === '') {
             $sourceText = trim((string)($material['extracted_content'] ?? ''));
         }
+        // If still empty but we have a file, try to extract text via AI service from a signed URL
+        if ($sourceText === '') {
+            $storagePath = trim((string)($material['storage_path'] ?? ''));
+            if ($storagePath !== '') {
+                $signedUrl = $this->signStorageObject($storagePath, $token, 600);
+                if ($signedUrl !== null) {
+                    $extract = $this->aiService->extractTextFromUrl($signedUrl);
+                    if (($extract['success'] ?? false) && isset($extract['data']['text'])) {
+                        $text = trim((string)$extract['data']['text']);
+                        if ($text !== '') {
+                            $sourceText = $text;
+                            // Persist for future calls
+                            try {
+                                $this->materialRepo->update($materialId, ['extracted_content' => $text], $token);
+                            } catch (\Throwable $e) {
+                                error_log('[StudyToolsController] Failed to save extracted_content: ' . $e->getMessage());
+                            }
+                        }
+                    } else {
+                        error_log('[StudyToolsController] AI extractTextFromUrl failed: ' . json_encode($extract));
+                    }
+                } else {
+                    error_log('[StudyToolsController] Failed to sign storage object for extraction: ' . $storagePath);
+                }
+            }
+        }
+        
         if ($sourceText === '') {
             JsonResponder::badRequest('Material has no text content to process. Add a description or upload a file.');
             return;
@@ -311,6 +346,33 @@ final class StudyToolsController
         if ($sourceText === '') {
             $sourceText = trim((string)($material['extracted_content'] ?? ''));
         }
+        // If still empty but we have a file, try to extract text via AI service from a signed URL
+        if ($sourceText === '') {
+            $storagePath = trim((string)($material['storage_path'] ?? ''));
+            if ($storagePath !== '') {
+                $signedUrl = $this->signStorageObject($storagePath, $token, 600);
+                if ($signedUrl !== null) {
+                    $extract = $this->aiService->extractTextFromUrl($signedUrl);
+                    if (($extract['success'] ?? false) && isset($extract['data']['text'])) {
+                        $text = trim((string)$extract['data']['text']);
+                        if ($text !== '') {
+                            $sourceText = $text;
+                            // Persist for future calls
+                            try {
+                                $this->materialRepo->update($materialId, ['extracted_content' => $text], $token);
+                            } catch (\Throwable $e) {
+                                error_log('[StudyToolsController] Failed to save extracted_content: ' . $e->getMessage());
+                            }
+                        }
+                    } else {
+                        error_log('[StudyToolsController] AI extractTextFromUrl failed: ' . json_encode($extract));
+                    }
+                } else {
+                    error_log('[StudyToolsController] Failed to sign storage object for extraction: ' . $storagePath);
+                }
+            }
+        }
+        
         if ($sourceText === '') {
             JsonResponder::badRequest('Material has no text content to process. Add a description or upload a file.');
             return;
@@ -383,6 +445,33 @@ final class StudyToolsController
         if ($sourceText === '') {
             $sourceText = trim((string)($material['extracted_content'] ?? ''));
         }
+        // If still empty but we have a file, try to extract text via AI service from a signed URL
+        if ($sourceText === '') {
+            $storagePath = trim((string)($material['storage_path'] ?? ''));
+            if ($storagePath !== '') {
+                $signedUrl = $this->signStorageObject($storagePath, $token, 600);
+                if ($signedUrl !== null) {
+                    $extract = $this->aiService->extractTextFromUrl($signedUrl);
+                    if (($extract['success'] ?? false) && isset($extract['data']['text'])) {
+                        $text = trim((string)$extract['data']['text']);
+                        if ($text !== '') {
+                            $sourceText = $text;
+                            // Persist for future calls
+                            try {
+                                $this->materialRepo->update($materialId, ['extracted_content' => $text], $token);
+                            } catch (\Throwable $e) {
+                                error_log('[StudyToolsController] Failed to save extracted_content: ' . $e->getMessage());
+                            }
+                        }
+                    } else {
+                        error_log('[StudyToolsController] AI extractTextFromUrl failed: ' . json_encode($extract));
+                    }
+                } else {
+                    error_log('[StudyToolsController] Failed to sign storage object for extraction: ' . $storagePath);
+                }
+            }
+        }
+        
         if ($sourceText === '') {
             JsonResponder::badRequest('Material has no text content to process. Add a description or upload a file.');
             return;
@@ -1203,4 +1292,135 @@ final class StudyToolsController
             ];
         }
     }
+
+    /**
+     * Queue async reviewer generation for a material.
+     * POST /api/materials/{id}/generate-reviewer
+     */
+    public function queueReviewerGeneration(Request $request, string $materialId): void
+    {
+        $user = $request->getAttribute('user');
+        $token = $request->getAttribute('access_token');
+
+        if (!$user instanceof AuthenticatedUser || !is_string($token) || $token === '') {
+            JsonResponder::unauthorized('Authentication required');
+            return;
+        }
+
+        // Fetch material
+        $material = $this->materialRepo->findById($materialId, $token);
+        if ($material === null) {
+            JsonResponder::withStatus(404, ['error' => 'Learning material not found']);
+            return;
+        }
+
+        // Check ownership
+        $ownerId = (string)($material['user_id'] ?? '');
+        if ($ownerId !== $user->getId()) {
+            JsonResponder::unauthorized('You do not have access to this material');
+            return;
+        }
+
+        // Check if AI is enabled
+        if (!(bool)($material['ai_toggle_enabled'] ?? false)) {
+            JsonResponder::badRequest('AI is not enabled for this material. Enable it in material settings.');
+            return;
+        }
+
+        // Check for existing pending or completed job
+        $existingJob = $this->aiJobsRepo->getLatestByMaterialAndType($materialId, 'reviewer', $token);
+        if ($existingJob !== null) {
+            $status = (string)($existingJob['status'] ?? '');
+            if ($status === 'pending' || $status === 'processing') {
+                JsonResponder::ok([
+                    'message' => 'Reviewer generation already in progress',
+                    'job_id' => $existingJob['job_id'],
+                    'status' => $status,
+                ]);
+                return;
+            }
+            if ($status === 'completed' && isset($existingJob['result'])) {
+                JsonResponder::ok([
+                    'message' => 'Reviewer already generated',
+                    'job_id' => $existingJob['job_id'],
+                    'status' => $status,
+                    'result' => $existingJob['result'],
+                ]);
+                return;
+            }
+        }
+
+        // Prepare metadata
+        $metadata = [
+            'storage_path' => $material['storage_path'] ?? null,
+            'file_url' => $material['file_url'] ?? null,
+            'mime_type' => $material['mime_type'] ?? null,
+        ];
+
+        // Create job
+        $jobId = $this->aiJobsRepo->create([
+            'material_id' => $materialId,
+            'user_id' => $user->getId(),
+            'job_type' => 'reviewer',
+            'priority' => 0,
+            'metadata' => $metadata,
+        ], $token);
+
+        if ($jobId === null) {
+            JsonResponder::withStatus(500, ['error' => 'Failed to queue reviewer generation']);
+            return;
+        }
+
+        JsonResponder::created([
+            'message' => 'Reviewer generation queued successfully',
+            'job_id' => $jobId,
+            'status' => 'pending',
+        ]);
+    }
+
+    /**
+     * Get AI job status and result.
+     * GET /api/materials/{id}/ai-status?job_type=reviewer
+     */
+    public function getAiStatus(Request $request, string $materialId): void
+    {
+        $user = $request->getAttribute('user');
+        $token = $request->getAttribute('access_token');
+
+        if (!$user instanceof AuthenticatedUser || !is_string($token) || $token === '') {
+            JsonResponder::unauthorized('Authentication required');
+            return;
+        }
+
+        $jobType = $_GET['job_type'] ?? 'reviewer';
+
+        // Get latest job for this material and type
+        $job = $this->aiJobsRepo->getLatestByMaterialAndType($materialId, $jobType, $token);
+        if ($job === null) {
+            JsonResponder::withStatus(404, ['error' => 'No AI job found for this material']);
+            return;
+        }
+
+        // Transform job data
+        $response = [
+            'job_id' => $job['job_id'],
+            'job_type' => $job['job_type'],
+            'status' => $job['status'],
+            'created_at' => $job['created_at'],
+            'started_at' => $job['started_at'] ?? null,
+            'completed_at' => $job['completed_at'] ?? null,
+        ];
+
+        if (isset($job['error_message'])) {
+            $response['error_message'] = $job['error_message'];
+        }
+
+        if (isset($job['result'])) {
+            $result = is_string($job['result']) ? json_decode($job['result'], true) : $job['result'];
+            $response['result'] = $result;
+        }
+
+        JsonResponder::ok($response);
+    }
 }
+

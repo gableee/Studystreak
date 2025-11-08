@@ -1,0 +1,25 @@
+name: Validate JSON Schemas
+on: [push, pull_request]
+jobs:
+  validate-schemas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install jsonschema
+      - name: Validate sample canonical JSON
+        run: |
+          python - <<'PY'
+          import json
+          from jsonschema import validate
+          with open('ai-service/schemas/raw_schema.json','r', encoding='utf-8') as f:
+              schema = json.load(f)
+          with open('ai-service/test_fixtures/sample_canonical.json','r', encoding='utf-8') as f:
+              data = json.load(f)
+          validate(instance=data, schema=schema)
+          print('OK')
+          PY

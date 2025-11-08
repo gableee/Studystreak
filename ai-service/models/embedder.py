@@ -26,11 +26,14 @@ def get_embedding_model() -> SentenceTransformer:
     if _embedding_model is None:
         logger.info(f"Loading embedding model ({config.EMBEDDING_MODEL})...")
         try:
+            device = config.get_device()
+            # SentenceTransformer accepts 'cpu', 'cuda' or 'cuda:0' style device strings
             _embedding_model = SentenceTransformer(
                 config.EMBEDDING_MODEL,
-                cache_folder=config.MODEL_CACHE_DIR
+                cache_folder=str(config.MODEL_CACHE_DIR),
+                device=device
             )
-            logger.info("✅ Embedding model loaded successfully")
+            logger.info(f"✅ Embedding model loaded successfully on {device}")
         except Exception as e:
             logger.error(f"❌ Failed to load embedding model: {e}")
             raise

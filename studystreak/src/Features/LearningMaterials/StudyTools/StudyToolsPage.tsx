@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Sparkles } from 'lucide-react';
 import type { StudyToolTab } from './types';
-import { SummaryTab } from './SummaryTab';
 import { KeyPointsTab } from './KeyPointsTab';
 import { QuizTab } from './QuizTab';
 import { FlashcardsTab } from './FlashcardsTab';
@@ -20,7 +19,6 @@ export function StudyToolsPage() {
 
   const tabs: { value: StudyToolTab; label: string }[] = [
     { value: 'summary', label: 'Summary' },
-    { value: 'keypoints', label: 'Key Points' },
     { value: 'quiz', label: 'Quiz' },
     { value: 'flashcards', label: 'Flashcards' },
   ];
@@ -83,8 +81,7 @@ export function StudyToolsPage() {
       {/* Tab Content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="transition-opacity duration-300">
-          {activeTab === 'summary' && <SummaryTab materialId={id} />}
-          {activeTab === 'keypoints' && <KeyPointsTab materialId={id} />}
+          {activeTab === 'summary' && <KeyPointsTab materialId={id} />}
           {activeTab === 'quiz' && <QuizTab materialId={id} />}
           {activeTab === 'flashcards' && <FlashcardsTab materialId={id} />}
         </div>

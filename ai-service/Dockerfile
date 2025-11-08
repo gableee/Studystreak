@@ -1,29 +1,38 @@
-# Base image with Python 3.10
-FROM python:3.10-slim
+# Use CUDA 12.1 base image with Python 3.11
+FROM nvidia/cuda:12.1.0-cudnn8-runtime-ubuntu22.04
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies for ML libraries
+# Install Python 3.11 and system dependencies
 RUN apt-get update && apt-get install -y \
+    python3.11 \
+    python3.11-dev \
+    python3-pip \
     build-essential \
     curl \
+    ca-certificates \
     poppler-utils \
     tesseract-ocr \
+    git \
     libgl1 \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -s /usr/bin/python3.11 /usr/bin/python
 
 # Copy requirements first (for Docker layer caching)
 COPY requirements.txt .
 
-# Install Python dependencies
-# Use --no-cache-dir to reduce image size
+# Environment and cache dirs for model downloads
 ENV TORCH_HOME=/app/model_cache/torch \
     HF_HOME=/app/model_cache/hf \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
-RUN pip install --no-cache-dir -r requirements.txt && \
-    python -c "import torch,clip; import transformers; from sentence_transformers import SentenceTransformer; clip.load('ViT-B/32', device='cpu'); SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2'); from transformers import AutoTokenizer, AutoModel; AutoTokenizer.from_pretrained('t5-base'); AutoModel.from_pretrained('t5-base'); print('Preloaded models cached.')"
+# Install PyTorch 2.5+ with CUDA 12.1 support (supports sm_120 for RTX 5060)
+# Then install other requirements (filtering torch to avoid conflicts)
+RUN pip3 install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 && \
+    grep -iEv "^\s*torch(\s|=|>|<|$)" requirements.txt > /tmp/req_no_torch.txt || cp requirements.txt /tmp/req_no_torch.txt && \
+    pip3 install --no-cache-dir -r /tmp/req_no_torch.txt
 
 # Copy application code
 COPY . .

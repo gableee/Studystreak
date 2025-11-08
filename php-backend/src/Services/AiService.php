@@ -123,6 +123,18 @@ final class AiService
     }
 
     /**
+     * Generate a reviewer document from material URL.
+     * @param string $materialUrl URL to the PDF/document
+     * @return array{success: bool, data?: array<string,mixed>, error?: string}
+     */
+    public function generateReviewer(string $materialUrl): array
+    {
+        return $this->post('/generate/reviewer', [
+            'material_url' => $materialUrl,
+        ]);
+    }
+
+    /**
      * Generate embedding vector from text.
      * @return array{success: bool, data?: array{vector: array<float>, dimensions: int}, error?: string}
      */

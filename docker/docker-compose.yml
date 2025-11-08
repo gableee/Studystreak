@@ -14,6 +14,7 @@ services:
     build:
       context: ../ai-service
       dockerfile: Dockerfile
+    image: studystreak-ai:latest
     ports:
       - "8000:8000"
     env_file:
@@ -24,6 +25,20 @@ services:
       # Persistent model cache (avoid re-downloading models)
       - ai-models-cache:/app/model_cache
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    # GPU options (choose one depending on your Docker version/runtime):
+    # NOTE: some Compose/validation setups reject `device_requests` in the base
+    # docker-compose.yml. If you see a validation error about `device_requests`
+    # being an additional property, use the GPU override file included alongside
+    # this compose file:
+    #
+    #   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build ai-service
+    #
+    # The override file (docker-compose.gpu.yml) adds the `device_requests` block
+    # only when you explicitly opt-in, avoiding validation errors on systems
+    # that don't accept the property in the base file.
+    # Alternative: run the built image manually with `--gpus all`:
+    #    docker run --rm --gpus all -p 8000:8000 studystreak-ai:latest
+    restart: unless-stopped
 
   context7-mcp:
     build:

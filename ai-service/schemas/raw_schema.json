@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studystreak.example/schemas/raw_schema.json",
+  "title": "StudyStreak Canonical Raw Schema",
+  "type": "object",
+  "required": ["materialId","sourceMeta","cleanedUnits","concepts","sections","processingMeta"],
+  "properties": {
+    "materialId": {"type": "string"},
+    "sourceMeta": {
+      "type": "object",
+      "properties": {
+        "filename": {"type": "string"},
+        "contentType": {"type": "string","enum":["pdf","pptx","docx","text","image"]},
+        "pageCount": {"type": "integer"},
+        "extractionMethod": {"type": "string","enum":["ocr","native","hybrid"]},
+        "language": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "rawChunks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id","text"],
+        "properties": {
+          "id": {"type": "string"},
+          "text": {"type": "string"},
+          "page": {"type": ["integer","null"]},
+          "span": {"type": ["string","null"]}
+        },
+        "additionalProperties": false
+      }
+    },
+    "cleanedUnits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id","text","tokens","origin"],
+        "properties": {
+          "id": {"type": "string"},
+          "text": {"type": "string"},
+          "tokens": {"type": "integer"},
+          "origin": {"type":"object","properties":{"rawChunkId":{"type":"string"}},"additionalProperties": false}
+        }
+      }
+    },
+    "concepts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id","term","conceptType","shortDefinition","fullDefinition"],
+        "properties": {
+          "id": {"type": "string"},
+          "term": {"type": "string"},
+          "conceptType": {"type": "string","enum":["DEFINITION","COMPARISON","TYPE_LIST","PROCESS","EXAMPLE","FORMULA","SIMPLE","MERGED"]},
+          "shortDefinition": {"type": "string"},
+          "fullDefinition": {"type": "string"},
+          "examples": {"type": "array","items":{"type":"string"}},
+          "subtypes": {"type": "array","items":{"type":"string"}},
+          "relatedIds": {"type": "array","items":{"type":"string"}},
+          "importance": {"type":"number","minimum":0.0,"maximum":1.0},
+          "sourceSpan": {"type": ["string","null"]},
+          "todoFlag": {"type": ["boolean","null"]}
+        },
+        "additionalProperties": false
+      }
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id","title","conceptIds"],
+        "properties": {
+          "id": {"type": "string"},
+          "title": {"type": "string"},
+          "icon": {"type": "string"},
+          "conceptIds": {"type": "array","items":{"type":"string"}}
+        },
+        "additionalProperties": false
+      }
+    },
+    "summaryDraft": {
+      "type":"object",
+      "properties":{
+        "overview": {"type":"string"},
+        "mainIdeas": {"type":"array","items":{"type":"string"}},
+        "keyTakeaway": {"type":"string"}
+      },
+      "additionalProperties": false
+    },
+    "flashcardsDraft": {
+      "type": "array",
+      "items": {"type":"object","additionalProperties": true}
+    },
+    "quizDraft": {
+      "type": "array",
+      "items": {"type":"object","additionalProperties": true}
+    },
+    "processingMeta": {
+      "type": "object",
+      "required": ["createdAt","pipelineVersion"],
+      "properties": {
+        "createdAt": {"type":"string","format":"date-time"},
+        "pipelineVersion": {"type":"string"}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false,
+  "$comment": "Use strict properties; extend via explicit schema versions and $id references. For flexible drafts (flashcardsDraft/quizDraft) internal items allow additionalProperties until enriched.",
+  "examples": [
+    {
+      "materialId": "a98b87e1-fe9f-437c-a234-5e68697f34fc",
+      "sourceMeta": {"filename": "extractedtext.txt", "contentType": "text", "extractionMethod": "native", "language": "en"}
+    }
+  ]
+}

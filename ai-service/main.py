@@ -17,7 +17,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from dotenv import load_dotenv
 
 # Import route modules
-from routes import extraction, generation, embeddings
+from routes import extraction, generation, embeddings, schema as schema_routes, diagnostics
 import config
 
 # Load environment variables from .env if present
@@ -40,8 +40,8 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
     """Middleware to enforce API key authentication."""
     
     async def dispatch(self, request: Request, call_next):
-        # Skip auth for health/root/docs endpoints
-        if request.url.path in ["/", "/health", "/docs", "/openapi.json"]:
+        # Skip auth for health/root/docs/diagnostics endpoints
+        if request.url.path in ["/", "/health", "/docs", "/openapi.json", "/redoc"] or request.url.path.startswith("/diagnostics"):
             return await call_next(request)
 
         # If running under pytest in this process, skip API key enforcement to
@@ -79,6 +79,13 @@ app = FastAPI(
     description="AI microservice for generating study materials and embeddings"
 )
 
+# Log detected device for ML workloads
+try:
+    device_str = config.get_device()
+    logger.info(f"ML device configured: {device_str}")
+except Exception:
+    logger.info("ML device configured: cpu (fallback)")
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -95,6 +102,8 @@ app.add_middleware(APIKeyMiddleware)
 app.include_router(extraction.router)
 app.include_router(generation.router)
 app.include_router(embeddings.router)
+app.include_router(schema_routes.router)
+app.include_router(diagnostics.router)
 
 
 @app.get("/health")
@@ -125,6 +134,9 @@ async def root():
             "generate_flashcards": "/generate/flashcards",
             "generate_study_note": "/generate/study-note",
             "generate_embedding": "/embeddings/generate",
+            "schema_raw": "/schema/raw",
+            "schema_validate_raw": "/schema/validate-raw",
+            "diagnostics_ocr_smoke": "/diagnostics/ocr-smoke",
         },
         "docs": "/docs",
     }

@@ -24,14 +24,15 @@ def get_summarization_model() -> Pipeline:
     global _summarization_pipeline
     
     if _summarization_pipeline is None:
-        logger.info("Loading summarization model (facebook/bart-large-cnn)...")
+        device_id = config.get_hf_pipeline_device_id()
+        logger.info(f"Loading summarization model (facebook/bart-large-cnn) on device={device_id}...")
         try:
             _summarization_pipeline = pipeline(
                 "summarization",
                 model="facebook/bart-large-cnn",
-                device=-1  # CPU (use 0 for GPU)
+                device=device_id
             )
-            logger.info("✅ Summarization model loaded successfully")
+            logger.info(f"✅ Summarization model loaded successfully on device={device_id}")
         except Exception as e:
             logger.error(f"❌ Failed to load summarization model: {e}")
             raise

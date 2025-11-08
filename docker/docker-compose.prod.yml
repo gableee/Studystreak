@@ -1,0 +1,75 @@
+# Production Docker Compose with GPU Support
+# Use this for production deployments with optional GPU acceleration
+
+services:
+  php-backend:
+    build:
+      context: ../php-backend
+    ports:
+      - "8181:8181"
+    env_file:
+      - ../php-backend/.env
+    command: php -d variables_order=EGPCS -d upload_max_filesize=100M -d post_max_size=100M -d memory_limit=128M -d max_execution_time=180 -d max_input_time=180 -S 0.0.0.0:8181 -t public public/router.php
+    depends_on:
+      ai-service:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - studystreak
+
+  ai-service:
+    build:
+      context: ../ai-service
+      dockerfile: Dockerfile
+    image: studystreak-ai:latest
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../ai-service/.env
+    environment:
+      # Override USE_GPU based on deployment
+      # Set to 'cpu' for CPU-only, 'auto' for GPU if available
+      - USE_GPU=${AI_USE_GPU:-auto}
+      - CUDA_DEVICE=${AI_CUDA_DEVICE:-0}
+    volumes:
+      # Persistent model cache (critical for production)
+      - ai-models-cache:/app/model_cache
+      # Optional: mount code for development hot-reload (comment out for production)
+      # - ../ai-service:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --workers 2
+    # GPU configuration (requires nvidia-docker2 or Docker Desktop with WSL2)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    # Alternative for older Docker versions:
+    # runtime: nvidia
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - studystreak
+
+  context7-mcp:
+    build:
+      context: ./
+    ports:
+      - "8090:8080"
+    restart: unless-stopped
+    networks:
+      - studystreak
+
+volumes:
+  ai-models-cache:
+    driver: local
+
+networks:
+  studystreak:
+    driver: bridge
