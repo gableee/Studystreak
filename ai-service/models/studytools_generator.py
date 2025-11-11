@@ -203,7 +203,7 @@ Generate the JSON now:"""
             logger.error(f"Keypoints generation failed: {e}")
             raise
     
-    def generate_quiz(self, content: str, assignment: Optional[str] = None, num_questions: int = 5) -> List[Dict[str, Any]]:
+    def generate_quiz(self, content: str, assignment: Optional[str] = None, num_questions: int = 5, question_type: str = 'multiple-choice', difficulty: str = 'normal') -> List[Dict[str, Any]]:
         """
         Generate quiz questions with answers and explanations.
         
@@ -211,16 +211,68 @@ Generate the JSON now:"""
             content: Extracted text content
             assignment: Optional task description
             num_questions: Number of questions to generate
+            question_type: Type of questions (multiple-choice, true-false, short-answer)
+            difficulty: Difficulty level (easy, normal, hard)
         
         Returns:
             List of quiz question dicts
         """
         try:
-            logger.info(f"Generating {num_questions} quiz questions...")
+            logger.info(f"Generating {num_questions} {difficulty} {question_type} quiz questions...")
             
-            system_prompt = """You are an academic assistant AI specialized in creating educational quiz questions.
-Generate multiple choice, true/false, or short answer questions based on the content.
-Include correct answers, explanations, difficulty levels, and time estimates."""
+            # Customize prompt based on question type
+            if question_type == 'true-false':
+                type_instructions = """- Generate EXACTLY {num_questions} TRUE/FALSE questions
+- EVERY question MUST have exactly 2 options: ["True", "False"]
+- Questions should be clear statements that are definitively true or false
+- Answer must be either "True" or "False"""
+                type_example = '''{
+      "question": "Machine learning algorithms can only work with numerical data. True or False?",
+      "options": ["True", "False"],
+      "answer": "False",
+      "explanation": "Machine learning can work with various data types including text, images, and categorical data.",
+      "difficulty": "normal",
+      "time_estimate": "1 minute"
+    }'''
+            elif question_type == 'short-answer':
+                type_instructions = """- Generate EXACTLY {num_questions} SHORT ANSWER questions
+- Questions should require a brief written response (1-3 sentences)
+- DO NOT include options array
+- Provide a model answer that demonstrates the expected response"""
+                type_example = '''{
+      "question": "Explain the difference between supervised and unsupervised learning.",
+      "options": [],
+      "answer": "Supervised learning uses labeled training data to learn a mapping from inputs to outputs, while unsupervised learning finds patterns in unlabeled data without predefined categories.",
+      "explanation": "This answer correctly identifies the key difference: labeled vs unlabeled data.",
+      "difficulty": "normal",
+      "time_estimate": "3 minutes"
+    }'''
+            else:  # multiple-choice
+                type_instructions = """- Generate EXACTLY {num_questions} MULTIPLE CHOICE quiz questions covering key concepts
+- EVERY question MUST have exactly 4 distinct, meaningful options
+- DO NOT use letter prefixes like "A. ", "B. ", "C. ", "D. " in the options array
+- DO NOT use generic text like "Option A", "Option B", "Option C", "Option D"
+- Each option should be ONLY the answer text itself, without any prefix
+- The 'answer' field MUST contain the EXACT text of the correct option (copy it word-for-word)
+- DO NOT include the options in the question text - keep them separate
+- Question text should end with a question mark"""
+                type_example = '''{
+      "question": "Which algorithm is commonly used for classification tasks in supervised learning?",
+      "options": [
+        "Decision Trees",
+        "K-Means Clustering", 
+        "Principal Component Analysis",
+        "Apriori Algorithm"
+      ],
+      "answer": "Decision Trees",
+      "explanation": "Decision Trees are a popular supervised learning algorithm used for classification tasks, while the other options are used for clustering, dimensionality reduction, and association rule learning respectively.",
+      "difficulty": "normal",
+      "time_estimate": "2 minutes"
+    }'''
+
+            system_prompt = f"""You are an academic assistant AI specialized in creating educational quiz questions.
+Generate {question_type} questions at {difficulty} difficulty level.
+Include correct answers, explanations, and time estimates."""
             
             user_prompt = f"""Assignment: {assignment or 'Generate quiz questions from the material'}
 
@@ -228,28 +280,29 @@ Content:
 {content[:15000]}
 
 Instructions:
-- Generate {num_questions} quiz questions covering key concepts
-- Mix question types: multiple choice, true/false
-- Include 4 options for multiple choice questions
-- Provide correct answer, detailed explanation, difficulty level (easy/normal/hard)
+{type_instructions.format(num_questions=num_questions)}
+- Difficulty level: {difficulty} (easy = basic recall, normal = understanding, hard = analysis/application)
+- Provide detailed explanation for why the answer is correct
 - Estimate time to answer each question (1-3 minutes)
 - Questions should test understanding, not just memorization
+
+CRITICAL RULES FOR OPTIONS AND ANSWERS:
+1. Options array must contain ONLY the answer text (no "A. ", "B. ", "C. ", "D. " prefixes)
+2. The 'answer' field MUST be the EXACT TEXT of one of the options (copy-paste it exactly)
+3. DO NOT use "Option A", "Option B", etc. in the answer field
+4. Example: If options are ["Apple", "Banana", "Cherry", "Date"], answer must be one of these exact words
 
 Return ONLY valid JSON in this exact format:
 {{
   "quiz": [
-    {{
-      "question": "Question text?",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
-      "answer": "Option A",
-      "explanation": "Why this is correct.",
-      "difficulty": "normal",
-      "time_estimate": "2 minutes",
-      "userAnswer": null,
-      "score": null
-    }}
+    {type_example}
   ]
 }}
+
+IMPORTANT: 
+- Question type: {question_type}
+- Difficulty: {difficulty}
+- Answer must match one option EXACTLY (character-by-character)
 
 Generate the quiz JSON now:"""
             
@@ -270,10 +323,70 @@ Generate the quiz JSON now:"""
             normalized_quiz = []
             for q in quiz[:num_questions]:
                 if isinstance(q, dict) and 'question' in q:
+                    options = q.get('options', [])
+                    answer = q.get('answer', '')
+                    
+                    # Clean up options: remove letter prefixes like "A. ", "B. ", etc.
+                    cleaned_options = []
+                    for opt in options:
+                        if isinstance(opt, str):
+                            # Remove patterns like "A. ", "B. ", "1. ", etc.
+                            import re
+                            cleaned = re.sub(r'^[A-D][\.\)]\s*', '', opt.strip())
+                            cleaned_options.append(cleaned)
+                    
+                    options = cleaned_options
+                    
+                    # Clean up answer field: handle "Option A", "Option B" format
+                    if answer and isinstance(answer, str):
+                        # If answer is "Option X", try to map to actual option
+                        option_pattern = re.match(r'Option\s+([A-D])', answer, re.IGNORECASE)
+                        if option_pattern:
+                            letter = option_pattern.group(1).upper()
+                            index = ord(letter) - ord('A')
+                            if 0 <= index < len(options):
+                                answer = options[index]
+                                logger.info(f"Converted '{q.get('answer')}' to '{answer}'")
+                        else:
+                            # Try to clean the answer like we did options
+                            answer = re.sub(r'^[A-D][\.\)]\s*', '', answer.strip())
+                    
+                    # Validate based on question type
+                    if question_type == 'true-false':
+                        # Must have exactly 2 options
+                        if len(options) != 2 or not all(opt in ['True', 'False'] for opt in options):
+                            options = ['True', 'False']
+                    elif question_type == 'short-answer':
+                        # No options needed for short answer
+                        options = []
+                    else:  # multiple-choice
+                        # Must have exactly 4 options with actual content
+                        if len(options) < 4:
+                            logger.warning(f"Question has only {len(options)} options, skipping: {q.get('question', '')[:50]}")
+                            continue  # Skip questions with incomplete options
+                        elif len(options) > 4:
+                            options = options[:4]
+                        
+                        # Validate options are not generic placeholders
+                        generic_patterns = [
+                            ['option a', 'option b', 'option c', 'option d'],
+                            ['a', 'b', 'c', 'd'],
+                            ['', '', '', '']
+                        ]
+                        options_lower = [opt.lower().strip() for opt in options]
+                        if options_lower in generic_patterns or all(len(opt) < 3 for opt in options):
+                            logger.warning(f"Question has generic/empty options, skipping: {q.get('question', '')[:50]}")
+                            continue  # Skip questions with placeholder options
+                        
+                        # Ensure answer matches one of the options
+                        if answer not in options:
+                            logger.warning(f"Answer '{answer}' not in options, using first option as fallback")
+                            answer = options[0] if options else ''
+                    
                     normalized_quiz.append({
                         'question': q.get('question', ''),
-                        'options': q.get('options', []),
-                        'answer': q.get('answer', ''),
+                        'options': options,
+                        'answer': answer,
                         'explanation': q.get('explanation', ''),
                         'difficulty': q.get('difficulty', 'normal'),
                         'time_estimate': q.get('time_estimate', '2 minutes'),
@@ -282,18 +395,41 @@ Generate the quiz JSON now:"""
                     })
             
             if not normalized_quiz:
-                # Fallback question
-                logger.warning("Using fallback quiz structure")
-                normalized_quiz = [{
-                    'question': 'What are the main concepts covered in this material?',
-                    'options': ['Concept A', 'Concept B', 'Concept C', 'All of the above'],
-                    'answer': 'All of the above',
-                    'explanation': 'The material covers multiple key concepts.',
-                    'difficulty': 'easy',
-                    'time_estimate': '2 minutes',
-                    'userAnswer': None,
-                    'score': None
-                }]
+                # Fallback question based on question type
+                logger.warning(f"Using fallback {question_type} quiz structure")
+                if question_type == 'true-false':
+                    normalized_quiz = [{
+                        'question': 'The material covers multiple important concepts. True or False?',
+                        'options': ['True', 'False'],
+                        'answer': 'True',
+                        'explanation': 'The material contains several key concepts worth studying.',
+                        'difficulty': 'easy',
+                        'time_estimate': '1 minute',
+                        'userAnswer': None,
+                        'score': None
+                    }]
+                elif question_type == 'short-answer':
+                    normalized_quiz = [{
+                        'question': 'What are the main concepts covered in this material?',
+                        'options': [],
+                        'answer': 'The material covers several key concepts related to the subject matter.',
+                        'explanation': 'Your answer should identify the main topics discussed.',
+                        'difficulty': 'easy',
+                        'time_estimate': '3 minutes',
+                        'userAnswer': None,
+                        'score': None
+                    }]
+                else:  # multiple-choice
+                    normalized_quiz = [{
+                        'question': 'What are the main concepts covered in this material?',
+                        'options': ['Fundamental principles', 'Advanced applications', 'Practical examples', 'All of the above'],
+                        'answer': 'All of the above',
+                        'explanation': 'The material covers multiple key concepts including principles, applications, and examples.',
+                        'difficulty': 'easy',
+                        'time_estimate': '2 minutes',
+                        'userAnswer': None,
+                        'score': None
+                    }]
             
             logger.info(f"Quiz generated ({len(normalized_quiz)} questions)")
             

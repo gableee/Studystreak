@@ -33,15 +33,21 @@ final class MaterialAiVersionRepository
         $authToken = $this->serviceRoleKey ?? $userToken;
         $apiKey = $authToken === $this->serviceRoleKey ? $this->serviceRoleKey : $this->anonKey;
 
-        error_log('[MaterialAiVersionRepo] Inserting AI version: ' . json_encode([
-            'material_id' => $data['material_id'] ?? 'MISSING',
-            'type' => $data['type'] ?? 'MISSING',
-            'using_service_role' => $authToken === $this->serviceRoleKey,
-            'has_content' => isset($data['content']),
-            'content_length' => isset($data['content']) ? strlen($data['content']) : 0,
-        ]));
-
-        $result = $this->send('POST', '/rest/v1/material_ai_versions', [
+		$contentLength = 0;
+		if (isset($data['content'])) {
+			if (is_string($data['content'])) {
+				$contentLength = strlen($data['content']);
+			} elseif (is_array($data['content'])) {
+				$contentLength = strlen(json_encode($data['content']));
+			}
+		}
+		error_log('[MaterialAiVersionRepo] Inserting AI version: ' . json_encode([
+			'material_id' => $data['material_id'] ?? 'MISSING',
+			'type' => $data['type'] ?? 'MISSING',
+			'using_service_role' => $authToken === $this->serviceRoleKey,
+			'has_content' => isset($data['content']),
+			'content_length' => $contentLength,
+		]));        $result = $this->send('POST', '/rest/v1/material_ai_versions', [
             'headers' => [
                 'Authorization' => 'Bearer ' . $authToken,
                 'apikey' => $apiKey,

@@ -51,6 +51,8 @@ class QuizRequest(BaseModel):
     supabase_file_path: Optional[str] = Field(None, description="Supabase file path")
     assignment: Optional[str] = Field(None, description="Assignment description")
     num_questions: int = Field(5, ge=1, le=20)
+    question_type: str = Field('multiple-choice', description="Question type: multiple-choice, true-false, or short-answer")
+    difficulty: str = Field('normal', description="Difficulty level: easy, normal, or hard")
 
 
 class FlashcardsRequest(BaseModel):
@@ -219,7 +221,17 @@ async def generate_quiz(request: QuizRequest) -> Dict[str, Any]:
         
         content = get_content_from_request(request.content, request.supabase_file_path)
         
-        quiz = studytools_generator.generate_quiz(content, request.assignment, request.num_questions)
+        # Get quiz parameters
+        question_type = getattr(request, 'question_type', 'multiple-choice')
+        difficulty = getattr(request, 'difficulty', 'normal')
+        
+        quiz = studytools_generator.generate_quiz(
+            content, 
+            request.assignment, 
+            request.num_questions,
+            question_type=question_type,
+            difficulty=difficulty
+        )
         
         logger.info("✅ Quiz generation completed")
         
