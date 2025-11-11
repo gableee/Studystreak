@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Sparkles, Loader2, AlertCircle, History, Play } from 'lucide-react';
-import { fetchQuiz } from './api';
+import { fetchQuiz, submitQuizAttempt } from './api';
 import { apiClient } from '@/lib/apiClient';
 import { supabase } from '@/lib/supabaseClient';
 import { QuizHistoryView } from '@/components/QuizHistoryView';
@@ -25,6 +25,9 @@ export function QuizTab({ materialId }: QuizTabProps) {
   const [userAnswers, setUserAnswers] = useState<Record<string, string[]>>({});
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState<{ correct: number; total: number } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [quizStartTime, setQuizStartTime] = useState<number | null>(null);
 
   const types: { value: QuizType; label: string }[] = [
     { value: 'multiple-choice', label: 'Multiple Choice' },
@@ -48,6 +51,8 @@ export function QuizTab({ materialId }: QuizTabProps) {
       setUserAnswers({});
       setSubmitted(false);
       setScore(null);
+      setSubmitError(null);
+      setQuizStartTime(Date.now());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate quiz');
     } finally {
@@ -60,6 +65,14 @@ export function QuizTab({ materialId }: QuizTabProps) {
 
     setUserAnswers((prev) => {
       const current = prev[questionId] || [];
+      
+      // For short-answer (text input), always replace with new text
+      if (!quiz) return prev;
+      const question = quiz.questions.find(q => q.id === questionId);
+      if (question && question.options && question.options.length === 0) {
+        // Short answer: store the text directly
+        return { ...prev, [questionId]: [answer] };
+      }
       
       if (isMultipleCorrect) {
         // Checkbox behavior: toggle selection
@@ -75,10 +88,17 @@ export function QuizTab({ materialId }: QuizTabProps) {
     });
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!quiz) return;
 
     let correct = 0;
+    const responses: Array<{
+      question_id: string;
+      user_answer: string | string[];
+      is_correct: boolean;
+      response_time_ms?: number;
+    }> = [];
+
     quiz.questions.forEach((question) => {
       const userAnswer = userAnswers[question.id] || [];
       const correctAnswer = question.correctAnswer;
@@ -92,16 +112,47 @@ export function QuizTab({ materialId }: QuizTabProps) {
       );
 
       // Check if sets are equal
-      if (
+      const isCorrect = (
         userAnswerSet.size === correctAnswerSet.size &&
         [...userAnswerSet].every((a) => correctAnswerSet.has(a))
-      ) {
+      );
+
+      if (isCorrect) {
         correct++;
       }
+
+      responses.push({
+        question_id: question.id,
+        user_answer: userAnswer.length === 1 ? userAnswer[0] : userAnswer,
+        is_correct: isCorrect,
+      });
     });
 
     setScore({ correct, total: quiz.questions.length });
     setSubmitted(true);
+
+    // Submit to backend
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const timeSpent = quizStartTime ? Math.round((Date.now() - quizStartTime) / 1000) : 0;
+      
+      await submitQuizAttempt(materialId, {
+        quiz_id: `${selectedType}-${selectedDifficulty}-${Date.now()}`,
+        score: Math.round((correct / quiz.questions.length) * 100),
+        total_questions: quiz.questions.length,
+        correct_answers: correct,
+        time_spent: timeSpent,
+        responses,
+      });
+
+      // Success - quiz saved to history
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Failed to save quiz results');
+      console.error('Failed to submit quiz:', err);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function isAnswerCorrect(questionId: string): boolean | null {
@@ -289,12 +340,22 @@ export function QuizTab({ materialId }: QuizTabProps) {
           {quiz && quiz.questions.length > 0 && (
             <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-lg border border-slate-200/60 dark:bg-white/5 dark:border-slate-700/60">
               <div className="flex items-center justify-between gap-2 mb-6">
-                <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 text-sm font-medium">
-                  <Sparkles className="w-4 h-4" />
-                  <span>AI Generated Quiz</span>
-                  <span className="text-slate-400 dark:text-slate-500">
-                    • {quiz.questions.length} questions
-                  </span>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 text-sm font-medium">
+                    <Sparkles className="w-4 h-4" />
+                    <span>AI Generated Quiz</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="px-2.5 py-1 bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 rounded-lg font-medium capitalize">
+                      {selectedType.replace('-', ' ')}
+                    </span>
+                    <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg font-medium capitalize">
+                      {selectedDifficulty}
+                    </span>
+                    <span className="text-slate-400 dark:text-slate-500">
+                      • {quiz.questions.length} questions
+                    </span>
+                  </div>
                 </div>
                 <button
                   onClick={async () => {
@@ -334,6 +395,21 @@ export function QuizTab({ materialId }: QuizTabProps) {
                       </span>
                       {' '}({Math.round((score.correct / score.total) * 100)}%)
                     </p>
+                    {submitting && (
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                        Saving to history...
+                      </p>
+                    )}
+                    {submitError && (
+                      <p className="text-sm text-red-600 dark:text-red-400 mt-2">
+                        Failed to save: {submitError}
+                      </p>
+                    )}
+                    {!submitting && !submitError && (
+                      <p className="text-sm text-green-600 dark:text-green-400 mt-2">
+                        ✓ Saved to quiz history
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -361,8 +437,35 @@ export function QuizTab({ materialId }: QuizTabProps) {
                             {question.question}
                           </p>
 
-                          {/* Options */}
-                          {question.options && (
+                          {/* Short Answer Input */}
+                          {question.type === 'short-answer' && (
+                            <div className="space-y-3">
+                              <textarea
+                                value={userSelectedAnswers[0] || ''}
+                                onChange={(e) => handleAnswerSelect(question.id, e.target.value, false)}
+                                disabled={submitted}
+                                placeholder="Type your answer here..."
+                                rows={4}
+                                className={`
+                                  w-full p-4 rounded-xl border-2 transition-all duration-200
+                                  ${!submitted ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:border-purple-400 dark:focus:border-purple-500 focus:outline-none' : ''}
+                                  ${submitted ? 'bg-slate-100 dark:bg-slate-800/30 border-slate-300 dark:border-slate-600 cursor-not-allowed' : ''}
+                                  text-slate-900 dark:text-white
+                                `}
+                              />
+                              {submitted && (
+                                <div className="p-4 bg-blue-50 dark:bg-blue-500/10 rounded-xl border border-blue-200 dark:border-blue-500/30">
+                                  <p className="text-sm text-blue-900 dark:text-blue-100">
+                                    <span className="font-semibold">Model Answer: </span>
+                                    {question.correctAnswer}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Multiple Choice / True-False Options */}
+                          {question.options && question.options.length > 0 && (
                             <div className="space-y-2">
                               {question.options.map((option, optIndex) => {
                                 const isSelected = userSelectedAnswers.includes(option);
@@ -379,7 +482,8 @@ export function QuizTab({ materialId }: QuizTabProps) {
                                       w-full p-4 rounded-xl text-left transition-all duration-200 flex items-center gap-3 border-2
                                       ${!submitted && !isSelected ? 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-500 hover:bg-slate-100 dark:hover:bg-slate-700/50' : ''}
                                       ${!submitted && isSelected ? 'bg-purple-100 dark:bg-purple-500/20 border-purple-400 dark:border-purple-500' : ''}
-                                      ${showCorrect ? 'bg-green-100 dark:bg-green-500/20 border-green-500 dark:border-green-400' : ''}
+                                      ${showCorrect && isSelected ? 'bg-green-50 dark:bg-green-500/20 border-2 border-green-600 dark:border-green-500' : ''}
+                                        ${showCorrect && !isSelected ? 'bg-green-50 dark:bg-green-900/10 border-2 border-green-500 dark:border-green-800/70' : ''}
                                       ${showWrong ? 'bg-red-100 dark:bg-red-500/20 border-red-500 dark:border-red-400' : ''}
                                       ${submitted ? 'cursor-not-allowed' : 'cursor-pointer'}
                                     `}
@@ -389,19 +493,25 @@ export function QuizTab({ materialId }: QuizTabProps) {
                                       flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center
                                       ${!submitted && isSelected ? 'border-purple-500 bg-purple-500' : ''}
                                       ${!submitted && !isSelected ? 'border-slate-300 dark:border-slate-600' : ''}
-                                      ${showCorrect ? 'border-green-500 bg-green-500' : ''}
+                                      ${showCorrect && isSelected ? 'border-green-600 bg-white' : ''}
+                                      ${showCorrect && !isSelected ? 'border-green-700 bg-transparent' : ''}
                                       ${showWrong ? 'border-red-500 bg-red-500' : ''}
                                       ${submitted && !showCorrect && !showWrong ? 'border-slate-300 dark:border-slate-600' : ''}
                                     `}>
                                       {(isSelected || showCorrect) && (
-                                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                                        <div className={`w-2 h-2 rounded-full ${
+                                          showCorrect && isSelected ? 'bg-green-600' : 
+                                          showCorrect && !isSelected ? 'bg-white' :
+                                          'bg-white'
+                                        }`}></div>
                                       )}
                                     </div>
 
                                     {/* Option Text */}
                                     <span className={`
                                       flex-1 text-sm font-medium
-                                      ${showCorrect ? 'text-green-900 dark:text-green-100' : ''}
+                                      ${showCorrect && isSelected ? 'text-green-900 dark:text-white font-semibold' : ''}
+                                      ${showCorrect && !isSelected ? 'text-green-800 dark:text-green-200' : ''}
                                       ${showWrong ? 'text-red-900 dark:text-red-100' : ''}
                                       ${!submitted ? 'text-slate-700 dark:text-slate-200' : ''}
                                       ${submitted && !showCorrect && !showWrong ? 'text-slate-500 dark:text-slate-400' : ''}
@@ -410,9 +520,14 @@ export function QuizTab({ materialId }: QuizTabProps) {
                                     </span>
 
                                     {/* Correct/Wrong Indicators */}
-                                    {showCorrect && (
-                                      <span className="text-xs font-semibold text-green-700 dark:text-green-300 bg-green-200 dark:bg-green-900/30 px-2 py-1 rounded-lg">
+                                    {showCorrect && isSelected && (
+                                      <span className="text-xs font-semibold text-white bg-green-700 dark:bg-green-800 px-2 py-1 rounded-lg">
                                         ✓ Correct
+                                      </span>
+                                    )}
+                                    {showCorrect && !isSelected && (
+                                      <span className="text-xs font-semibold text-green-700 dark:text-green-300 bg-green-200/60 dark:bg-green-900/20 px-2 py-1 rounded-lg">
+                                        ✓ Correct Answer
                                       </span>
                                     )}
                                     {showWrong && (

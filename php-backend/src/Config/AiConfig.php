@@ -26,7 +26,10 @@ final class AiConfig
         $apiKey = $apiKey !== false && $apiKey !== null ? trim((string)$apiKey) : null;
         $this->apiKey = $apiKey !== '' ? $apiKey : null;
 
-        $this->timeoutSeconds = 120; // 2 minutes for AI generation
+        // Align with AI service timeout; can be overridden via env
+        $timeout = getenv('AI_SERVICE_TIMEOUT') ?: getenv('AI_REQUEST_TIMEOUT');
+        $timeout = ($timeout !== false && $timeout !== null && trim((string)$timeout) !== '') ? (int)$timeout : 300;
+        $this->timeoutSeconds = $timeout;
         $this->embeddingModel = 'sentence-transformers/all-MiniLM-L6-v2';
         $this->vectorDimensions = 384; // all-MiniLM-L6-v2 produces 384-dim vectors
     }

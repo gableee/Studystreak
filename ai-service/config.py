@@ -1,84 +1,55 @@
 """
-Configuration for AI service.
-Holds model paths, vector dimensions, and API keys.
+Configuration settings for AI service.
+Loads environment variables and provides configuration constants.
 """
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
-# Optional: device selection for Torch/Transformers/CLIP
-# USE_GPU options: "auto" | "cpu" | "cuda" | "1"/"0" | "true"/"false"
-USE_GPU = os.getenv("USE_GPU", "auto").lower()
-CUDA_DEVICE = int(os.getenv("CUDA_DEVICE", "0"))
-TORCH_HOME = os.getenv("TORCH_HOME", str(Path("./model_cache/torch").resolve()))
-HF_HOME = os.getenv("HF_HOME", str(Path("./model_cache/hf").resolve()))
+# Load environment variables from .env file
+env_path = Path(__file__).parent / '.env'
+if env_path.exists():
+    load_dotenv(env_path)
 
-os.environ.setdefault("TORCH_HOME", TORCH_HOME)
-os.environ.setdefault("HF_HOME", HF_HOME)
+# Supabase Configuration
+SUPABASE_URL = os.getenv('SUPABASE_URL', '')
+SUPABASE_KEY = os.getenv('SUPABASE_KEY', '')
+SUPABASE_ANON_KEY = os.getenv('SUPABASE_ANON_KEY', SUPABASE_KEY)
+SUPABASE_BUCKET = os.getenv('SUPABASE_BUCKET', 'learning-materials-v2')
 
-# AI Service Settings
-AI_SERVICE_HOST = os.getenv("AI_SERVICE_HOST", "0.0.0.0")
-AI_SERVICE_PORT = int(os.getenv("AI_SERVICE_PORT", "8000"))
-API_KEY = os.getenv("AI_SERVICE_API_KEY", None)
+# Ollama Configuration
+OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'qwen3-vl:8b')
+OLLAMA_TIMEOUT = int(os.getenv('OLLAMA_TIMEOUT', '120'))
 
-# HuggingFace API Token (for Inference API or private models)
-HF_API_TOKEN = os.getenv("HF_API_TOKEN", None)
+# Service Configuration
+PORT = int(os.getenv('PORT', '8000'))
+HOST = os.getenv('HOST', '0.0.0.0')
+LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
+DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
-# Model Settings
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-VECTOR_DIMENSIONS = 384  # all-MiniLM-L6-v2 produces 384-dim vectors
+# Generation Defaults
+DEFAULT_NUM_QUIZ_QUESTIONS = 5
+DEFAULT_NUM_FLASHCARDS = 10
+MAX_QUIZ_QUESTIONS = 20
+MAX_FLASHCARDS = 50
 
-SUMMARY_MODEL = "facebook/bart-large-cnn"
-KEYPOINTS_MODEL = "facebook/bart-large-cnn"
-QUIZ_MODEL = "t5-base"  # TODO: Fine-tune for question generation
-FLASHCARD_MODEL = "t5-base"
+# Content Processing
+MAX_CONTENT_LENGTH = 20000  # Characters to send to model
+MIN_CONTENT_LENGTH = 100    # Minimum required content
 
-# Model Cache Directory (avoid conflict with models/ Python package)
-MODEL_CACHE_DIR = Path(os.getenv("MODEL_CACHE_DIR", "./model_cache"))
+# File Upload
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
+ALLOWED_EXTENSIONS = {'.pdf', '.docx', '.pptx', '.txt', '.md', '.png', '.jpg', '.jpeg', '.tiff', '.bmp'}
+
+# Paths
+BASE_DIR = Path(__file__).parent
+LOGS_DIR = BASE_DIR / 'logs'
+MODEL_CACHE_DIR = BASE_DIR / 'model_cache'
+TEMP_DIR = BASE_DIR / 'tmp'
+
+# Create directories if they don't exist
+LOGS_DIR.mkdir(exist_ok=True)
 MODEL_CACHE_DIR.mkdir(exist_ok=True)
-
-# Request Limits
-# Removed hard MAX_TEXT_LENGTH limit - chunking handles long texts
-# Allow up to 1M chars but rely on summarizer chunking for safe processing
-MAX_TEXT_LENGTH = 1000000  # characters (soft limit, chunking handles actual processing)
-MAX_BATCH_SIZE = 32
-
-# Logging
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
-LOG_FILE = Path("./logs/ai_service.log")
-LOG_FILE.parent.mkdir(exist_ok=True)
-
-
-def get_device() -> str:
-	"""Return a torch device string based on USE_GPU and availability.
-
-	Returns:
-		e.g. "cuda:0" or "cpu"
-	"""
-	# Avoid importing torch at module import for speed in non-ML code paths
-	try:
-		import torch  # type: ignore
-	except Exception:
-		return "cpu"
-
-	if USE_GPU in {"cpu", "0", "false"}:
-		return "cpu"
-
-	# auto | cuda | 1 | true
-	if torch.cuda.is_available():
-		return f"cuda:{CUDA_DEVICE}"
-	return "cpu"
-
-
-def get_hf_pipeline_device_id() -> int:
-	"""Return the device id for HuggingFace pipelines.
-
-	-1 for CPU, >=0 GPU index.
-	"""
-	dev = get_device()
-	if dev.startswith("cuda:"):
-		try:
-			return int(dev.split(":", 1)[1])
-		except Exception:
-			return 0
-	return -1
+TEMP_DIR.mkdir(exist_ok=True)

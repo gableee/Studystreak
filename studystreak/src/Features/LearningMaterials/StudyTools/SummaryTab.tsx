@@ -74,7 +74,22 @@ export function SummaryTab({ materialId }: SummaryTabProps) {
     );
   }
 
-  if (!summary || !summary.summary) {
+  // Extract summary content (handle both string and object formats)
+  const summaryContent = summary?.summary 
+    ? typeof summary.summary === 'string' 
+      ? summary.summary 
+      : summary.summary.content
+    : null;
+
+  const summaryWordCount = summary?.summary && typeof summary.summary === 'object' 
+    ? summary.summary.word_count 
+    : null;
+
+  const summaryReadingTime = summary?.summary && typeof summary.summary === 'object'
+    ? summary.summary.reading_time
+    : null;
+
+  if (!summary || !summaryContent) {
     return (
       <div className="bg-slate-50/50 backdrop-blur-sm rounded-3xl p-12 border border-slate-200 text-center dark:bg-white/5 dark:border-slate-700">
         <div className="flex flex-col items-center gap-4">
@@ -163,6 +178,16 @@ export function SummaryTab({ materialId }: SummaryTabProps) {
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4" />
           <span>AI Generated</span>
+          {summaryWordCount && (
+            <span className="text-slate-400 dark:text-slate-500">
+              • {summaryWordCount} words
+            </span>
+          )}
+          {summaryReadingTime && (
+            <span className="text-slate-400 dark:text-slate-500">
+              • {summaryReadingTime}
+            </span>
+          )}
           {summary.generatedAt && (
             <span className="text-slate-400 dark:text-slate-500">
               • {new Date(summary.generatedAt).toLocaleDateString()}
@@ -204,7 +229,7 @@ export function SummaryTab({ materialId }: SummaryTabProps) {
       {/* Summary Content */}
       <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-lg border border-slate-200/60 dark:bg-white/5 dark:border-slate-700/60">
         <p className="text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-wrap text-base">
-          {summary.summary}
+          {summaryContent}
         </p>
       </div>
     </div>

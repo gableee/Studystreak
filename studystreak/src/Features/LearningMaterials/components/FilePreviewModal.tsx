@@ -102,17 +102,7 @@ export function FilePreviewModal({ material, onClose }: FilePreviewModalProps) {
               <Download className="h-4 w-4" />
               Download
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                // TODO: Implement quiz generation
-                console.log('Quiz button clicked for material:', material.id)
-              }}
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-3 py-2 text-sm font-medium text-white shadow-md transition hover:bg-blue-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-            >
-              <BookOpen className="h-4 w-4" />
-              Quiz
-            </button>
+
             <button
               type="button"
               onClick={onClose}

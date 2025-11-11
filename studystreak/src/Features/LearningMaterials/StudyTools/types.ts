@@ -2,7 +2,11 @@ export type StudyToolTab = 'summary' | 'keypoints' | 'quiz' | 'flashcards';
 
 export interface StudySummary {
   materialId: string;
-  summary: string;
+  summary: {
+    content: string;
+    word_count: number;
+    reading_time: string;
+  } | string; // Support both old (string) and new (object) format
   generatedAt: string;
 }
 
