@@ -1,9 +1,12 @@
 """
 AI Models package - ML model loaders and inference logic.
 """
+"""Models package init.
 
-from .summarizer import Summarizer
-from .qa_generator import QAGenerator
-from .embedder import get_embedding_model
+Avoid importing heavy model dependencies at package import time (transformers,
+pytesseract, torch, etc.) because importing submodules can trigger large
+side-effects and break on some Python versions/environments. Import submodules
+explicitly where needed.
+"""
 
-__all__ = ["Summarizer", "QAGenerator", "get_embedding_model"]
+__all__ = []

@@ -1,0 +1,124 @@
+table_name,column_name,data_type,is_nullable,column_default,character_maximum_length,ordinal_position
+ai_jobs,job_id,uuid,NO,gen_random_uuid(),null,1
+ai_jobs,material_id,uuid,NO,null,null,2
+ai_jobs,user_id,uuid,NO,null,null,3
+ai_jobs,job_type,character varying,NO,null,50,4
+ai_jobs,status,USER-DEFINED,NO,'pending'::ai_job_status,null,5
+ai_jobs,priority,integer,NO,0,null,6
+ai_jobs,attempts,integer,NO,0,null,7
+ai_jobs,max_attempts,integer,NO,3,null,8
+ai_jobs,error_message,text,YES,null,null,9
+ai_jobs,result,jsonb,YES,null,null,10
+ai_jobs,metadata,jsonb,YES,null,null,11
+ai_jobs,started_at,timestamp with time zone,YES,null,null,12
+ai_jobs,completed_at,timestamp with time zone,YES,null,null,13
+ai_jobs,created_at,timestamp with time zone,NO,now(),null,14
+ai_jobs,updated_at,timestamp with time zone,NO,now(),null,15
+learning_materials,material_id,uuid,NO,uuid_generate_v4(),null,1
+learning_materials,title,text,NO,null,null,2
+learning_materials,description,text,YES,null,null,3
+learning_materials,content_type,text,NO,null,null,4
+learning_materials,file_url,text,YES,null,null,5
+learning_materials,created_at,timestamp with time zone,YES,now(),null,9
+learning_materials,extracted_content,text,YES,null,null,10
+learning_materials,word_count,integer,YES,0,null,11
+learning_materials,ai_quiz_generated,boolean,YES,false,null,12
+learning_materials,user_id,uuid,YES,null,null,13
+learning_materials,is_public,boolean,YES,false,null,14
+learning_materials,category,text,YES,null,null,15
+learning_materials,ai_status,text,NO,'pending'::text,null,17
+learning_materials,download_count,integer,YES,0,null,19
+learning_materials,storage_path,text,YES,null,null,20
+learning_materials,uploader_name,text,YES,null,null,21
+learning_materials,uploader_email,text,YES,null,null,22
+learning_materials,file_name,text,YES,null,null,23
+learning_materials,size,bigint,YES,null,null,24
+learning_materials,mime,text,YES,null,null,25
+learning_materials,updated_at,timestamp with time zone,YES,now(),null,26
+learning_materials,deleted_at,timestamp with time zone,YES,null,null,27
+learning_materials,likes_count,integer,YES,0,null,28
+learning_materials,tags_jsonb,jsonb,YES,null,null,30
+learning_materials,ai_toggle_enabled,boolean,YES,false,null,31
+learning_materials,ai_limit_count,integer,YES,0,null,32
+learning_materials,ai_summary,text,YES,null,null,33
+learning_materials,ai_keypoints,jsonb,YES,null,null,34
+learning_materials,ai_quiz,jsonb,YES,null,null,35
+learning_materials,ai_flashcards,jsonb,YES,null,null,36
+learning_materials,ai_generated_at,timestamp with time zone,YES,null,null,37
+learning_materials,latest_ai_versions,jsonb,YES,null,null,38
+learning_materials,extracted_raw,text,YES,null,null,39
+learning_materials,extraction_meta,jsonb,YES,null,null,40
+material_ai_embeddings,embedding_id,uuid,NO,gen_random_uuid(),null,1
+material_ai_embeddings,ai_version_id,uuid,NO,null,null,2
+material_ai_embeddings,vector,USER-DEFINED,YES,null,null,3
+material_ai_embeddings,created_at,timestamp with time zone,YES,now(),null,4
+material_ai_versions,ai_version_id,uuid,NO,gen_random_uuid(),null,1
+material_ai_versions,material_id,uuid,NO,null,null,2
+material_ai_versions,type,text,NO,null,null,3
+material_ai_versions,content,jsonb,NO,null,null,4
+material_ai_versions,model_name,text,YES,null,null,5
+material_ai_versions,model_params,jsonb,YES,null,null,6
+material_ai_versions,generated_by,text,YES,null,null,7
+material_ai_versions,created_at,timestamp with time zone,YES,now(),null,8
+material_ai_versions,created_by,uuid,YES,null,null,9
+material_ai_versions,run_id,uuid,YES,null,null,10
+material_ai_versions,content_preview,text,YES,null,null,11
+material_ai_versions,language,text,YES,null,null,12
+material_ai_versions,confidence,numeric,YES,null,null,13
+material_ai_versions,content_hash,text,YES,null,null,14
+profiles,id,uuid,NO,null,null,1
+profiles,username,text,NO,null,null,2
+profiles,avatar_url,text,YES,null,null,3
+profiles,created_at,timestamp with time zone,NO,now(),null,4
+profiles,email,text,YES,null,null,7
+profiles,updated_at,timestamp with time zone,NO,now(),null,8
+profiles,first_name,text,NO,null,null,9
+profiles,last_name,text,NO,null,null,10
+profiles,age,integer,YES,null,null,12
+profiles,birthday,timestamp with time zone,YES,null,null,13
+profiles,streak_count,integer,YES,0,null,14
+profiles,total_study_time,integer,YES,0,null,15
+profiles,level,integer,YES,1,null,16
+profiles,experience_points,integer,YES,0,null,17
+profiles,streak_longest,integer,YES,0,null,18
+profiles,streak_last_active_at,timestamp with time zone,YES,null,null,19
+profiles,streak_timezone,text,YES,null,null,20
+profiles,streak_savers_available,integer,YES,3,null,21
+profiles,streak_savers_used,integer,YES,0,null,22
+profiles,streak_savers_last_reset,timestamp with time zone,YES,null,null,23
+profiles,streak_savers_max_per_month,integer,YES,3,null,24
+profiles,preferred_name,text,YES,null,null,25
+quiz_attempt_responses,id,uuid,NO,gen_random_uuid(),null,1
+quiz_attempt_responses,attempt_id,uuid,NO,null,null,2
+quiz_attempt_responses,question_id,uuid,YES,null,null,3
+quiz_attempt_responses,answer,jsonb,NO,null,null,4
+quiz_attempt_responses,is_correct,boolean,YES,null,null,5
+quiz_attempt_responses,response_time_ms,integer,YES,null,null,6
+quiz_attempt_responses,created_at,timestamp with time zone,YES,now(),null,7
+quiz_attempts,attempt_id,uuid,NO,uuid_generate_v4(),null,1
+quiz_attempts,user_id,uuid,YES,null,null,2
+quiz_attempts,quiz_id,uuid,YES,null,null,3
+quiz_attempts,score,double precision,YES,0,null,4
+quiz_attempts,total_questions,integer,YES,0,null,5
+quiz_attempts,correct_answers,integer,YES,0,null,6
+quiz_attempts,time_spent,integer,YES,0,null,7
+quiz_attempts,completed_at,timestamp with time zone,YES,now(),null,8
+quiz_questions,question_id,uuid,NO,uuid_generate_v4(),null,1
+quiz_questions,quiz_id,uuid,YES,null,null,2
+quiz_questions,material_id,uuid,YES,null,null,3
+quiz_questions,question_text,text,NO,null,null,4
+quiz_questions,question_type,text,YES,'multiple_choice'::text,null,5
+quiz_questions,options,jsonb,NO,null,null,6
+quiz_questions,correct_answer,text,NO,null,null,7
+quiz_questions,explanation,text,YES,null,null,8
+quiz_questions,difficulty,text,YES,'medium'::text,null,9
+quiz_questions,points,integer,YES,1,null,10
+quiz_questions,created_at,timestamp with time zone,YES,now(),null,11
+quizzes,quiz_id,uuid,NO,uuid_generate_v4(),null,1
+quizzes,title,text,NO,null,null,2
+quizzes,description,text,YES,null,null,3
+quizzes,material_id,uuid,YES,null,null,4
+quizzes,passing_score,double precision,YES,70.0,null,5
+quizzes,created_at,timestamp with time zone,YES,now(),null,7
+quizzes,max_attempts,integer,YES,null,null,8
+quizzes,generated_from_ai_version_id,uuid,YES,null,null,9

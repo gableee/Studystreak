@@ -4,8 +4,9 @@ declare(strict_types=1);
 // Ensure PHP upload limits align with the 100MB application constraint.
 ini_set('upload_max_filesize', '120M');
 ini_set('post_max_size', '125M');
-ini_set('max_execution_time', '120');
-ini_set('max_input_time', '120');
+// Give AI generation ample time; can be overridden by php -d or ini settings in container
+ini_set('max_execution_time', (string)(getenv('PHP_MAX_EXECUTION_TIME') ?: '300'));
+ini_set('max_input_time', (string)(getenv('PHP_MAX_INPUT_TIME') ?: '300'));
 
 // Quick health probe responder: respond immediately to /health (and /) so platform
 // health checks succeed even if autoload or env is not yet available during deploy.
@@ -42,6 +43,7 @@ use App\Middleware\AuthMiddleware;
 use App\Controllers\GamificationController;
 use App\Controllers\LearningMaterialsController;
 use App\Controllers\StudyToolsController;
+use App\Controllers\AIStudyToolsController;
 use App\Repositories\LearningMaterialRepository;
 use GuzzleHttp\Client;
 
@@ -61,7 +63,8 @@ $gamificationController = new GamificationController($config);
 $guzzleClient = new Client(['base_uri' => $config->getUrl()]);
 $learningMaterialRepository = new LearningMaterialRepository($guzzleClient, $config->getAnonKey(), $config->getServiceRoleKey());
 $learningMaterialsController = new LearningMaterialsController($config, $supabaseAuth, $learningMaterialRepository);
-$studyToolsController = new StudyToolsController($config, $aiConfig);
+$studyToolsController = new StudyToolsController($config, $aiConfig, $learningMaterialRepository);
+$aiHealthController = new AIStudyToolsController();
 
 // Basic CORS (dev) - adjust origin in production
 // Allow the health endpoint to be checked by probes that do not send an Origin header.
@@ -242,6 +245,12 @@ if ($path === '/debug-cors') {
   exit;
 }
 
+// AI service health (no auth) - GET /api/ai/health
+if ($path === '/api/ai/health' && $method === 'GET') {
+  $aiHealthController->healthCheck();
+  exit;
+}
+
 // Auth routes.
 if ($path === '/api/auth/signin' && $method === 'POST') {
   $authController->signIn($request);
@@ -411,10 +420,10 @@ if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/summary$#', $pa
   exit;
 }
 
-// GET /api/materials/{id}/study-tools/keypoints
+// GET|POST /api/materials/{id}/study-tools/keypoints
 if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/keypoints$#', $path, $matches)) {
   $materialId = $matches[1];
-  if ($method === 'GET') {
+  if ($method === 'GET' || $method === 'POST') {
     $authMiddleware->handle($request, function(Request $authedRequest) use ($studyToolsController, $materialId): void {
       $studyToolsController->getKeyPoints($authedRequest, $materialId);
     });
@@ -424,10 +433,10 @@ if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/keypoints$#', $
   exit;
 }
 
-// GET /api/materials/{id}/study-tools/keypoints-v2
+// GET|POST /api/materials/{id}/study-tools/keypoints-v2
 if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/keypoints-v2$#', $path, $matches)) {
   $materialId = $matches[1];
-  if ($method === 'GET') {
+  if ($method === 'GET' || $method === 'POST') {
     $authMiddleware->handle($request, function(Request $authedRequest) use ($studyToolsController, $materialId): void {
       $studyToolsController->getKeyPointsV2($authedRequest, $materialId);
     });
@@ -450,10 +459,10 @@ if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/quiz$#', $path,
   exit;
 }
 
-// GET /api/materials/{id}/study-tools/flashcards
+// GET|POST /api/materials/{id}/study-tools/flashcards
 if (preg_match('#^/api/materials/([0-9a-fA-F\-]{36})/study-tools/flashcards$#', $path, $matches)) {
   $materialId = $matches[1];
-  if ($method === 'GET') {
+  if ($method === 'GET' || $method === 'POST') {
     $authMiddleware->handle($request, function(Request $authedRequest) use ($studyToolsController, $materialId): void {
       $studyToolsController->getFlashcards($authedRequest, $materialId);
     });
