@@ -1,4 +1,13 @@
 <?php
+
+/**
+ * SupabaseAuth
+ *
+ * Lightweight wrapper around Supabase Auth HTTP endpoints. Provides
+ * token validation and convenience methods for sign-in, sign-up,
+ * and token refresh. Throws SupabaseAuthException for upstream
+ * errors and returns AuthenticatedUser value objects on success.
+ */
 namespace App\Auth;
 
 use App\Auth\AuthenticatedUser;

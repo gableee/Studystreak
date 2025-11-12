@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * SupabaseAuthException
+ *
+ * Specialized exception used to surface errors from Supabase
+ * authentication operations. Carries an additional `details`
+ * payload that callers can include in JSON error responses.
+ */
 namespace App\Auth;
 
 use Throwable;

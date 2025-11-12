@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * Response
+ *
+ * Minimal HTTP response helper used by JsonResponder. Manages status
+ * code, headers and body, and can send JSON responses with proper
+ * Content-Type and status.
+ */
 namespace App\Http;
 
 final class Response

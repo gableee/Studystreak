@@ -1,4 +1,12 @@
 <?php
+
+/**
+ * TodoController
+ *
+ * Small controller exposing todo list endpoints for the authenticated
+ * user. Proxies requests to Supabase (PostgREST) and returns the
+ * results as JSON. Provides basic list and create actions.
+ */
 namespace App\Controllers;
 
 use App\Auth\AuthenticatedUser;

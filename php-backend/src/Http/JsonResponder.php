@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * JsonResponder
+ *
+ * Small utility that centralizes JSON responses for the API.
+ * Provides helpers for common response types (200 OK, 201 Created,
+ * 400 Bad Request, 401 Unauthorized and arbitrary status codes).
+ */
 namespace App\Http;
 
 final class JsonResponder

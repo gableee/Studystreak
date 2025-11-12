@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * GamificationController
+ *
+ * Handles gamification-related endpoints and logic such as loading
+ * user profiles, activating streaks, using streak savers, and
+ * managing timezone and study session records. This controller
+ * communicates with Supabase via an HTTP client and normalizes
+ * profile data for API responses.
+ */
 namespace App\Controllers;
 
 use App\Config\SupabaseConfig;

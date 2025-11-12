@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * AuthMiddleware
+ *
+ * Middleware that validates incoming requests contain a valid
+ * Bearer token. On success it attaches an AuthenticatedUser and the
+ * raw access token to the Request attributes and forwards to the
+ * next handler; on failure it returns a 401 JSON response.
+ */
 namespace App\Middleware;
 
 use App\Auth\SupabaseAuth;

@@ -1,6 +1,14 @@
 <?php
 declare(strict_types=1);
 
+/**
+ * LearningMaterialsController
+ *
+ * Controller for managing learning materials (CRUD operations,
+ * signed URL generation, likes/unlikes, downloads, and enrichment
+ * with user profiles). Uses a LearningMaterialRepository to perform
+ * PostgREST requests to Supabase and returns JSON responses.
+ */
 namespace App\Controllers;
 
 use App\Auth\AuthenticatedUser;

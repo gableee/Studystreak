@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * AuthController
+ *
+ * Controller responsible for user authentication actions.
+ * Provides endpoints for signing in, signing up, refreshing tokens,
+ * and returning the current authenticated user. Delegates auth
+ * operations to the SupabaseAuth service and uses JsonResponder
+ * to return consistent JSON responses.
+ */
 namespace App\Controllers;
 
 use App\Auth\SupabaseAuth;
