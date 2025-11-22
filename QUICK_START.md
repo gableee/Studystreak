@@ -159,10 +159,6 @@ PORT=8000
 
 ---
 
-## 📚 Full Documentation
-
-- Setup: `README_OLLAMA_INTEGRATION.md`
-- Summary: `IMPLEMENTATION_SUMMARY.md`
 - API Docs: http://localhost:8000/docs (when running)
 
 ---

@@ -12,6 +12,8 @@ tags:
     description: Track streaks, XP, and profile-level gamification data.
   - name: Learning Materials
     description: Upload, list, and manage shared study resources.
+  - name: AI Study Tools
+    description: Generate summaries, keypoints, quizzes, and flashcards from study materials.
 servers:
   - url: https://studystreak-backend.onrender.com
     description: Production deployment
@@ -19,6 +21,8 @@ servers:
     description: Local development server
   - url: http://localhost:8182
     description: Local development server (alternate - PHP built-in with raised upload limits)
+  - url: http://localhost:8000
+    description: AI service (local development)
 paths:
   /api/todos:
     get:
@@ -435,6 +439,151 @@ paths:
                 $ref: '#/components/schemas/LearningMaterial'
         '401':
           description: Unauthorized
+  /api/ai/generate/summary:
+    post:
+      tags:
+        - AI Study Tools
+      summary: Generate a summary from text
+      description: >-
+        Generate a concise summary from the provided text content using AI.
+        Returns a structured summary with key points.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateRequest'
+      responses:
+        '200':
+          description: Successfully generated summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary:
+                    type: string
+                    example: "This text discusses the fundamentals of machine learning..."
+        '400':
+          description: Invalid request payload
+        '500':
+          description: AI generation error
+  /api/ai/generate/keypoints:
+    post:
+      tags:
+        - AI Study Tools
+      summary: Generate keypoints from text
+      description: >-
+        Extract and generate key points from the provided text content.
+        Returns a list of important concepts and ideas.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateRequest'
+      responses:
+        '200':
+          description: Successfully generated keypoints
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  keypoints:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Neural networks are computational models", "Supervised learning uses labeled data"]
+        '400':
+          description: Invalid request payload
+        '500':
+          description: AI generation error
+  /api/ai/generate/quiz:
+    post:
+      tags:
+        - AI Study Tools
+      summary: Generate a quiz from text
+      description: >-
+        Generate multiple-choice quiz questions from the provided text content.
+        Returns a set of questions with options and correct answers.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateQuizRequest'
+      responses:
+        '200':
+          description: Successfully generated quiz
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  quiz:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/QuizQuestion'
+        '400':
+          description: Invalid request payload
+        '500':
+          description: AI generation error
+  /api/ai/generate/flashcards:
+    post:
+      tags:
+        - AI Study Tools
+      summary: Generate flashcards from text
+      description: >-
+        Generate study flashcards (question-answer pairs) from the provided text content.
+        Returns a set of flashcards optimized for memorization.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateFlashcardsRequest'
+      responses:
+        '200':
+          description: Successfully generated flashcards
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  flashcards:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Flashcard'
+        '400':
+          description: Invalid request payload
+        '500':
+          description: AI generation error
+  /api/ai/generate/all:
+    post:
+      tags:
+        - AI Study Tools
+      summary: Generate all study tools at once
+      description: >-
+        Generate summary, keypoints, quiz, and flashcards from the provided text in a single request.
+        This is more efficient than making separate calls to each endpoint.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateAllRequest'
+      responses:
+        '200':
+          description: Successfully generated all study tools
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllStudyToolsResponse'
+        '400':
+          description: Invalid request payload
+        '500':
+          description: AI generation error
 components:
   securitySchemes:
     bearerAuth:
@@ -668,4 +817,112 @@ components:
         expires_at:
           type: integer
           description: Unix timestamp when the signed URL expires
+    GenerateRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          description: The input text content to process
+          example: "Machine learning is a subset of artificial intelligence that focuses on..."
+    GenerateQuizRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          description: The input text content to generate quiz from
+        num_questions:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 5
+          description: Number of quiz questions to generate
+    GenerateFlashcardsRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          description: The input text content to generate flashcards from
+        num_flashcards:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 10
+          description: Number of flashcards to generate
+    GenerateAllRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          description: The input text content to process
+        num_quiz_questions:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 5
+          description: Number of quiz questions to generate
+        num_flashcards:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 10
+          description: Number of flashcards to generate
+    QuizQuestion:
+      type: object
+      properties:
+        question:
+          type: string
+          example: "What is machine learning?"
+        options:
+          type: array
+          items:
+            type: string
+          example: ["A subset of AI", "A programming language", "A database system", "A web framework"]
+        correct_answer:
+          type: string
+          example: "A subset of AI"
+        explanation:
+          type: string
+          nullable: true
+          example: "Machine learning is a branch of artificial intelligence that focuses on..."
+    Flashcard:
+      type: object
+      properties:
+        question:
+          type: string
+          example: "What is supervised learning?"
+        answer:
+          type: string
+          example: "A type of machine learning where the model is trained on labeled data"
+        confidence:
+          type: number
+          format: float
+          nullable: true
+          description: Confidence score for the generated flashcard (0-1)
+    AllStudyToolsResponse:
+      type: object
+      properties:
+        summary:
+          type: string
+          example: "This text discusses machine learning fundamentals..."
+        keypoints:
+          type: array
+          items:
+            type: string
+          example: ["Machine learning is a subset of AI", "Neural networks mimic brain structure"]
+        quiz:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuizQuestion'
+        flashcards:
+          type: array
+          items:
+            $ref: '#/components/schemas/Flashcard'
 
